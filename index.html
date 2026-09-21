@@ -99,6 +99,10 @@ input{
   background:#777;
 }
 
+.boton-azul{
+  background:#286090;
+}
+
 .articulo{
   background:#fff;
   border-radius:10px;
@@ -138,8 +142,6 @@ input{
 
 <main class="contenedor">
 
-<!-- MENÚ -->
-
 <section id="menu" class="pantalla activa">
 
 <div class="tarjeta">
@@ -149,56 +151,26 @@ input{
 
 <div class="menu">
 
-<button class="boton" onclick="mostrar('inicio')">
-🏠 Inicio
-</button>
-
-<button class="boton" onclick="mostrar('inventario')">
-📦 Inventario
-</button>
-
-<button class="boton" onclick="mostrar('ventas')">
-💰 Ventas
-</button>
-
-<button class="boton" onclick="mostrar('compras')">
-🛒 Compras
-</button>
-
-<button class="boton" onclick="mostrar('clientes')">
-👥 Clientes
-</button>
-
-<button class="boton" onclick="mostrar('proveedores')">
-🚚 Proveedores
-</button>
-
-<button class="boton" onclick="mostrar('gastos')">
-💸 Gastos
-</button>
-
-<button class="boton" onclick="mostrar('reportes')">
-📊 Reportes
-</button>
-
-<button class="boton" onclick="mostrar('administracion')">
-⚙️ Administración
-</button>
+<button class="boton" onclick="mostrar('inicio')">🏠 Inicio</button>
+<button class="boton" onclick="mostrar('inventario')">📦 Inventario</button>
+<button class="boton" onclick="mostrar('ventas')">💰 Ventas</button>
+<button class="boton" onclick="mostrar('compras')">🛒 Compras</button>
+<button class="boton" onclick="mostrar('clientes')">👥 Clientes</button>
+<button class="boton" onclick="mostrar('proveedores')">🚚 Proveedores</button>
+<button class="boton" onclick="mostrar('gastos')">💸 Gastos</button>
+<button class="boton" onclick="mostrar('reportes')">📊 Reportes</button>
+<button class="boton" onclick="mostrar('administracion')">⚙️ Administración</button>
 
 </div>
 </section>
 
-
-<!-- INICIO -->
 
 <section id="inicio" class="pantalla">
 
 <div class="tarjeta">
 <h2>🏠 Inicio</h2>
 
-<button
-class="boton boton-gris volver"
-onclick="mostrar('menu')">
+<button class="boton boton-gris volver" onclick="mostrar('menu')">
 ← Volver
 </button>
 
@@ -208,17 +180,13 @@ onclick="mostrar('menu')">
 </section>
 
 
-<!-- INVENTARIO -->
-
 <section id="inventario" class="pantalla">
 
 <div class="tarjeta">
 
 <h2>📦 Inventario</h2>
 
-<button
-class="boton boton-gris volver"
-onclick="mostrar('menu')">
+<button class="boton boton-gris volver" onclick="mostrar('menu')">
 ← Volver
 </button>
 
@@ -226,9 +194,7 @@ onclick="mostrar('menu')">
 
 <div class="tarjeta">
 
-<button
-class="boton boton-verde"
-onclick="nuevoArticulo()">
+<button class="boton boton-verde" onclick="nuevoArticulo()">
 ➕ Nuevo artículo
 </button>
 
@@ -240,51 +206,34 @@ oninput="buscarArticulos()">
 
 </div>
 
-<div
-id="formulario"
-class="tarjeta oculto">
 
-<h3>Nuevo artículo</h3>
+<div id="formulario" class="tarjeta oculto">
 
-<input
-id="codigo"
-type="text"
-placeholder="Código">
+<h3 id="tituloFormulario">Nuevo artículo</h3>
 
-<input
-id="nombre"
-type="text"
-placeholder="Nombre del artículo">
-
-<input
-id="costo"
-type="number"
-step="0.01"
-placeholder="Costo">
-
-<input
-id="precio"
-type="number"
-step="0.01"
-placeholder="Precio al público">
-
-<input
-id="stock"
-type="number"
-placeholder="Stock">
-
-<input
-id="minimo"
-type="number"
-placeholder="Stock mínimo">
+<input id="codigo" type="text" placeholder="Código">
+<input id="nombre" type="text" placeholder="Nombre del artículo">
+<input id="costo" type="number" step="0.01" placeholder="Costo">
+<input id="precio" type="number" step="0.01" placeholder="Precio al público">
+<input id="stock" type="number" placeholder="Stock">
+<input id="minimo" type="number" placeholder="Stock mínimo">
 
 <button
+id="botonGuardar"
 class="boton boton-verde"
 onclick="guardarArticulo()">
 💾 Guardar artículo
 </button>
 
+<button
+id="botonCancelar"
+class="boton boton-gris oculto"
+onclick="cancelarEdicion()">
+Cancelar
+</button>
+
 </div>
+
 
 <div id="lista">
 Cargando inventario...
@@ -293,136 +242,66 @@ Cargando inventario...
 </section>
 
 
-<!-- VENTAS -->
-
 <section id="ventas" class="pantalla">
-
 <div class="tarjeta">
 <h2>💰 Ventas</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de ventas.</p>
 </div>
-
 </section>
 
-
-<!-- COMPRAS -->
 
 <section id="compras" class="pantalla">
-
 <div class="tarjeta">
 <h2>🛒 Compras</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de compras.</p>
 </div>
-
 </section>
 
-
-<!-- CLIENTES -->
 
 <section id="clientes" class="pantalla">
-
 <div class="tarjeta">
 <h2>👥 Clientes</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de clientes.</p>
 </div>
-
 </section>
 
-
-<!-- PROVEEDORES -->
 
 <section id="proveedores" class="pantalla">
-
 <div class="tarjeta">
 <h2>🚚 Proveedores</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de proveedores.</p>
 </div>
-
 </section>
 
-
-<!-- GASTOS -->
 
 <section id="gastos" class="pantalla">
-
 <div class="tarjeta">
 <h2>💸 Gastos</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de gastos.</p>
 </div>
-
 </section>
 
-
-<!-- REPORTES -->
 
 <section id="reportes" class="pantalla">
-
 <div class="tarjeta">
 <h2>📊 Reportes</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de reportes.</p>
 </div>
-
 </section>
 
 
-<!-- ADMINISTRACIÓN -->
-
 <section id="administracion" class="pantalla">
-
 <div class="tarjeta">
 <h2>⚙️ Administración</h2>
-
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
+<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
 <p>Módulo de administración.</p>
 </div>
-
 </section>
 
 </main>
@@ -435,6 +314,9 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
 "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+let articulos=[];
+let articuloEditando=null;
 
 
 /* CONEXIÓN */
@@ -509,10 +391,7 @@ window.scrollTo(0,0);
 }
 
 
-/* INVENTARIO */
-
-let articulos=[];
-
+/* CARGAR INVENTARIO */
 
 async function cargarArticulos(){
 
@@ -588,7 +467,10 @@ div.innerHTML=
 "<br>Precio público: $"+
 Number(a.precio_publico||0).toFixed(2)+
 "<br>Stock: "+Number(a.stock||0)+
-"<br>Stock mínimo: "+Number(a.stock_minimo||0);
+"<br>Stock mínimo: "+Number(a.stock_minimo||0)+
+'<br><br><button class="boton boton-azul" onclick="editarArticulo(\''+
+a.id+
+'\')">✏️ Editar</button>';
 
 lista.appendChild(div);
 
@@ -630,9 +512,80 @@ mostrarArticulos(resultados);
 
 function nuevoArticulo(){
 
+articuloEditando=null;
+
+document.getElementById("tituloFormulario").textContent=
+"Nuevo artículo";
+
+document.getElementById("botonGuardar").textContent=
+"💾 Guardar artículo";
+
+document.getElementById("botonCancelar")
+.classList.add("oculto");
+
 document
 .getElementById("formulario")
 .classList.remove("oculto");
+
+document.getElementById("codigo").value="";
+document.getElementById("nombre").value="";
+document.getElementById("costo").value="";
+document.getElementById("precio").value="";
+document.getElementById("stock").value="";
+document.getElementById("minimo").value="";
+
+}
+
+
+/* EDITAR ARTÍCULO */
+
+function editarArticulo(id){
+
+const articulo=articulos.find(function(a){
+return a.id===id;
+});
+
+if(!articulo){
+
+alert("No se encontró el artículo.");
+return;
+
+}
+
+articuloEditando=id;
+
+document.getElementById("tituloFormulario").textContent=
+"Editar artículo";
+
+document.getElementById("botonGuardar").textContent=
+"💾 Guardar cambios";
+
+document.getElementById("botonCancelar")
+.classList.remove("oculto");
+
+document.getElementById("codigo").value=
+articulo.codigo||"";
+
+document.getElementById("nombre").value=
+articulo.nombre||"";
+
+document.getElementById("costo").value=
+articulo.costo||0;
+
+document.getElementById("precio").value=
+articulo.precio_publico||0;
+
+document.getElementById("stock").value=
+articulo.stock||0;
+
+document.getElementById("minimo").value=
+articulo.stock_minimo||0;
+
+document
+.getElementById("formulario")
+.classList.remove("oculto");
+
+window.scrollTo(0,0);
 
 }
 
@@ -690,15 +643,40 @@ nombre:nombre,
 costo:costo,
 precio_publico:precio,
 stock:stock,
-stock_minimo:minimo,
-activo:true
+stock_minimo:minimo
 
 };
 
 
 try{
 
-const respuesta=await fetch(
+let respuesta;
+
+if(articuloEditando){
+
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+articuloEditando,
+{
+method:"PATCH",
+
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json",
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify(datos)
+
+}
+);
+
+}else{
+
+datos.activo=true;
+
+respuesta=await fetch(
 SUPABASE_URL+
 "/rest/v1/articulos",
 {
@@ -716,6 +694,8 @@ body:JSON.stringify(datos)
 }
 );
 
+}
+
 
 if(!respuesta.ok){
 
@@ -724,7 +704,9 @@ const error=await respuesta.text();
 console.log(error);
 
 alert(
-"No se pudo guardar el artículo."
+articuloEditando
+?"No se pudieron guardar los cambios."
+:"No se pudo guardar el artículo."
 );
 
 return;
@@ -732,21 +714,14 @@ return;
 }
 
 
-alert("✅ Artículo guardado.");
+alert(
+articuloEditando
+?"✅ Cambios guardados."
+:"✅ Artículo guardado."
+);
 
 
-document
-.getElementById("formulario")
-.classList.add("oculto");
-
-
-document.getElementById("codigo").value="";
-document.getElementById("nombre").value="";
-document.getElementById("costo").value="";
-document.getElementById("precio").value="";
-document.getElementById("stock").value="";
-document.getElementById("minimo").value="";
-
+cancelarEdicion();
 
 cargarArticulos();
 
@@ -758,6 +733,34 @@ console.log(error);
 alert("❌ Error de conexión.");
 
 }
+
+}
+
+
+/* CANCELAR EDICIÓN */
+
+function cancelarEdicion(){
+
+articuloEditando=null;
+
+document.getElementById("formulario")
+.classList.add("oculto");
+
+document.getElementById("tituloFormulario").textContent=
+"Nuevo artículo";
+
+document.getElementById("botonGuardar").textContent=
+"💾 Guardar artículo";
+
+document.getElementById("botonCancelar")
+.classList.add("oculto");
+
+document.getElementById("codigo").value="";
+document.getElementById("nombre").value="";
+document.getElementById("costo").value="";
+document.getElementById("precio").value="";
+document.getElementById("stock").value="";
+document.getElementById("minimo").value="";
 
 }
 
