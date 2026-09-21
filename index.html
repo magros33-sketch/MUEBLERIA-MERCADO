@@ -13,63 +13,40 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f1eb;
+      background: #f4f4f4;
       color: #222;
     }
 
     header {
-      background: #5a351f;
+      background: #5b351c;
       color: white;
+      padding: 20px;
       text-align: center;
-      padding: 20px 15px;
     }
 
     header h1 {
       margin: 0;
-      font-size: 27px;
+      font-size: 26px;
     }
 
     header p {
       margin: 6px 0 0;
+      font-size: 16px;
     }
 
-    main {
-      max-width: 700px;
-      margin: auto;
-      padding: 18px 15px 30px;
-    }
-
-    .estado {
+    #conexion {
+      margin: 12px;
+      padding: 10px;
       background: white;
-      border-radius: 12px;
-      padding: 11px;
+      border-radius: 8px;
       text-align: center;
-      margin-bottom: 18px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
       font-size: 14px;
     }
 
-    .menu {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .boton {
-      background: white;
-      border: none;
-      border-radius: 15px;
-      padding: 18px 8px;
-      min-height: 105px;
-      font-size: 16px;
-      font-weight: bold;
-      box-shadow: 0 3px 9px rgba(0,0,0,.10);
-    }
-
-    .boton span {
-      display: block;
-      font-size: 32px;
-      margin-bottom: 7px;
+    .contenedor {
+      padding: 15px;
+      max-width: 700px;
+      margin: auto;
     }
 
     .pantalla {
@@ -80,98 +57,151 @@
       display: block;
     }
 
-    .tarjeta {
-      background: white;
-      border-radius: 15px;
-      padding: 18px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 9px rgba(0,0,0,.08);
+    .menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 15px;
     }
 
-    .tarjeta h2 {
-      margin-top: 0;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 12px;
-      margin: 6px 0 10px;
-      border: 1px solid #ccc;
-      border-radius: 9px;
-      font-size: 16px;
-    }
-
-    .btn-principal {
-      width: 100%;
-      padding: 13px;
+    .boton {
       border: none;
       border-radius: 10px;
-      background: #5a351f;
-      color: white;
+      padding: 17px 10px;
       font-size: 16px;
       font-weight: bold;
+      background: #6b4022;
+      color: white;
+      cursor: pointer;
+    }
+
+    .boton:active {
+      transform: scale(0.98);
+    }
+
+    .boton-secundario {
+      background: #777;
+    }
+
+    .boton-verde {
+      background: #26734d;
+    }
+
+    .tarjeta {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.08);
+    }
+
+    h2 {
       margin-top: 5px;
     }
 
-    .btn-secundario {
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input,
+    select {
       width: 100%;
-      padding: 11px;
-      border: none;
-      border-radius: 10px;
-      background: #ddd;
-      font-size: 15px;
-      margin-top: 8px;
+      padding: 12px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
     }
 
     .articulo {
-      border: 1px solid #ddd;
-      border-radius: 12px;
+      background: white;
+      border-radius: 10px;
       padding: 14px;
-      margin-top: 10px;
-      background: #fafafa;
+      margin-bottom: 10px;
+      border-left: 5px solid #6b4022;
     }
 
     .articulo strong {
       font-size: 18px;
     }
 
+    .datos-articulo {
+      margin-top: 7px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
     .acciones {
       display: flex;
       gap: 8px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     .acciones button {
-      flex: 1;
-      padding: 9px;
       border: none;
-      border-radius: 8px;
+      border-radius: 7px;
+      padding: 9px 12px;
+      cursor: pointer;
       font-weight: bold;
     }
 
-    .btn-editar {
-      background: #e8dfd5;
+    .editar {
+      background: #e6c35c;
     }
 
-    .btn-baja {
-      background: #f0caca;
+    .desactivar {
+      background: #d9534f;
+      color: white;
+    }
+
+    .stock-bajo {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    .stock-ok {
+      color: #26734d;
+      font-weight: bold;
     }
 
     .oculto {
       display: none;
     }
 
-    .mensaje {
-      padding: 10px;
-      border-radius: 9px;
-      margin-top: 10px;
-      display: none;
-      background: #eee;
+    .titulo-seccion {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
     }
 
-    @media (min-width: 600px) {
+    .titulo-seccion h2 {
+      margin: 0;
+    }
+
+    .volver {
+      background: #777;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .mensaje {
+      text-align: center;
+      padding: 15px;
+      color: #666;
+    }
+
+    @media (max-width: 500px) {
       .menu {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -179,329 +209,1121 @@
 
 <body>
 
-<header>
-  <h1>🪑 Mueblería Mercado</h1>
-  <p>Para tu hogar</p>
-</header>
+  <header>
+    <h1>🪑 Mueblería Mercado</h1>
+    <p>Para tu hogar</p>
+  </header>
 
-<main>
-
-  <div class="estado" id="conexion">
+  <div id="conexion">
     Conectando con la base de datos...
   </div>
 
-  <!-- MENÚ -->
+  <main class="contenedor">
 
-  <section id="menu" class="pantalla activa">
+    <!-- =========================
+         INICIO / MENÚ
+    ========================== -->
+    <section id="menu" class="pantalla activa">
 
-    <div class="menu">
-
-      <button class="boton" onclick="mostrar('inicio')">
-        <span>🏠</span>Inicio
-      </button>
-
-      <button class="boton" onclick="mostrar('inventario')">
-        <span>📦</span>Inventario
-      </button>
-
-      <button class="boton" onclick="alert('Ventas se construirá después.')">
-        <span>💰</span>Ventas
-      </button>
-
-      <button class="boton" onclick="alert('Compras se construirá después.')">
-        <span>🛒</span>Compras
-      </button>
-
-      <button class="boton" onclick="alert('Clientes se construirá después.')">
-        <span>👥</span>Clientes
-      </button>
-
-      <button class="boton" onclick="alert('Proveedores se construirá después.')">
-        <span>🚚</span>Proveedores
-      </button>
-
-      <button class="boton" onclick="alert('Gastos se construirá después.')">
-        <span>💸</span>Gastos
-      </button>
-
-      <button class="boton" onclick="alert('Reportes se construirán después.')">
-        <span>📊</span>Reportes
-      </button>
-
-      <button class="boton" onclick="alert('Administración se construirá después.')">
-        <span>⚙️</span>Administración
-      </button>
-
-    </div>
-
-  </section>
-
-  <!-- INICIO -->
-
-  <section id="inicio" class="pantalla">
-
-    <div class="tarjeta">
-      <h2>🏠 Inicio</h2>
-      <p>Bienvenido a Mueblería Mercado.</p>
-
-      <button class="btn-secundario" onclick="mostrar('menu')">
-        ← Volver al menú
-      </button>
-    </div>
-
-  </section>
-
-  <!-- INVENTARIO -->
-
-  <section id="inventario" class="pantalla">
-
-    <div class="tarjeta">
-
-      <h2>📦 Inventario</h2>
-
-      <button class="btn-principal" onclick="mostrarFormulario()">
-        ➕ Nuevo artículo
-      </button>
-
-      <input
-        type="text"
-        id="buscar"
-        placeholder="🔍 Buscar por código o nombre"
-        oninput="cargarArticulos()"
-      >
-
-    </div>
-
-    <!-- FORMULARIO -->
-
-    <div id="formulario" class="tarjeta oculto">
-
-      <h2 id="tituloFormulario">Nuevo artículo</h2>
-
-      <input type="hidden" id="articuloId">
-
-      <label>Código</label>
-      <input id="codigo" placeholder="Ej. ROP-001">
-
-      <label>Nombre</label>
-      <input id="nombre" placeholder="Ej. Ropero 6 puertas">
-
-      <label>Costo</label>
-      <input id="costo" type="number" step="0.01" placeholder="0.00">
-
-      <label>Precio al público</label>
-      <input id="precio" type="number" step="0.01" placeholder="0.00">
-
-      <label>Stock</label>
-      <input id="stock" type="number" value="0">
-
-      <label>Stock mínimo</label>
-      <input id="stockMinimo" type="number" value="0">
-
-      <button class="btn-principal" onclick="guardarArticulo()">
-        💾 Guardar artículo
-      </button>
-
-      <button class="btn-secundario" onclick="cerrarFormulario()">
-        Cancelar
-      </button>
-
-      <div id="mensajeFormulario" class="mensaje"></div>
-
-    </div>
-
-    <!-- LISTA -->
-
-    <div class="tarjeta">
-
-      <h2>Artículos</h2>
-
-      <div id="listaArticulos">
-        Cargando inventario...
+      <div class="tarjeta">
+        <h2>Inicio</h2>
+        <p>Selecciona el módulo que deseas utilizar.</p>
       </div>
 
-    </div>
+      <div class="menu">
 
-    <button class="btn-secundario" onclick="mostrar('menu')">
-      ← Volver al menú
-    </button>
+        <button class="boton" onclick="mostrar('inicio')">
+          🏠 Inicio
+        </button>
 
-  </section>
+        <button class="boton" onclick="mostrar('inventario')">
+          📦 Inventario
+        </button>
 
-</main>
+        <button class="boton" onclick="mostrar('ventas')">
+          💰 Ventas
+        </button>
 
-<script>
+        <button class="boton" onclick="mostrar('compras')">
+          🛒 Compras
+        </button>
 
-  const SUPABASE_URL =
-    "https://ggaqknpwlohpbyxeyque.supabase.co";
+        <button class="boton" onclick="mostrar('clientes')">
+          👥 Clientes
+        </button>
 
-  const SUPABASE_KEY =
-    "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+        <button class="boton" onclick="mostrar('proveedores')">
+          🚚 Proveedores
+        </button>
 
+        <button class="boton" onclick="mostrar('gastos')">
+          💸 Gastos
+        </button>
+
+        <button class="boton" onclick="mostrar('reportes')">
+          📊 Reportes
+        </button>
+
+        <button class="boton" onclick="mostrar('administracion')">
+          ⚙️ Administración
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         INICIO
+    ========================== -->
+    <section id="inicio" class="pantalla">
+
+      <div class="titulo-seccion">
+        <h2>🏠 Inicio</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
+
+      <div class="tarjeta">
+        <h3>🪑 Mueblería Mercado</h3>
+        <p>Bienvenido a la aplicación.</p>
+        <p>Desde aquí podrás administrar inventario, ventas, compras y demás módulos.</p>
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         INVENTARIO
+    ========================== -->
+    <section id="inventario" class="pantalla">
+
+      <div class="titulo-seccion">
+        <h2>📦 Inventario</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
+
+      <div class="tarjeta">
+
+        <button
+          class="boton boton-verde"
+          onclick="mostrarFormularioArticulo()"
+        >
+          ➕ Nuevo artículo
+        </button>
+
+        <label for="buscarArticulo">
+          🔎 Buscar artículo
+        </label>
+
+        <input
+          type="text"
+          id="buscarArticulo"
+          placeholder="Código o nombre"
+          oninput="filtrarArticulos()"
+        >
+
+      </div>
+
+
+      <!-- FORMULARIO ARTÍCULO -->
+      <div id="formularioArticulo" class="tarjeta oculto">
+
+        <h3 id="tituloFormulario">
+          Nuevo artículo
+        </h3>
+
+        <input
+          type="hidden"
+          id="articuloId"
+        >
+
+        <label for="codigo">
+          Código
+        </label>
+
+        <input
+          type="text"
+          id="codigo"
+          placeholder="Ej. 00125"
+        >
+
+        <label for="nombre">
+          Nombre del artículo
+        </label>
+
+        <input
+          type="text"
+          id="nombre"
+          placeholder="Ej. Ropero 6 puertas"
+        >
+
+        <label for="costo">
+          Costo
+        </label>
+
+        <input
+          type="number"
+          id="costo"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+        >
+
+        <label for="precioPublico">
+          Precio al público
+        </label>
+
+        <input
+          type="number"
+          id="precioPublico"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+        >
+
+        <label for="stock">
+          Stock
+        </label>
+
+        <input
+          type="number"
+          id="stock"
+          step="1"
+          min="0"
+          value="0"
+        >
+
+        <label for="stockMinimo">
+          Stock mínimo
+        </label>
+
+        <input
+          type="number"
+          id="stockMinimo"
+          step="1"
+          min="0"
+          value="0"
+        >
+
+        <div class="acciones">
+
+          <button
+            class="boton boton-verde"
+            onclick="guardarArticulo()"
+          >
+            💾 Guardar
+          </button>
+
+          <button
+            class="boton boton-secundario"
+            onclick="cerrarFormularioArticulo()"
+          >
+            Cancelar
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- LISTA -->
+      <div id="listaArticulos">
+        <div class="mensaje">
+          Cargando artículos...
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         VENTAS
+    ========================== -->
+    <section id="ventas" class="pantalla">
+
+      <div class="titulo-seccion">
+        <h2>💰 Ventas</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
+
+      <div class="tarjeta">
+        <p>El módulo de ventas se agregará aquí.</p>
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         COMPRAS
+    ========================== -->
+    <section id="compras" class="pantalla">
+
+      <div class="titulo-seccion">
+        <h2>🛒 Compras</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
+
+      <div class="tarjeta">
+        <p>El módulo de compras se agregará aquí.</p>
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         CLIENTES
+    ========================== -->
+    <section id="clientes" class="pantalla">
+
+      <div class="titulo-seccion">
+        <h2>👥 Clientes</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
 
-  /* CONEXIÓN */
+      <div class="tarjeta">
+        <p>El módulo de clientes se agregará aquí.</p>
+      </div>
 
-  async function comprobarConexion() {
+    </section>
 
-    const mensaje = document.getElementById("conexion");
 
-    try {
+    <!-- =========================
+         PROVEEDORES
+    ========================== -->
+    <section id="proveedores" class="pantalla">
 
-      const respuesta = await fetch(
-        SUPABASE_URL + "/rest/v1/categorias?select=id&limit=1",
-        {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": "Bearer " + SUPABASE_KEY
-          }
-        }
-      );
+      <div class="titulo-seccion">
+        <h2>🚚 Proveedores</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
 
-      if (respuesta.ok) {
+      <div class="tarjeta">
+        <p>El módulo de proveedores se agregará aquí.</p>
+      </div>
 
-        mensaje.textContent =
-          "✅ Conectado correctamente con Supabase.";
+    </section>
 
-      } else {
 
-        mensaje.textContent =
-          "⚠️ Supabase responde, pero falta configurar permisos.";
+    <!-- =========================
+         GASTOS
+    ========================== -->
+    <section id="gastos" class="pantalla">
 
-      }
+      <div class="titulo-seccion">
+        <h2>💸 Gastos</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
 
-    } catch (error) {
+      <div class="tarjeta">
+        <p>El módulo de gastos se agregará aquí.</p>
+      </div>
 
-      console.log(error);
+    </section>
 
-      mensaje.textContent =
-        "❌ Error de conexión con Supabase.";
 
-    }
+    <!-- =========================
+         REPORTES
+    ========================== -->
+    <section id="reportes" class="pantalla">
 
-  }
+      <div class="titulo-seccion">
+        <h2>📊 Reportes</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
 
+      <div class="tarjeta">
+        <p>El módulo de reportes se agregará aquí.</p>
+      </div>
 
-  /* NAVEGACIÓN */
+    </section>
 
-  function mostrar(pantalla) {
 
-    document
-      .querySelectorAll(".pantalla")
-      .forEach(x => x.classList.remove("activa"));
+    <!-- =========================
+         ADMINISTRACIÓN
+    ========================== -->
+    <section id="administracion" class="pantalla">
 
-    document
-      .getElementById(pantalla)
-      .classList.add("activa");
+      <div class="titulo-seccion">
+        <h2>⚙️ Administración</h2>
+        <button class="volver" onclick="mostrar('menu')">
+          ← Menú
+        </button>
+      </div>
 
-    if (pantalla === "inventario") {
-      cargarArticulos();
-    }
+      <div class="tarjeta">
+        <p>El módulo de administración se agregará aquí.</p>
+      </div>
 
-    window.scrollTo(0,0);
-  }
+    </section>
 
+  </main>
 
-  /* FORMULARIO */
 
-  function mostrarFormulario() {
+  <script>
 
-    document
-      .getElementById("formulario")
-      .classList.remove("oculto");
+    /* =====================================
+       CONEXIÓN SUPABASE
+    ====================================== */
 
-    document.getElementById("tituloFormulario").textContent =
-      "Nuevo artículo";
+    const SUPABASE_URL =
+      "https://ggaqknpwlohpbyxeyque.supabase.co";
 
-    limpiarFormulario();
+    const SUPABASE_KEY =
+      "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
-  }
 
+    async function comprobarConexion() {
 
-  function cerrarFormulario() {
+      const mensaje =
+        document.getElementById("conexion");
 
-    document
-      .getElementById("formulario")
-      .classList.add("oculto");
+      try {
 
-    limpiarFormulario();
-
-  }
-
-
-  function limpiarFormulario() {
-
-    document.getElementById("articuloId").value = "";
-    document.getElementById("codigo").value = "";
-    document.getElementById("nombre").value = "";
-    document.getElementById("costo").value = "";
-    document.getElementById("precio").value = "";
-    document.getElementById("stock").value = "0";
-    document.getElementById("stockMinimo").value = "0";
-
-  }
-
-
-  /* GUARDAR */
-
-  async function guardarArticulo() {
-
-    const id =
-      document.getElementById("articuloId").value;
-
-    const articulo = {
-
-      codigo:
-        document.getElementById("codigo").value.trim(),
-
-      nombre:
-        document.getElementById("nombre").value.trim(),
-
-      costo:
-        Number(document.getElementById("costo").value || 0),
-
-      precio_publico:
-        Number(document.getElementById("precio").value || 0),
-
-      stock:
-        Number(document.getElementById("stock").value || 0),
-
-      stock_minimo:
-        Number(document.getElementById("stockMinimo").value || 0)
-
-    };
-
-
-    if (!articulo.codigo || !articulo.nombre) {
-
-      alert("Escribe el código y el nombre del artículo.");
-
-      return;
-    }
-
-
-    try {
-
-      let respuesta;
-
-
-      if (id) {
-
-        respuesta = await fetch(
-          SUPABASE_URL + "/rest/v1/articulos?id=eq." + id,
+        const respuesta = await fetch(
+          SUPABASE_URL +
+          "/rest/v1/categorias?select=id&limit=1",
           {
-            method: "PATCH",
-
             headers: {
               "apikey": SUPABASE_KEY,
-              "Authorization": "Bearer " + SUPABASE_KEY,
-              "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(articulo)
+              "Authorization":
+                "Bearer " + SUPABASE_KEY
+            }
           }
         );
 
-      } else {
+        if (respuesta.ok) {
 
-        respuesta = await fetch(
-          SUPABASE_URL
+          mensaje.textContent =
+            "✅ Conectado correctamente con Supabase.";
+
+        } else {
+
+          mensaje.textContent =
+            "⚠️ Supabase responde, pero falta configurar permisos.";
+
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+        mensaje.textContent =
+          "❌ Error de conexión con Supabase.";
+
+      }
+
+    }
+
+
+    /* =====================================
+       NAVEGACIÓN
+    ====================================== */
+
+    function mostrar(pantalla) {
+
+      const pantallas =
+        document.querySelectorAll(".pantalla");
+
+      pantallas.forEach(function(p) {
+        p.classList.remove("activa");
+      });
+
+
+      const destino =
+        document.getElementById(pantalla);
+
+
+      if (!destino) {
+
+        alert(
+          "No se encontró el módulo: " +
+          pantalla
+        );
+
+        return;
+      }
+
+
+      destino.classList.add("activa");
+
+
+      if (pantalla === "inventario") {
+        cargarArticulos();
+      }
+
+
+      window.scrollTo(0, 0);
+    }
+
+
+    /* =====================================
+       VARIABLES
+    ====================================== */
+
+    let articulos = [];
+
+
+    /* =====================================
+       CARGAR ARTÍCULOS
+    ====================================== */
+
+    async function cargarArticulos() {
+
+      const lista =
+        document.getElementById("listaArticulos");
+
+      lista.innerHTML =
+        '<div class="mensaje">Cargando artículos...</div>';
+
+
+      try {
+
+        const respuesta = await fetch(
+          SUPABASE_URL +
+          "/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+          {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization":
+                "Bearer " + SUPABASE_KEY
+            }
+          }
+        );
+
+
+        if (!respuesta.ok) {
+
+          const errorTexto =
+            await respuesta.text();
+
+          console.log(errorTexto);
+
+          lista.innerHTML =
+            '<div class="mensaje">' +
+            '⚠️ No se pudieron cargar los artículos.' +
+            '</div>';
+
+          return;
+        }
+
+
+        articulos =
+          await respuesta.json();
+
+
+        mostrarArticulos(articulos);
+
+      } catch (error) {
+
+        console.log(error);
+
+        lista.innerHTML =
+          '<div class="mensaje">' +
+          '❌ Error al cargar inventario.' +
+          '</div>';
+
+      }
+
+    }
+
+
+    /* =====================================
+       MOSTRAR ARTÍCULOS
+    ====================================== */
+
+    function mostrarArticulos(listaArticulos) {
+
+      const lista =
+        document.getElementById("listaArticulos");
+
+
+      if (!listaArticulos.length) {
+
+        lista.innerHTML =
+          '<div class="mensaje">' +
+          'No hay artículos registrados todavía.' +
+          '</div>';
+
+        return;
+      }
+
+
+      lista.innerHTML = "";
+
+
+      listaArticulos.forEach(function(articulo) {
+
+        const div =
+          document.createElement("div");
+
+        div.className = "articulo";
+
+
+        const stockBajo =
+          Number(articulo.stock) <=
+          Number(articulo.stock_minimo);
+
+
+        div.innerHTML = `
+
+          <strong>
+            ${escapeHTML(articulo.nombre || "")}
+          </strong>
+
+          <div class="datos-articulo">
+
+            <div>
+              <b>Código:</b>
+              ${escapeHTML(articulo.codigo || "")}
+            </div>
+
+            <div>
+              <b>Costo:</b>
+              $${Number(articulo.costo || 0).toFixed(2)}
+            </div>
+
+            <div>
+              <b>Precio público:</b>
+              $${Number(articulo.precio_publico || 0).toFixed(2)}
+            </div>
+
+            <div class="${
+              stockBajo
+                ? "stock-bajo"
+                : "stock-ok"
+            }">
+
+              <b>Stock:</b>
+              ${Number(articulo.stock || 0)}
+
+              ${
+                stockBajo
+                  ? " ⚠️ Stock bajo"
+                  : " ✅"
+              }
+
+            </div>
+
+            <div>
+              <b>Stock mínimo:</b>
+              ${Number(articulo.stock_minimo || 0)}
+            </div>
+
+          </div>
+
+          <div class="acciones">
+
+            <button
+              class="editar"
+              onclick="editarArticulo('${articulo.id}')"
+            >
+              ✏️ Editar
+            </button>
+
+            <button
+              class="desactivar"
+              onclick="desactivarArticulo('${articulo.id}')"
+            >
+              🗑️ Desactivar
+            </button>
+
+          </div>
+        `;
+
+
+        lista.appendChild(div);
+
+      });
+
+    }
+
+
+    /* =====================================
+       BUSCAR
+    ====================================== */
+
+    function filtrarArticulos() {
+
+      const texto =
+        document
+          .getElementById("buscarArticulo")
+          .value
+          .toLowerCase()
+          .trim();
+
+
+      if (!texto) {
+
+        mostrarArticulos(articulos);
+
+        return;
+      }
+
+
+      const filtrados =
+        articulos.filter(function(a) {
+
+          const codigo =
+            String(a.codigo || "")
+              .toLowerCase();
+
+          const nombre =
+            String(a.nombre || "")
+              .toLowerCase();
+
+          return (
+            codigo.includes(texto) ||
+            nombre.includes(texto)
+          );
+
+        });
+
+
+      mostrarArticulos(filtrados);
+
+    }
+
+
+    /* =====================================
+       FORMULARIO NUEVO ARTÍCULO
+    ====================================== */
+
+    function mostrarFormularioArticulo() {
+
+      document
+        .getElementById("formularioArticulo")
+        .classList.remove("oculto");
+
+
+      document
+        .getElementById("tituloFormulario")
+        .textContent =
+        "Nuevo artículo";
+
+
+      document
+        .getElementById("articuloId")
+        .value = "";
+
+
+      document
+        .getElementById("codigo")
+        .value = "";
+
+
+      document
+        .getElementById("nombre")
+        .value = "";
+
+
+      document
+        .getElementById("costo")
+        .value = "";
+
+
+      document
+        .getElementById("precioPublico")
+        .value = "";
+
+
+      document
+        .getElementById("stock")
+        .value = "0";
+
+
+      document
+        .getElementById("stockMinimo")
+        .value = "0";
+
+
+      window.scrollTo(0, 0);
+
+    }
+
+
+    /* =====================================
+       CERRAR FORMULARIO
+    ====================================== */
+
+    function cerrarFormularioArticulo() {
+
+      document
+        .getElementById("formularioArticulo")
+        .classList.add("oculto");
+
+    }
+
+
+    /* =====================================
+       GUARDAR ARTÍCULO
+    ====================================== */
+
+    async function guardarArticulo() {
+
+      const id =
+        document
+          .getElementById("articuloId")
+          .value;
+
+
+      const codigo =
+        document
+          .getElementById("codigo")
+          .value
+          .trim();
+
+
+      const nombre =
+        document
+          .getElementById("nombre")
+          .value
+          .trim();
+
+
+      const costo =
+        Number(
+          document
+            .getElementById("costo")
+            .value || 0
+        );
+
+
+      const precio_publico =
+        Number(
+          document
+            .getElementById("precioPublico")
+            .value || 0
+        );
+
+
+      const stock =
+        Number(
+          document
+            .getElementById("stock")
+            .value || 0
+        );
+
+
+      const stock_minimo =
+        Number(
+          document
+            .getElementById("stockMinimo")
+            .value || 0
+        );
+
+
+      if (!codigo) {
+
+        alert("Escribe el código del artículo.");
+
+        return;
+      }
+
+
+      if (!nombre) {
+
+        alert("Escribe el nombre del artículo.");
+
+        return;
+      }
+
+
+      const datos = {
+
+        codigo: codigo,
+
+        nombre: nombre,
+
+        costo: costo,
+
+        precio_publico: precio_publico,
+
+        stock: stock,
+
+        stock_minimo: stock_minimo,
+
+        activo: true
+
+      };
+
+
+      try {
+
+        let respuesta;
+
+
+        if (id) {
+
+          respuesta =
+            await fetch(
+              SUPABASE_URL +
+              "/rest/v1/articulos?id=eq." +
+              encodeURIComponent(id),
+              {
+                method: "PATCH",
+
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization":
+                    "Bearer " + SUPABASE_KEY,
+                  "Content-Type":
+                    "application/json",
+                  "Prefer":
+                    "return=representation"
+                },
+
+                body:
+                  JSON.stringify(datos)
+              }
+            );
+
+        } else {
+
+          respuesta =
+            await fetch(
+              SUPABASE_URL +
+              "/rest/v1/articulos",
+              {
+                method: "POST",
+
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization":
+                    "Bearer " + SUPABASE_KEY,
+                  "Content-Type":
+                    "application/json",
+                  "Prefer":
+                    "return=representation"
+                },
+
+                body:
+                  JSON.stringify(datos)
+              }
+            );
+
+        }
+
+
+        if (!respuesta.ok) {
+
+          const errorTexto =
+            await respuesta.text();
+
+          console.log(errorTexto);
+
+          alert(
+            "No se pudo guardar el artículo.\n\n" +
+            errorTexto
+          );
+
+          return;
+        }
+
+
+        alert(
+          id
+            ? "✅ Artículo actualizado."
+            : "✅ Artículo guardado."
+        );
+
+
+        cerrarFormularioArticulo();
+
+        await cargarArticulos();
+
+
+      } catch (error) {
+
+        console.log(error);
+
+        alert(
+          "❌ Error al guardar el artículo."
+        );
+
+      }
+
+    }
+
+
+    /* =====================================
+       EDITAR ARTÍCULO
+    ====================================== */
+
+    function editarArticulo(id) {
+
+      const articulo =
+        articulos.find(function(a) {
+          return a.id === id;
+        });
+
+
+      if (!articulo) {
+
+        alert(
+          "No se encontró el artículo."
+        );
+
+        return;
+      }
+
+
+      document
+        .getElementById("formularioArticulo")
+        .classList.remove("oculto");
+
+
+      document
+        .getElementById("tituloFormulario")
+        .textContent =
+        "Editar artículo";
+
+
+      document
+        .getElementById("articuloId")
+        .value =
+        articulo.id;
+
+
+      document
+        .getElementById("codigo")
+        .value =
+        articulo.codigo || "";
+
+
+      document
+        .getElementById("nombre")
+        .value =
+        articulo.nombre || "";
+
+
+      document
+        .getElementById("costo")
+        .value =
+        articulo.costo || 0;
+
+
+      document
+        .getElementById("precioPublico")
+        .value =
+        articulo.precio_publico || 0;
+
+
+      document
+        .getElementById("stock")
+        .value =
+        articulo.stock || 0;
+
+
+      document
+        .getElementById("stockMinimo")
+        .value =
+        articulo.stock_minimo || 0;
+
+
+      window.scrollTo(0, 0);
+
+    }
+
+
+    /* =====================================
+       DESACTIVAR ARTÍCULO
+    ====================================== */
+
+    async function desactivarArticulo(id) {
+
+      const confirmar =
+        confirm(
+          "¿Quieres desactivar este artículo?"
+        );
+
+
+      if (!confirmar) {
+        return;
+      }
+
+
+      try {
+
+        const respuesta =
+          await fetch(
+            SUPABASE_URL +
+            "/rest/v1/articulos?id=eq." +
+            encodeURIComponent(id),
+            {
+              method: "PATCH",
+
+              headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization":
+                  "Bearer " + SUPABASE_KEY,
+                "Content-Type":
+                  "application/json",
+                "Prefer":
+                  "return=representation"
+              },
+
+              body:
+                JSON.stringify({
+                  activo: false
+                })
+            }
+          );
+
+
+        if (!respuesta.ok) {
+
+          const errorTexto =
+            await respuesta.text();
+
+          console.log(errorTexto);
+
+          alert(
+            "No se pudo desactivar el artículo."
+          );
+
+          return;
+        }
+
+
+        alert(
+          "✅ Artículo desactivado."
+        );
+
+
+        await cargarArticulos();
+
+
+      } catch (error) {
+
+        console.log(error);
+
+        alert(
+          "❌ Error al desactivar el artículo."
+        );
+
+      }
+
+    }
+
+
+    /* =====================================
+       SEGURIDAD PARA MOSTRAR TEXTO
+    ====================================== */
+
+    function escapeHTML(texto) {
