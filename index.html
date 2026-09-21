@@ -1,1329 +1,772 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mueblería Mercado</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mueblería Mercado</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+*{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      color: #222;
-    }
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7f5;
+  color:#17221b;
+}
 
-    header {
-      background: #5b351c;
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
+header{
+  background:#123b2a;
+  color:#fff;
+  padding:18px;
+  text-align:center;
+}
 
-    header h1 {
-      margin: 0;
-      font-size: 26px;
-    }
+header h1{
+  margin:0;
+  font-size:26px;
+}
 
-    header p {
-      margin: 6px 0 0;
-      font-size: 16px;
-    }
+header p{
+  margin:6px 0 0;
+}
 
-    #conexion {
-      margin: 12px;
-      padding: 10px;
-      background: white;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 14px;
-    }
+#conexion{
+  margin:12px;
+  padding:10px;
+  background:#fff;
+  border-radius:8px;
+  text-align:center;
+}
 
-    .contenedor {
-      padding: 15px;
-      max-width: 700px;
-      margin: auto;
-    }
+.contenedor{
+  max-width:700px;
+  margin:auto;
+  padding:15px;
+}
 
-    .pantalla {
-      display: none;
-    }
+.pantalla{
+  display:none;
+}
 
-    .pantalla.activa {
-      display: block;
-    }
+.pantalla.activa{
+  display:block;
+}
 
-    .menu {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 15px;
-    }
+.menu{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
-    .boton {
-      border: none;
-      border-radius: 10px;
-      padding: 17px 10px;
-      font-size: 16px;
-      font-weight: bold;
-      background: #6b4022;
-      color: white;
-      cursor: pointer;
-    }
+.boton{
+  border:0;
+  border-radius:10px;
+  padding:17px 10px;
+  font-size:16px;
+  font-weight:bold;
+  background:#123b2a;
+  color:#fff;
+  cursor:pointer;
+}
 
-    .boton:active {
-      transform: scale(0.98);
-    }
+.boton:active{
+  transform:scale(.98);
+}
 
-    .boton-secundario {
-      background: #777;
-    }
+.tarjeta{
+  background:#fff;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
+}
 
-    .boton-verde {
-      background: #26734d;
-    }
+input{
+  width:100%;
+  padding:12px;
+  margin:5px 0 12px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  font-size:16px;
+}
 
-    .tarjeta {
-      background: white;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 7px rgba(0,0,0,0.08);
-    }
+.boton-verde{
+  background:#287a4d;
+}
 
-    h2 {
-      margin-top: 5px;
-    }
+.boton-gris{
+  background:#777;
+}
 
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
+.articulo{
+  background:#fff;
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,.06);
+}
 
-    input,
-    select {
-      width: 100%;
-      padding: 12px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
+.articulo strong{
+  font-size:18px;
+}
 
-    .articulo {
-      background: white;
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 10px;
-      border-left: 5px solid #6b4022;
-    }
+.oculto{
+  display:none;
+}
 
-    .articulo strong {
-      font-size: 18px;
-    }
+.volver{
+  margin-bottom:15px;
+}
 
-    .datos-articulo {
-      margin-top: 7px;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .acciones {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-
-    .acciones button {
-      border: none;
-      border-radius: 7px;
-      padding: 9px 12px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .editar {
-      background: #e6c35c;
-    }
-
-    .desactivar {
-      background: #d9534f;
-      color: white;
-    }
-
-    .stock-bajo {
-      color: #c62828;
-      font-weight: bold;
-    }
-
-    .stock-ok {
-      color: #26734d;
-      font-weight: bold;
-    }
-
-    .oculto {
-      display: none;
-    }
-
-    .titulo-seccion {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    .titulo-seccion h2 {
-      margin: 0;
-    }
-
-    .volver {
-      background: #777;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 13px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .mensaje {
-      text-align: center;
-      padding: 15px;
-      color: #666;
-    }
-
-    @media (max-width: 500px) {
-      .menu {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+@media(max-width:500px){
+  .menu{
+    grid-template-columns:1fr;
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <header>
-    <h1>🪑 Mueblería Mercado</h1>
-    <p>Para tu hogar</p>
-  </header>
+<header>
+<h1>🪑 Mueblería Mercado</h1>
+<p>Para tu hogar</p>
+</header>
 
-  <div id="conexion">
-    Conectando con la base de datos...
-  </div>
+<div id="conexion">Conectando con la base de datos...</div>
 
-  <main class="contenedor">
+<main class="contenedor">
 
-    <!-- =========================
-         INICIO / MENÚ
-    ========================== -->
-    <section id="menu" class="pantalla activa">
-
-      <div class="tarjeta">
-        <h2>Inicio</h2>
-        <p>Selecciona el módulo que deseas utilizar.</p>
-      </div>
+<!-- MENÚ -->
 
-      <div class="menu">
+<section id="menu" class="pantalla activa">
 
-        <button class="boton" onclick="mostrar('inicio')">
-          🏠 Inicio
-        </button>
+<div class="tarjeta">
+<h2>Inicio</h2>
+<p>Selecciona el módulo que deseas utilizar.</p>
+</div>
 
-        <button class="boton" onclick="mostrar('inventario')">
-          📦 Inventario
-        </button>
+<div class="menu">
 
-        <button class="boton" onclick="mostrar('ventas')">
-          💰 Ventas
-        </button>
+<button class="boton" onclick="mostrar('inicio')">
+🏠 Inicio
+</button>
 
-        <button class="boton" onclick="mostrar('compras')">
-          🛒 Compras
-        </button>
+<button class="boton" onclick="mostrar('inventario')">
+📦 Inventario
+</button>
 
-        <button class="boton" onclick="mostrar('clientes')">
-          👥 Clientes
-        </button>
+<button class="boton" onclick="mostrar('ventas')">
+💰 Ventas
+</button>
 
-        <button class="boton" onclick="mostrar('proveedores')">
-          🚚 Proveedores
-        </button>
+<button class="boton" onclick="mostrar('compras')">
+🛒 Compras
+</button>
 
-        <button class="boton" onclick="mostrar('gastos')">
-          💸 Gastos
-        </button>
-
-        <button class="boton" onclick="mostrar('reportes')">
-          📊 Reportes
-        </button>
-
-        <button class="boton" onclick="mostrar('administracion')">
-          ⚙️ Administración
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         INICIO
-    ========================== -->
-    <section id="inicio" class="pantalla">
-
-      <div class="titulo-seccion">
-        <h2>🏠 Inicio</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
-
-      <div class="tarjeta">
-        <h3>🪑 Mueblería Mercado</h3>
-        <p>Bienvenido a la aplicación.</p>
-        <p>Desde aquí podrás administrar inventario, ventas, compras y demás módulos.</p>
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         INVENTARIO
-    ========================== -->
-    <section id="inventario" class="pantalla">
-
-      <div class="titulo-seccion">
-        <h2>📦 Inventario</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
-
-      <div class="tarjeta">
-
-        <button
-          class="boton boton-verde"
-          onclick="mostrarFormularioArticulo()"
-        >
-          ➕ Nuevo artículo
-        </button>
-
-        <label for="buscarArticulo">
-          🔎 Buscar artículo
-        </label>
-
-        <input
-          type="text"
-          id="buscarArticulo"
-          placeholder="Código o nombre"
-          oninput="filtrarArticulos()"
-        >
-
-      </div>
-
-
-      <!-- FORMULARIO ARTÍCULO -->
-      <div id="formularioArticulo" class="tarjeta oculto">
-
-        <h3 id="tituloFormulario">
-          Nuevo artículo
-        </h3>
-
-        <input
-          type="hidden"
-          id="articuloId"
-        >
-
-        <label for="codigo">
-          Código
-        </label>
-
-        <input
-          type="text"
-          id="codigo"
-          placeholder="Ej. 00125"
-        >
-
-        <label for="nombre">
-          Nombre del artículo
-        </label>
-
-        <input
-          type="text"
-          id="nombre"
-          placeholder="Ej. Ropero 6 puertas"
-        >
-
-        <label for="costo">
-          Costo
-        </label>
-
-        <input
-          type="number"
-          id="costo"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        >
-
-        <label for="precioPublico">
-          Precio al público
-        </label>
-
-        <input
-          type="number"
-          id="precioPublico"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        >
-
-        <label for="stock">
-          Stock
-        </label>
-
-        <input
-          type="number"
-          id="stock"
-          step="1"
-          min="0"
-          value="0"
-        >
-
-        <label for="stockMinimo">
-          Stock mínimo
-        </label>
-
-        <input
-          type="number"
-          id="stockMinimo"
-          step="1"
-          min="0"
-          value="0"
-        >
-
-        <div class="acciones">
-
-          <button
-            class="boton boton-verde"
-            onclick="guardarArticulo()"
-          >
-            💾 Guardar
-          </button>
-
-          <button
-            class="boton boton-secundario"
-            onclick="cerrarFormularioArticulo()"
-          >
-            Cancelar
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <!-- LISTA -->
-      <div id="listaArticulos">
-        <div class="mensaje">
-          Cargando artículos...
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         VENTAS
-    ========================== -->
-    <section id="ventas" class="pantalla">
-
-      <div class="titulo-seccion">
-        <h2>💰 Ventas</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
-
-      <div class="tarjeta">
-        <p>El módulo de ventas se agregará aquí.</p>
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         COMPRAS
-    ========================== -->
-    <section id="compras" class="pantalla">
-
-      <div class="titulo-seccion">
-        <h2>🛒 Compras</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
-
-      <div class="tarjeta">
-        <p>El módulo de compras se agregará aquí.</p>
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         CLIENTES
-    ========================== -->
-    <section id="clientes" class="pantalla">
-
-      <div class="titulo-seccion">
-        <h2>👥 Clientes</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
+<button class="boton" onclick="mostrar('clientes')">
+👥 Clientes
+</button>
 
-      <div class="tarjeta">
-        <p>El módulo de clientes se agregará aquí.</p>
-      </div>
+<button class="boton" onclick="mostrar('proveedores')">
+🚚 Proveedores
+</button>
 
-    </section>
+<button class="boton" onclick="mostrar('gastos')">
+💸 Gastos
+</button>
 
+<button class="boton" onclick="mostrar('reportes')">
+📊 Reportes
+</button>
 
-    <!-- =========================
-         PROVEEDORES
-    ========================== -->
-    <section id="proveedores" class="pantalla">
+<button class="boton" onclick="mostrar('administracion')">
+⚙️ Administración
+</button>
 
-      <div class="titulo-seccion">
-        <h2>🚚 Proveedores</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
-
-      <div class="tarjeta">
-        <p>El módulo de proveedores se agregará aquí.</p>
-      </div>
+</div>
+</section>
 
-    </section>
 
+<!-- INICIO -->
 
-    <!-- =========================
-         GASTOS
-    ========================== -->
-    <section id="gastos" class="pantalla">
+<section id="inicio" class="pantalla">
 
-      <div class="titulo-seccion">
-        <h2>💸 Gastos</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
+<div class="tarjeta">
+<h2>🏠 Inicio</h2>
 
-      <div class="tarjeta">
-        <p>El módulo de gastos se agregará aquí.</p>
-      </div>
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-    </section>
+<p>Bienvenido a Mueblería Mercado.</p>
+</div>
 
+</section>
 
-    <!-- =========================
-         REPORTES
-    ========================== -->
-    <section id="reportes" class="pantalla">
 
-      <div class="titulo-seccion">
-        <h2>📊 Reportes</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
+<!-- INVENTARIO -->
 
-      <div class="tarjeta">
-        <p>El módulo de reportes se agregará aquí.</p>
-      </div>
+<section id="inventario" class="pantalla">
 
-    </section>
+<div class="tarjeta">
 
+<h2>📦 Inventario</h2>
 
-    <!-- =========================
-         ADMINISTRACIÓN
-    ========================== -->
-    <section id="administracion" class="pantalla">
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-      <div class="titulo-seccion">
-        <h2>⚙️ Administración</h2>
-        <button class="volver" onclick="mostrar('menu')">
-          ← Menú
-        </button>
-      </div>
+</div>
 
-      <div class="tarjeta">
-        <p>El módulo de administración se agregará aquí.</p>
-      </div>
+<div class="tarjeta">
 
-    </section>
+<button
+class="boton boton-verde"
+onclick="nuevoArticulo()">
+➕ Nuevo artículo
+</button>
 
-  </main>
+<input
+id="buscar"
+type="text"
+placeholder="Buscar por código o nombre"
+oninput="buscarArticulos()">
 
+</div>
 
-  <script>
+<div
+id="formulario"
+class="tarjeta oculto">
 
-    /* =====================================
-       CONEXIÓN SUPABASE
-    ====================================== */
+<h3>Nuevo artículo</h3>
 
-    const SUPABASE_URL =
-      "https://ggaqknpwlohpbyxeyque.supabase.co";
+<input
+id="codigo"
+type="text"
+placeholder="Código">
 
-    const SUPABASE_KEY =
-      "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+<input
+id="nombre"
+type="text"
+placeholder="Nombre del artículo">
 
+<input
+id="costo"
+type="number"
+step="0.01"
+placeholder="Costo">
 
-    async function comprobarConexion() {
+<input
+id="precio"
+type="number"
+step="0.01"
+placeholder="Precio al público">
 
-      const mensaje =
-        document.getElementById("conexion");
+<input
+id="stock"
+type="number"
+placeholder="Stock">
 
-      try {
+<input
+id="minimo"
+type="number"
+placeholder="Stock mínimo">
 
-        const respuesta = await fetch(
-          SUPABASE_URL +
-          "/rest/v1/categorias?select=id&limit=1",
-          {
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization":
-                "Bearer " + SUPABASE_KEY
-            }
-          }
-        );
+<button
+class="boton boton-verde"
+onclick="guardarArticulo()">
+💾 Guardar artículo
+</button>
 
-        if (respuesta.ok) {
+</div>
 
-          mensaje.textContent =
-            "✅ Conectado correctamente con Supabase.";
+<div id="lista">
+Cargando inventario...
+</div>
 
-        } else {
+</section>
 
-          mensaje.textContent =
-            "⚠️ Supabase responde, pero falta configurar permisos.";
 
-        }
+<!-- VENTAS -->
 
-      } catch (error) {
+<section id="ventas" class="pantalla">
 
-        console.log(error);
+<div class="tarjeta">
+<h2>💰 Ventas</h2>
 
-        mensaje.textContent =
-          "❌ Error de conexión con Supabase.";
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-      }
+<p>Módulo de ventas.</p>
+</div>
 
-    }
+</section>
 
 
-    /* =====================================
-       NAVEGACIÓN
-    ====================================== */
+<!-- COMPRAS -->
 
-    function mostrar(pantalla) {
+<section id="compras" class="pantalla">
 
-      const pantallas =
-        document.querySelectorAll(".pantalla");
+<div class="tarjeta">
+<h2>🛒 Compras</h2>
 
-      pantallas.forEach(function(p) {
-        p.classList.remove("activa");
-      });
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
+<p>Módulo de compras.</p>
+</div>
 
-      const destino =
-        document.getElementById(pantalla);
+</section>
 
 
-      if (!destino) {
+<!-- CLIENTES -->
 
-        alert(
-          "No se encontró el módulo: " +
-          pantalla
-        );
+<section id="clientes" class="pantalla">
 
-        return;
-      }
+<div class="tarjeta">
+<h2>👥 Clientes</h2>
 
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-      destino.classList.add("activa");
+<p>Módulo de clientes.</p>
+</div>
 
+</section>
 
-      if (pantalla === "inventario") {
-        cargarArticulos();
-      }
 
+<!-- PROVEEDORES -->
 
-      window.scrollTo(0, 0);
-    }
+<section id="proveedores" class="pantalla">
 
+<div class="tarjeta">
+<h2>🚚 Proveedores</h2>
 
-    /* =====================================
-       VARIABLES
-    ====================================== */
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-    let articulos = [];
+<p>Módulo de proveedores.</p>
+</div>
 
+</section>
 
-    /* =====================================
-       CARGAR ARTÍCULOS
-    ====================================== */
 
-    async function cargarArticulos() {
+<!-- GASTOS -->
 
-      const lista =
-        document.getElementById("listaArticulos");
+<section id="gastos" class="pantalla">
 
-      lista.innerHTML =
-        '<div class="mensaje">Cargando artículos...</div>';
+<div class="tarjeta">
+<h2>💸 Gastos</h2>
 
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-      try {
+<p>Módulo de gastos.</p>
+</div>
 
-        const respuesta = await fetch(
-          SUPABASE_URL +
-          "/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
-          {
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization":
-                "Bearer " + SUPABASE_KEY
-            }
-          }
-        );
+</section>
 
 
-        if (!respuesta.ok) {
+<!-- REPORTES -->
 
-          const errorTexto =
-            await respuesta.text();
+<section id="reportes" class="pantalla">
 
-          console.log(errorTexto);
+<div class="tarjeta">
+<h2>📊 Reportes</h2>
 
-          lista.innerHTML =
-            '<div class="mensaje">' +
-            '⚠️ No se pudieron cargar los artículos.' +
-            '</div>';
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-          return;
-        }
+<p>Módulo de reportes.</p>
+</div>
 
+</section>
 
-        articulos =
-          await respuesta.json();
 
+<!-- ADMINISTRACIÓN -->
 
-        mostrarArticulos(articulos);
+<section id="administracion" class="pantalla">
 
-      } catch (error) {
+<div class="tarjeta">
+<h2>⚙️ Administración</h2>
 
-        console.log(error);
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
 
-        lista.innerHTML =
-          '<div class="mensaje">' +
-          '❌ Error al cargar inventario.' +
-          '</div>';
+<p>Módulo de administración.</p>
+</div>
 
-      }
+</section>
 
-    }
+</main>
 
 
-    /* =====================================
-       MOSTRAR ARTÍCULOS
-    ====================================== */
+<script>
 
-    function mostrarArticulos(listaArticulos) {
+const SUPABASE_URL =
+"https://ggaqknpwlohpbyxeyque.supabase.co";
 
-      const lista =
-        document.getElementById("listaArticulos");
+const SUPABASE_KEY =
+"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
 
-      if (!listaArticulos.length) {
+/* CONEXIÓN */
 
-        lista.innerHTML =
-          '<div class="mensaje">' +
-          'No hay artículos registrados todavía.' +
-          '</div>';
+async function comprobarConexion(){
 
-        return;
-      }
+const mensaje=document.getElementById("conexion");
 
+try{
 
-      lista.innerHTML = "";
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/categorias?select=id&limit=1",
+{
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY
+}
+}
+);
 
+if(respuesta.ok){
 
-      listaArticulos.forEach(function(articulo) {
+mensaje.textContent=
+"✅ Conectado correctamente con Supabase.";
 
-        const div =
-          document.createElement("div");
+}else{
 
-        div.className = "articulo";
+mensaje.textContent=
+"⚠️ Supabase responde, pero falta configurar permisos.";
 
+}
 
-        const stockBajo =
-          Number(articulo.stock) <=
-          Number(articulo.stock_minimo);
+}catch(error){
 
+console.log(error);
 
-        div.innerHTML = `
+mensaje.textContent=
+"⚠️ Aplicación funcionando. Revisar conexión.";
 
-          <strong>
-            ${escapeHTML(articulo.nombre || "")}
-          </strong>
+}
 
-          <div class="datos-articulo">
+}
 
-            <div>
-              <b>Código:</b>
-              ${escapeHTML(articulo.codigo || "")}
-            </div>
 
-            <div>
-              <b>Costo:</b>
-              $${Number(articulo.costo || 0).toFixed(2)}
-            </div>
+/* NAVEGACIÓN */
 
-            <div>
-              <b>Precio público:</b>
-              $${Number(articulo.precio_publico || 0).toFixed(2)}
-            </div>
+function mostrar(pantalla){
 
-            <div class="${
-              stockBajo
-                ? "stock-bajo"
-                : "stock-ok"
-            }">
+document.querySelectorAll(".pantalla")
+.forEach(function(p){
+p.classList.remove("activa");
+});
 
-              <b>Stock:</b>
-              ${Number(articulo.stock || 0)}
+const destino=document.getElementById(pantalla);
 
-              ${
-                stockBajo
-                  ? " ⚠️ Stock bajo"
-                  : " ✅"
-              }
+if(!destino){
 
-            </div>
+alert("No se encontró el módulo: "+pantalla);
+return;
 
-            <div>
-              <b>Stock mínimo:</b>
-              ${Number(articulo.stock_minimo || 0)}
-            </div>
+}
 
-          </div>
+destino.classList.add("activa");
 
-          <div class="acciones">
+if(pantalla==="inventario"){
+cargarArticulos();
+}
 
-            <button
-              class="editar"
-              onclick="editarArticulo('${articulo.id}')"
-            >
-              ✏️ Editar
-            </button>
+window.scrollTo(0,0);
 
-            <button
-              class="desactivar"
-              onclick="desactivarArticulo('${articulo.id}')"
-            >
-              🗑️ Desactivar
-            </button>
+}
 
-          </div>
-        `;
 
+/* INVENTARIO */
 
-        lista.appendChild(div);
+let articulos=[];
 
-      });
 
-    }
+async function cargarArticulos(){
 
+const lista=document.getElementById("lista");
 
-    /* =====================================
-       BUSCAR
-    ====================================== */
+lista.innerHTML="Cargando inventario...";
 
-    function filtrarArticulos() {
+try{
 
-      const texto =
-        document
-          .getElementById("buscarArticulo")
-          .value
-          .toLowerCase()
-          .trim();
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY
+}
+}
+);
 
+if(!respuesta.ok){
 
-      if (!texto) {
+lista.innerHTML=
+"⚠️ No se pudieron cargar los artículos.";
 
-        mostrarArticulos(articulos);
+return;
 
-        return;
-      }
+}
 
+articulos=await respuesta.json();
 
-      const filtrados =
-        articulos.filter(function(a) {
+mostrarArticulos(articulos);
 
-          const codigo =
-            String(a.codigo || "")
-              .toLowerCase();
+}catch(error){
 
-          const nombre =
-            String(a.nombre || "")
-              .toLowerCase();
+console.log(error);
 
-          return (
-            codigo.includes(texto) ||
-            nombre.includes(texto)
-          );
+lista.innerHTML=
+"⚠️ Error al cargar inventario.";
 
-        });
+}
 
+}
 
-      mostrarArticulos(filtrados);
 
-    }
+/* MOSTRAR ARTÍCULOS */
 
+function mostrarArticulos(listaArticulos){
 
-    /* =====================================
-       FORMULARIO NUEVO ARTÍCULO
-    ====================================== */
+const lista=document.getElementById("lista");
 
-    function mostrarFormularioArticulo() {
+if(listaArticulos.length===0){
 
-      document
-        .getElementById("formularioArticulo")
-        .classList.remove("oculto");
+lista.innerHTML=
+'<div class="tarjeta">No hay artículos registrados.</div>';
 
+return;
 
-      document
-        .getElementById("tituloFormulario")
-        .textContent =
-        "Nuevo artículo";
+}
 
+lista.innerHTML="";
 
-      document
-        .getElementById("articuloId")
-        .value = "";
+listaArticulos.forEach(function(a){
 
+const div=document.createElement("div");
 
-      document
-        .getElementById("codigo")
-        .value = "";
+div.className="articulo";
 
+div.innerHTML=
+"<strong>"+(a.nombre||"")+"</strong>"+
+"<br>Código: "+(a.codigo||"")+
+"<br>Costo: $"+Number(a.costo||0).toFixed(2)+
+"<br>Precio público: $"+
+Number(a.precio_publico||0).toFixed(2)+
+"<br>Stock: "+Number(a.stock||0)+
+"<br>Stock mínimo: "+Number(a.stock_minimo||0);
 
-      document
-        .getElementById("nombre")
-        .value = "";
+lista.appendChild(div);
 
+});
 
-      document
-        .getElementById("costo")
-        .value = "";
+}
 
 
-      document
-        .getElementById("precioPublico")
-        .value = "";
+/* BUSCAR */
 
+function buscarArticulos(){
 
-      document
-        .getElementById("stock")
-        .value = "0";
+const texto=document
+.getElementById("buscar")
+.value
+.toLowerCase()
+.trim();
 
+const resultados=articulos.filter(function(a){
 
-      document
-        .getElementById("stockMinimo")
-        .value = "0";
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto)
 
+||
 
-      window.scrollTo(0, 0);
+String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
 
-    }
+});
 
+mostrarArticulos(resultados);
 
-    /* =====================================
-       CERRAR FORMULARIO
-    ====================================== */
+}
 
-    function cerrarFormularioArticulo() {
 
-      document
-        .getElementById("formularioArticulo")
-        .classList.add("oculto");
+/* NUEVO ARTÍCULO */
 
-    }
+function nuevoArticulo(){
 
+document
+.getElementById("formulario")
+.classList.remove("oculto");
 
-    /* =====================================
-       GUARDAR ARTÍCULO
-    ====================================== */
+}
 
-    async function guardarArticulo() {
 
-      const id =
-        document
-          .getElementById("articuloId")
-          .value;
+/* GUARDAR */
 
+async function guardarArticulo(){
 
-      const codigo =
-        document
-          .getElementById("codigo")
-          .value
-          .trim();
+const codigo=document
+.getElementById("codigo")
+.value
+.trim();
 
+const nombre=document
+.getElementById("nombre")
+.value
+.trim();
 
-      const nombre =
-        document
-          .getElementById("nombre")
-          .value
-          .trim();
+const costo=Number(
+document.getElementById("costo").value||0
+);
 
+const precio=Number(
+document.getElementById("precio").value||0
+);
 
-      const costo =
-        Number(
-          document
-            .getElementById("costo")
-            .value || 0
-        );
+const stock=Number(
+document.getElementById("stock").value||0
+);
 
+const minimo=Number(
+document.getElementById("minimo").value||0
+);
 
-      const precio_publico =
-        Number(
-          document
-            .getElementById("precioPublico")
-            .value || 0
-        );
 
+if(!codigo){
 
-      const stock =
-        Number(
-          document
-            .getElementById("stock")
-            .value || 0
-        );
+alert("Escribe el código.");
+return;
 
+}
 
-      const stock_minimo =
-        Number(
-          document
-            .getElementById("stockMinimo")
-            .value || 0
-        );
+if(!nombre){
 
+alert("Escribe el nombre.");
+return;
 
-      if (!codigo) {
+}
 
-        alert("Escribe el código del artículo.");
 
-        return;
-      }
+const datos={
 
+codigo:codigo,
+nombre:nombre,
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:minimo,
+activo:true
 
-      if (!nombre) {
+};
 
-        alert("Escribe el nombre del artículo.");
 
-        return;
-      }
+try{
 
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos",
+{
+method:"POST",
 
-      const datos = {
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json",
+"Prefer":"return=representation"
+},
 
-        codigo: codigo,
+body:JSON.stringify(datos)
 
-        nombre: nombre,
+}
+);
 
-        costo: costo,
 
-        precio_publico: precio_publico,
+if(!respuesta.ok){
 
-        stock: stock,
+const error=await respuesta.text();
 
-        stock_minimo: stock_minimo,
+console.log(error);
 
-        activo: true
+alert(
+"No se pudo guardar el artículo."
+);
 
-      };
+return;
 
+}
 
-      try {
 
-        let respuesta;
+alert("✅ Artículo guardado.");
 
 
-        if (id) {
+document
+.getElementById("formulario")
+.classList.add("oculto");
 
-          respuesta =
-            await fetch(
-              SUPABASE_URL +
-              "/rest/v1/articulos?id=eq." +
-              encodeURIComponent(id),
-              {
-                method: "PATCH",
 
-                headers: {
-                  "apikey": SUPABASE_KEY,
-                  "Authorization":
-                    "Bearer " + SUPABASE_KEY,
-                  "Content-Type":
-                    "application/json",
-                  "Prefer":
-                    "return=representation"
-                },
+document.getElementById("codigo").value="";
+document.getElementById("nombre").value="";
+document.getElementById("costo").value="";
+document.getElementById("precio").value="";
+document.getElementById("stock").value="";
+document.getElementById("minimo").value="";
 
-                body:
-                  JSON.stringify(datos)
-              }
-            );
 
-        } else {
+cargarArticulos();
 
-          respuesta =
-            await fetch(
-              SUPABASE_URL +
-              "/rest/v1/articulos",
-              {
-                method: "POST",
 
-                headers: {
-                  "apikey": SUPABASE_KEY,
-                  "Authorization":
-                    "Bearer " + SUPABASE_KEY,
-                  "Content-Type":
-                    "application/json",
-                  "Prefer":
-                    "return=representation"
-                },
+}catch(error){
 
-                body:
-                  JSON.stringify(datos)
-              }
-            );
+console.log(error);
 
-        }
+alert("❌ Error de conexión.");
 
+}
 
-        if (!respuesta.ok) {
+}
 
-          const errorTexto =
-            await respuesta.text();
 
-          console.log(errorTexto);
+/* ARRANQUE */
 
-          alert(
-            "No se pudo guardar el artículo.\n\n" +
-            errorTexto
-          );
+comprobarConexion();
 
-          return;
-        }
+</script>
 
-
-        alert(
-          id
-            ? "✅ Artículo actualizado."
-            : "✅ Artículo guardado."
-        );
-
-
-        cerrarFormularioArticulo();
-
-        await cargarArticulos();
-
-
-      } catch (error) {
-
-        console.log(error);
-
-        alert(
-          "❌ Error al guardar el artículo."
-        );
-
-      }
-
-    }
-
-
-    /* =====================================
-       EDITAR ARTÍCULO
-    ====================================== */
-
-    function editarArticulo(id) {
-
-      const articulo =
-        articulos.find(function(a) {
-          return a.id === id;
-        });
-
-
-      if (!articulo) {
-
-        alert(
-          "No se encontró el artículo."
-        );
-
-        return;
-      }
-
-
-      document
-        .getElementById("formularioArticulo")
-        .classList.remove("oculto");
-
-
-      document
-        .getElementById("tituloFormulario")
-        .textContent =
-        "Editar artículo";
-
-
-      document
-        .getElementById("articuloId")
-        .value =
-        articulo.id;
-
-
-      document
-        .getElementById("codigo")
-        .value =
-        articulo.codigo || "";
-
-
-      document
-        .getElementById("nombre")
-        .value =
-        articulo.nombre || "";
-
-
-      document
-        .getElementById("costo")
-        .value =
-        articulo.costo || 0;
-
-
-      document
-        .getElementById("precioPublico")
-        .value =
-        articulo.precio_publico || 0;
-
-
-      document
-        .getElementById("stock")
-        .value =
-        articulo.stock || 0;
-
-
-      document
-        .getElementById("stockMinimo")
-        .value =
-        articulo.stock_minimo || 0;
-
-
-      window.scrollTo(0, 0);
-
-    }
-
-
-    /* =====================================
-       DESACTIVAR ARTÍCULO
-    ====================================== */
-
-    async function desactivarArticulo(id) {
-
-      const confirmar =
-        confirm(
-          "¿Quieres desactivar este artículo?"
-        );
-
-
-      if (!confirmar) {
-        return;
-      }
-
-
-      try {
-
-        const respuesta =
-          await fetch(
-            SUPABASE_URL +
-            "/rest/v1/articulos?id=eq." +
-            encodeURIComponent(id),
-            {
-              method: "PATCH",
-
-              headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization":
-                  "Bearer " + SUPABASE_KEY,
-                "Content-Type":
-                  "application/json",
-                "Prefer":
-                  "return=representation"
-              },
-
-              body:
-                JSON.stringify({
-                  activo: false
-                })
-            }
-          );
-
-
-        if (!respuesta.ok) {
-
-          const errorTexto =
-            await respuesta.text();
-
-          console.log(errorTexto);
-
-          alert(
-            "No se pudo desactivar el artículo."
-          );
-
-          return;
-        }
-
-
-        alert(
-          "✅ Artículo desactivado."
-        );
-
-
-        await cargarArticulos();
-
-
-      } catch (error) {
-
-        console.log(error);
-
-        alert(
-          "❌ Error al desactivar el artículo."
-        );
-
-      }
-
-    }
-
-
-    /* =====================================
-       SEGURIDAD PARA MOSTRAR TEXTO
-    ====================================== */
-
-    function escapeHTML(texto) {
+</body>
+</html>
