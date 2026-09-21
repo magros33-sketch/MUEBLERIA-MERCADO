@@ -102,13 +102,14 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
-input{
+input,select{
 width:100%;
 padding:13px;
 margin:6px 0 10px;
 border:1px solid #ccc;
 border-radius:8px;
-font-size:16px
+font-size:16px;
+background:#fff
 }
 
 label{
@@ -180,6 +181,12 @@ font-size:13px;
 color:#666;
 margin:3px 0 10px
 }
+
+.precio-venta{
+font-size:20px;
+font-weight:bold;
+margin-top:10px
+}
 </style>
 </head>
 
@@ -195,6 +202,8 @@ Conectando con la base de datos...
 </div>
 
 <main>
+
+<!-- ================= INICIO ================= -->
 
 <section id="inicio" class="pantalla activa">
 
@@ -236,6 +245,8 @@ Conectando con la base de datos...
 
 </section>
 
+
+<!-- ================= INVENTARIO ================= -->
 
 <section id="inventario" class="pantalla">
 
@@ -408,6 +419,8 @@ placeholder="Ejemplo: 3500"
 </section>
 
 
+<!-- ================= VENTAS ================= -->
+
 <section id="ventas" class="pantalla">
 
 <button
@@ -420,11 +433,134 @@ onclick="mostrarPantalla('inicio')"
 <h2>💰 Ventas</h2>
 
 <div class="tarjeta">
-Próximamente: registro de ventas y apartados.
+
+<h3>Registrar venta</h3>
+
+<div class="ayuda">
+Busca el artículo por código o nombre.
+</div>
+
+<label>Tipo de cliente</label>
+
+<select id="ventaTipoCliente">
+<option value="publico_general">
+Público en general
+</option>
+
+<option value="cliente">
+Cliente
+</option>
+</select>
+
+<div id="campoClienteVenta" class="oculto">
+
+<label>ID del cliente</label>
+
+<input
+id="ventaCliente"
+type="text"
+placeholder="ID del cliente"
+>
+
+<div class="ayuda">
+Este campo se utilizará cuando integremos el módulo de Clientes.
+</div>
+
+</div>
+
+<label>Código del artículo</label>
+
+<input
+id="ventaCodigo"
+type="text"
+placeholder="Escribe el código"
+autocomplete="off"
+>
+
+<div id="estadoVentaCodigo"></div>
+
+<label>Nombre del artículo</label>
+
+<input
+id="ventaNombre"
+type="text"
+placeholder="Escribe el nombre"
+autocomplete="off"
+>
+
+<div id="estadoVentaNombre"></div>
+
+<div id="resultadoVenta"></div>
+
+<label>Cantidad</label>
+
+<input
+id="ventaCantidad"
+type="number"
+min="1"
+value="1"
+oninput="actualizarTotalVenta()"
+>
+
+<label>Precio de venta por unidad</label>
+
+<input
+id="ventaPrecio"
+type="number"
+min="0"
+step="0.01"
+oninput="actualizarTotalVenta()"
+>
+
+<div id="infoPrecioVenta"></div>
+
+<label>Método de pago</label>
+
+<select id="ventaMetodoPago">
+
+<option value="efectivo">
+Efectivo
+</option>
+
+<option value="tarjeta">
+Tarjeta
+</option>
+
+<option value="transferencia">
+Transferencia
+</option>
+
+<option value="aplazo">
+Aplazo
+</option>
+
+</select>
+
+<div class="info-articulo">
+
+<strong>Total de la venta</strong>
+
+<div
+id="totalVenta"
+class="precio-venta"
+>
+$0.00
+</div>
+
+</div>
+
+<button onclick="registrarVenta()">
+💾 Registrar venta
+</button>
+
+<div id="mensajeVenta"></div>
+
 </div>
 
 </section>
 
+
+<!-- ================= CLIENTES ================= -->
 
 <section id="clientes" class="pantalla">
 
@@ -444,6 +580,8 @@ Próximamente: clientes.
 </section>
 
 
+<!-- ================= PROVEEDORES ================= -->
+
 <section id="proveedores" class="pantalla">
 
 <button
@@ -461,6 +599,8 @@ Próximamente: proveedores.
 
 </section>
 
+
+<!-- ================= GASTOS ================= -->
 
 <section id="gastos" class="pantalla">
 
@@ -480,6 +620,8 @@ Próximamente: gastos.
 </section>
 
 
+<!-- ================= REPORTES ================= -->
+
 <section id="reportes" class="pantalla">
 
 <button
@@ -497,6 +639,8 @@ Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
 
 </section>
 
+
+<!-- ================= ADMINISTRACIÓN ================= -->
 
 <section id="administracion" class="pantalla">
 
@@ -544,6 +688,7 @@ const headersSupabase = {
 let articulos=[];
 let articuloEditando=null;
 let articuloCompraSeleccionado=null;
+let articuloVentaSeleccionado=null;
 
 
 /* =====================================================
@@ -568,6 +713,10 @@ cargarArticulos();
 }
 
 if(id==="compras"){
+cargarArticulos();
+}
+
+if(id==="ventas"){
 cargarArticulos();
 }
 
@@ -1098,12 +1247,6 @@ const campoCompraNombre=
 document.getElementById("compraNombre");
 
 
-/*
- -------------------------------------------------------
- CÓDIGO
- -------------------------------------------------------
- */
-
 campoCompraCodigo.addEventListener(
 "input",
 function(){
@@ -1118,13 +1261,8 @@ document.getElementById("estadoNombre").innerHTML="";
 document.getElementById("resultadoCompra").innerHTML="";
 
 if(!texto){
-
 return;
-
 }
-
-
-/* Código exacto */
 
 const exacto=
 articulos.find(function(a){
@@ -1142,9 +1280,6 @@ return;
 
 }
 
-
-/* Coincidencias */
-
 const encontrados=
 articulos.filter(function(a){
 
@@ -1154,11 +1289,7 @@ return String(a.codigo||"")
 
 });
 
-if(encontrados.length===1){
-
-mostrarOpcionesCompra(encontrados);
-
-}else if(encontrados.length>1){
+if(encontrados.length){
 
 mostrarOpcionesCompra(encontrados);
 
@@ -1177,12 +1308,6 @@ No se encontró ese código.
 );
 
 
-/*
- -------------------------------------------------------
- NOMBRE
- -------------------------------------------------------
- */
-
 campoCompraNombre.addEventListener(
 "input",
 function(){
@@ -1197,13 +1322,8 @@ document.getElementById("estadoNombre").innerHTML="";
 document.getElementById("resultadoCompra").innerHTML="";
 
 if(!texto){
-
 return;
-
 }
-
-
-/* Nombre exacto */
 
 const exacto=
 articulos.find(function(a){
@@ -1220,9 +1340,6 @@ seleccionarArticuloCompra(exacto);
 return;
 
 }
-
-
-/* Coincidencias */
 
 const encontrados=
 articulos.filter(function(a){
@@ -1251,10 +1368,6 @@ No se encontró ese artículo.
 }
 );
 
-
-/* =====================================================
-   OPCIONES
-   ===================================================== */
 
 function mostrarOpcionesCompra(lista){
 
@@ -1301,10 +1414,6 @@ Costo: $${Number(a.costo||0).toFixed(2)}
 }
 
 
-/* =====================================================
-   SELECCIONAR
-   ===================================================== */
-
 function seleccionarArticuloCompraPorId(id){
 
 const articulo=
@@ -1320,10 +1429,6 @@ seleccionarArticuloCompra(articulo);
 
 }
 
-
-/* =====================================================
-   ARTÍCULO SELECCIONADO
-   ===================================================== */
 
 function seleccionarArticuloCompra(articulo){
 
@@ -1386,7 +1491,6 @@ $${Number(articulo.costo||0).toFixed(2)}
 
 /* =====================================================
    REGISTRAR COMPRA
-   AHORA GUARDA HISTORIAL + DETALLE + STOCK
    ===================================================== */
 
 async function registrarCompra(){
@@ -1413,9 +1517,6 @@ Number(
 document.getElementById("compraCosto").value||0
 );
 
-
-/* Buscar automáticamente por código */
-
 if(!articulo&&codigo){
 
 articulo=
@@ -1428,9 +1529,6 @@ return String(a.codigo||"")
 
 }
 
-
-/* Buscar automáticamente por nombre */
-
 if(!articulo&&nombre){
 
 articulo=
@@ -1442,7 +1540,6 @@ return String(a.nombre||"")
 });
 
 }
-
 
 if(!articulo){
 
@@ -1461,7 +1558,6 @@ return;
 
 }
 
-
 if(!cantidad||cantidad<1){
 
 mensaje.innerHTML=
@@ -1476,7 +1572,6 @@ mensaje.innerHTML=
 return;
 
 }
-
 
 if(costo<0){
 
@@ -1493,7 +1588,6 @@ return;
 
 }
 
-
 try{
 
 const nuevoStock=
@@ -1502,10 +1596,6 @@ Number(articulo.stock||0)+cantidad;
 const subtotal=
 cantidad*costo;
 
-
-/* =====================================================
-   1. GUARDAR CABECERA DE LA COMPRA
-   ===================================================== */
 
 const respuestaCompra=
 await fetch(
@@ -1581,10 +1671,6 @@ return;
 }
 
 
-/* =====================================================
-   2. GUARDAR DETALLE
-   ===================================================== */
-
 const respuestaDetalle=
 await fetch(
 SUPABASE_URL+
@@ -1637,10 +1723,6 @@ return;
 }
 
 
-/* =====================================================
-   3. ACTUALIZAR STOCK Y COSTO
-   ===================================================== */
-
 const respuestaArticulo=
 await fetch(
 SUPABASE_URL+
@@ -1690,10 +1772,6 @@ return;
 
 }
 
-
-/* =====================================================
-   ÉXITO
-   ===================================================== */
 
 mensaje.innerHTML=
 `
@@ -1759,6 +1837,875 @@ await cargarArticulos();
 }catch(error){
 
 console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   VENTAS
+   ===================================================== */
+
+const campoVentaCodigo=
+document.getElementById("ventaCodigo");
+
+const campoVentaNombre=
+document.getElementById("ventaNombre");
+
+
+/* =====================================================
+   TIPO DE CLIENTE
+   ===================================================== */
+
+document
+.getElementById("ventaTipoCliente")
+.addEventListener(
+"change",
+function(){
+
+const campo=
+document.getElementById("campoClienteVenta");
+
+if(this.value==="cliente"){
+
+campo.classList.remove("oculto");
+
+}else{
+
+campo.classList.add("oculto");
+
+document.getElementById("ventaCliente").value="";
+
+}
+
+}
+);
+
+
+/* =====================================================
+   BUSCAR VENTA POR CÓDIGO
+   ===================================================== */
+
+campoVentaCodigo.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+
+/* Código exacto */
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+
+return;
+
+}
+
+
+/* Coincidencias */
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese código.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   BUSCAR VENTA POR NOMBRE
+   ===================================================== */
+
+campoVentaNombre.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+
+/* Nombre exacto */
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+
+return;
+
+}
+
+
+/* Coincidencias */
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese artículo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   OPCIONES DE VENTA
+   ===================================================== */
+
+function mostrarOpcionesVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el artículo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloVentaPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+${Number(a.stock||0)}
+
+<br>
+
+Precio público:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   SELECCIONAR ARTÍCULO DE VENTA
+   ===================================================== */
+
+function seleccionarArticuloVentaPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+
+seleccionarArticuloVenta(articulo);
+
+}
+
+}
+
+
+/* =====================================================
+   ARTÍCULO SELECCIONADO PARA VENTA
+   ===================================================== */
+
+function seleccionarArticuloVenta(articulo){
+
+articuloVentaSeleccionado=articulo;
+
+campoVentaCodigo.value=
+articulo.codigo||"";
+
+campoVentaNombre.value=
+articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("ventaPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Código encontrado
+</div>
+`;
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Artículo encontrado
+</div>
+`;
+
+document.getElementById("resultadoVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Artículo seleccionado</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio público:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioVenta").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio para aplicar un descuento.
+</div>
+`;
+
+actualizarTotalVenta();
+
+}
+
+
+/* =====================================================
+   TOTAL VENTA
+   ===================================================== */
+
+function actualizarTotalVenta(){
+
+const cantidad=
+Number(
+document.getElementById("ventaCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("ventaPrecio").value||0
+);
+
+const total=
+cantidad*precio;
+
+document.getElementById("totalVenta").innerHTML=
+"$"+total.toFixed(2);
+
+}
+
+
+/* =====================================================
+   REGISTRAR VENTA
+   ===================================================== */
+
+async function registrarVenta(){
+
+const mensaje=
+document.getElementById("mensajeVenta");
+
+let articulo=
+articuloVentaSeleccionado;
+
+const codigo=
+campoVentaCodigo.value.trim();
+
+const nombre=
+campoVentaNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("ventaCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("ventaPrecio").value||0
+);
+
+const tipoCliente=
+document.getElementById("ventaTipoCliente").value;
+
+const cliente=
+document.getElementById("ventaCliente").value.trim();
+
+const metodoPago=
+document.getElementById("ventaMetodoPago").value;
+
+
+/* Buscar automáticamente por código */
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+
+/* Buscar automáticamente por nombre */
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+
+/* Validaciones */
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No encontramos ese artículo.
+
+Selecciona un artículo válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Indica una cantidad válida.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const stockActual=
+Number(articulo.stock||0);
+
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ El precio no puede ser negativo.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(tipoCliente==="cliente"&&!cliente){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Para una venta a cliente indica el ID del cliente.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const total=
+cantidad*precio;
+
+const nuevoStock=
+stockActual-cantidad;
+
+
+try{
+
+
+/* =====================================================
+   1. GUARDAR CABECERA DE VENTA
+   ===================================================== */
+
+const respuestaVenta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+id_cliente:
+tipoCliente==="cliente"
+?cliente
+:null,
+
+fecha:
+new Date().toISOString(),
+
+tipo_cliente:
+tipoCliente,
+
+metodo_pago:
+metodoPago,
+
+total:
+total,
+
+estado:
+"completada",
+
+notas:
+"Venta registrada desde la aplicación"
+
+})
+
+}
+);
+
+
+if(!respuestaVenta.ok){
+
+const errorTexto=
+await respuestaVenta.text();
+
+console.error(
+"Error guardando venta:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la venta.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+const ventasGuardadas=
+await respuestaVenta.json();
+
+const ventaGuardada=
+ventasGuardadas[0];
+
+
+if(!ventaGuardada||
+!ventaGuardada.id){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta no devolvió un identificador válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   2. GUARDAR DETALLE
+   ===================================================== */
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id_venta:
+ventaGuardada.id,
+
+articulo:
+articulo.id,
+
+cantidad:
+cantidad,
+
+precio_unitario:
+precio,
+
+subtotal:
+total
+
+})
+
+}
+);
+
+
+if(!respuestaDetalle.ok){
+
+const errorTexto=
+await respuestaDetalle.text();
+
+console.error(
+"Error guardando detalle:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta se creó, pero no se pudo guardar el detalle.
+
+El stock todavía no fue descontado.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   3. ACTUALIZAR STOCK
+   ===================================================== */
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:
+nuevoStock
+
+})
+
+}
+);
+
+
+if(!respuestaArticulo.ok){
+
+const errorTexto=
+await respuestaArticulo.text();
+
+console.error(
+"Error actualizando stock:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta quedó guardada,
+pero no se pudo actualizar el stock.
+
+<br><br>
+
+⚠️ Revisa el inventario antes de volver a registrar esta venta.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   ÉXITO
+   ===================================================== */
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Venta registrada correctamente
+</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Método de pago:
+${escaparHTML(metodoPago)}
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
+
+<br><br>
+
+📋 La venta quedó guardada.
+
+</div>
+`;
+
+
+/* =====================================================
+   LIMPIAR FORMULARIO
+   ===================================================== */
+
+articuloVentaSeleccionado=null;
+
+campoVentaCodigo.value="";
+
+campoVentaNombre.value="";
+
+document.getElementById("ventaCantidad").value="1";
+
+document.getElementById("ventaPrecio").value="";
+
+document.getElementById("ventaCliente").value="";
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+
+document.getElementById("estadoVentaNombre").innerHTML="";
+
+document.getElementById("resultadoVenta").innerHTML="";
+
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+actualizarTotalVenta();
+
+await cargarArticulos();
+
+
+}catch(error){
+
+console.error(
+"Error registrando venta:",
+error
+);
 
 mensaje.innerHTML=
 `
