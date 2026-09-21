@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Mueblería Mercado</title>
 
   <style>
@@ -22,68 +21,152 @@
       background: #5a351f;
       color: white;
       text-align: center;
-      padding: 22px 15px;
+      padding: 20px 15px;
     }
 
     header h1 {
       margin: 0;
-      font-size: 28px;
+      font-size: 27px;
     }
 
     header p {
       margin: 6px 0 0;
-      font-size: 16px;
     }
 
     main {
-      padding: 20px 15px 30px;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
+      padding: 18px 15px 30px;
     }
 
     .estado {
       background: white;
       border-radius: 12px;
-      padding: 12px;
+      padding: 11px;
       text-align: center;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
       font-size: 14px;
     }
 
     .menu {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
     .boton {
       background: white;
       border: none;
-      border-radius: 16px;
-      padding: 22px 10px;
-      min-height: 115px;
-      font-size: 17px;
+      border-radius: 15px;
+      padding: 18px 8px;
+      min-height: 105px;
+      font-size: 16px;
       font-weight: bold;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.10);
-      cursor: pointer;
+      box-shadow: 0 3px 9px rgba(0,0,0,.10);
     }
 
     .boton span {
       display: block;
-      font-size: 34px;
-      margin-bottom: 9px;
+      font-size: 32px;
+      margin-bottom: 7px;
     }
 
-    .boton:active {
-      transform: scale(0.97);
+    .pantalla {
+      display: none;
     }
 
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #777;
-      font-size: 13px;
+    .pantalla.activa {
+      display: block;
+    }
+
+    .tarjeta {
+      background: white;
+      border-radius: 15px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 9px rgba(0,0,0,.08);
+    }
+
+    .tarjeta h2 {
+      margin-top: 0;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0 10px;
+      border: 1px solid #ccc;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+
+    .btn-principal {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: #5a351f;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .btn-secundario {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      background: #ddd;
+      font-size: 15px;
+      margin-top: 8px;
+    }
+
+    .articulo {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+      background: #fafafa;
+    }
+
+    .articulo strong {
+      font-size: 18px;
+    }
+
+    .acciones {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .acciones button {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .btn-editar {
+      background: #e8dfd5;
+    }
+
+    .btn-baja {
+      background: #f0caca;
+    }
+
+    .oculto {
+      display: none;
+    }
+
+    .mensaje {
+      padding: 10px;
+      border-radius: 9px;
+      margin-top: 10px;
+      display: none;
+      background: #eee;
     }
 
     @media (min-width: 600px) {
@@ -96,124 +179,329 @@
 
 <body>
 
-  <header>
-    <h1>🪑 Mueblería Mercado</h1>
-    <p>Para tu hogar</p>
-  </header>
+<header>
+  <h1>🪑 Mueblería Mercado</h1>
+  <p>Para tu hogar</p>
+</header>
 
-  <main>
+<main>
 
-    <div class="estado" id="conexion">
-      Conectando con la base de datos...
-    </div>
+  <div class="estado" id="conexion">
+    Conectando con la base de datos...
+  </div>
+
+  <!-- MENÚ -->
+
+  <section id="menu" class="pantalla activa">
 
     <div class="menu">
 
-      <button class="boton" onclick="abrirModulo('inicio')">
-        <span>🏠</span>
-        Inicio
+      <button class="boton" onclick="mostrar('inicio')">
+        <span>🏠</span>Inicio
       </button>
 
-      <button class="boton" onclick="abrirModulo('inventario')">
-        <span>📦</span>
-        Inventario
+      <button class="boton" onclick="mostrar('inventario')">
+        <span>📦</span>Inventario
       </button>
 
-      <button class="boton" onclick="abrirModulo('ventas')">
-        <span>💰</span>
-        Ventas
+      <button class="boton" onclick="alert('Ventas se construirá después.')">
+        <span>💰</span>Ventas
       </button>
 
-      <button class="boton" onclick="abrirModulo('compras')">
-        <span>🛒</span>
-        Compras
+      <button class="boton" onclick="alert('Compras se construirá después.')">
+        <span>🛒</span>Compras
       </button>
 
-      <button class="boton" onclick="abrirModulo('clientes')">
-        <span>👥</span>
-        Clientes
+      <button class="boton" onclick="alert('Clientes se construirá después.')">
+        <span>👥</span>Clientes
       </button>
 
-      <button class="boton" onclick="abrirModulo('proveedores')">
-        <span>🚚</span>
-        Proveedores
+      <button class="boton" onclick="alert('Proveedores se construirá después.')">
+        <span>🚚</span>Proveedores
       </button>
 
-      <button class="boton" onclick="abrirModulo('gastos')">
-        <span>💸</span>
-        Gastos
+      <button class="boton" onclick="alert('Gastos se construirá después.')">
+        <span>💸</span>Gastos
       </button>
 
-      <button class="boton" onclick="abrirModulo('reportes')">
-        <span>📊</span>
-        Reportes
+      <button class="boton" onclick="alert('Reportes se construirán después.')">
+        <span>📊</span>Reportes
       </button>
 
-      <button class="boton" onclick="abrirModulo('administracion')">
-        <span>⚙️</span>
-        Administración
+      <button class="boton" onclick="alert('Administración se construirá después.')">
+        <span>⚙️</span>Administración
       </button>
 
     </div>
 
-  </main>
+  </section>
 
-  <footer>
-    Mueblería Mercado · Para tu hogar
-  </footer>
+  <!-- INICIO -->
 
-  <script>
+  <section id="inicio" class="pantalla">
 
-    const SUPABASE_URL =
-      "https://ggaqknpwlohpbyxeyque.supabase.co";
+    <div class="tarjeta">
+      <h2>🏠 Inicio</h2>
+      <p>Bienvenido a Mueblería Mercado.</p>
 
-    const SUPABASE_KEY =
-      "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+      <button class="btn-secundario" onclick="mostrar('menu')">
+        ← Volver al menú
+      </button>
+    </div>
 
-    async function comprobarConexion() {
+  </section>
 
-      const mensaje = document.getElementById("conexion");
+  <!-- INVENTARIO -->
 
-      try {
+  <section id="inventario" class="pantalla">
 
-        const respuesta = await fetch(
-          SUPABASE_URL + "/rest/v1/categorias?select=id&limit=1",
+    <div class="tarjeta">
+
+      <h2>📦 Inventario</h2>
+
+      <button class="btn-principal" onclick="mostrarFormulario()">
+        ➕ Nuevo artículo
+      </button>
+
+      <input
+        type="text"
+        id="buscar"
+        placeholder="🔍 Buscar por código o nombre"
+        oninput="cargarArticulos()"
+      >
+
+    </div>
+
+    <!-- FORMULARIO -->
+
+    <div id="formulario" class="tarjeta oculto">
+
+      <h2 id="tituloFormulario">Nuevo artículo</h2>
+
+      <input type="hidden" id="articuloId">
+
+      <label>Código</label>
+      <input id="codigo" placeholder="Ej. ROP-001">
+
+      <label>Nombre</label>
+      <input id="nombre" placeholder="Ej. Ropero 6 puertas">
+
+      <label>Costo</label>
+      <input id="costo" type="number" step="0.01" placeholder="0.00">
+
+      <label>Precio al público</label>
+      <input id="precio" type="number" step="0.01" placeholder="0.00">
+
+      <label>Stock</label>
+      <input id="stock" type="number" value="0">
+
+      <label>Stock mínimo</label>
+      <input id="stockMinimo" type="number" value="0">
+
+      <button class="btn-principal" onclick="guardarArticulo()">
+        💾 Guardar artículo
+      </button>
+
+      <button class="btn-secundario" onclick="cerrarFormulario()">
+        Cancelar
+      </button>
+
+      <div id="mensajeFormulario" class="mensaje"></div>
+
+    </div>
+
+    <!-- LISTA -->
+
+    <div class="tarjeta">
+
+      <h2>Artículos</h2>
+
+      <div id="listaArticulos">
+        Cargando inventario...
+      </div>
+
+    </div>
+
+    <button class="btn-secundario" onclick="mostrar('menu')">
+      ← Volver al menú
+    </button>
+
+  </section>
+
+</main>
+
+<script>
+
+  const SUPABASE_URL =
+    "https://ggaqknpwlohpbyxeyque.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+
+  /* CONEXIÓN */
+
+  async function comprobarConexion() {
+
+    const mensaje = document.getElementById("conexion");
+
+    try {
+
+      const respuesta = await fetch(
+        SUPABASE_URL + "/rest/v1/categorias?select=id&limit=1",
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + SUPABASE_KEY
+          }
+        }
+      );
+
+      if (respuesta.ok) {
+
+        mensaje.textContent =
+          "✅ Conectado correctamente con Supabase.";
+
+      } else {
+
+        mensaje.textContent =
+          "⚠️ Supabase responde, pero falta configurar permisos.";
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+      mensaje.textContent =
+        "❌ Error de conexión con Supabase.";
+
+    }
+
+  }
+
+
+  /* NAVEGACIÓN */
+
+  function mostrar(pantalla) {
+
+    document
+      .querySelectorAll(".pantalla")
+      .forEach(x => x.classList.remove("activa"));
+
+    document
+      .getElementById(pantalla)
+      .classList.add("activa");
+
+    if (pantalla === "inventario") {
+      cargarArticulos();
+    }
+
+    window.scrollTo(0,0);
+  }
+
+
+  /* FORMULARIO */
+
+  function mostrarFormulario() {
+
+    document
+      .getElementById("formulario")
+      .classList.remove("oculto");
+
+    document.getElementById("tituloFormulario").textContent =
+      "Nuevo artículo";
+
+    limpiarFormulario();
+
+  }
+
+
+  function cerrarFormulario() {
+
+    document
+      .getElementById("formulario")
+      .classList.add("oculto");
+
+    limpiarFormulario();
+
+  }
+
+
+  function limpiarFormulario() {
+
+    document.getElementById("articuloId").value = "";
+    document.getElementById("codigo").value = "";
+    document.getElementById("nombre").value = "";
+    document.getElementById("costo").value = "";
+    document.getElementById("precio").value = "";
+    document.getElementById("stock").value = "0";
+    document.getElementById("stockMinimo").value = "0";
+
+  }
+
+
+  /* GUARDAR */
+
+  async function guardarArticulo() {
+
+    const id =
+      document.getElementById("articuloId").value;
+
+    const articulo = {
+
+      codigo:
+        document.getElementById("codigo").value.trim(),
+
+      nombre:
+        document.getElementById("nombre").value.trim(),
+
+      costo:
+        Number(document.getElementById("costo").value || 0),
+
+      precio_publico:
+        Number(document.getElementById("precio").value || 0),
+
+      stock:
+        Number(document.getElementById("stock").value || 0),
+
+      stock_minimo:
+        Number(document.getElementById("stockMinimo").value || 0)
+
+    };
+
+
+    if (!articulo.codigo || !articulo.nombre) {
+
+      alert("Escribe el código y el nombre del artículo.");
+
+      return;
+    }
+
+
+    try {
+
+      let respuesta;
+
+
+      if (id) {
+
+        respuesta = await fetch(
+          SUPABASE_URL + "/rest/v1/articulos?id=eq." + id,
           {
+            method: "PATCH",
+
             headers: {
               "apikey": SUPABASE_KEY,
-              "Authorization": "Bearer " + SUPABASE_KEY
-            }
+              "Authorization": "Bearer " + SUPABASE_KEY,
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(articulo)
           }
         );
 
-        if (respuesta.ok) {
-          mensaje.textContent =
-            "✅ Conectado correctamente con Supabase.";
-        } else {
-          mensaje.textContent =
-            "⚠️ Supabase responde, pero falta configurar permisos.";
-        }
+      } else {
 
-      } catch (error) {
-
-        console.log(error);
-
-        mensaje.textContent =
-          "❌ Error de conexión con Supabase.";
-      }
-    }
-
-    function abrirModulo(modulo) {
-
-      alert(
-        "Módulo " +
-        modulo.charAt(0).toUpperCase() +
-        modulo.slice(1) +
-        " — lo construiremos a continuación."
-      );
-
-    }
-
-    comprobarConexion();
-
- 
+        respuesta = await fetch(
+          SUPABASE_URL
