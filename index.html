@@ -1,32 +1,772 @@
--- ============================================
--- PERMISOS PARA INVENTARIO - MUEBLERÍA MERCADO
--- ============================================
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mueblería Mercado</title>
 
--- Permitir leer artículos
-create policy "Permitir lectura articulos"
-on public.articulos
-for select
-to anon
-using (true);
+<style>
+*{box-sizing:border-box}
 
--- Permitir insertar artículos
-create policy "Permitir insertar articulos"
-on public.articulos
-for insert
-to anon
-with check (true);
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7f5;
+  color:#17221b;
+}
 
--- Permitir modificar artículos
-create policy "Permitir actualizar articulos"
-on public.articulos
-for update
-to anon
-using (true)
-with check (true);
+header{
+  background:#123b2a;
+  color:#fff;
+  padding:18px;
+  text-align:center;
+}
 
--- Permitir eliminar/desactivar artículos
-create policy "Permitir eliminar articulos"
-on public.articulos
-for delete
-to anon
-using (true);
+header h1{
+  margin:0;
+  font-size:26px;
+}
+
+header p{
+  margin:6px 0 0;
+}
+
+#conexion{
+  margin:12px;
+  padding:10px;
+  background:#fff;
+  border-radius:8px;
+  text-align:center;
+}
+
+.contenedor{
+  max-width:700px;
+  margin:auto;
+  padding:15px;
+}
+
+.pantalla{
+  display:none;
+}
+
+.pantalla.activa{
+  display:block;
+}
+
+.menu{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.boton{
+  border:0;
+  border-radius:10px;
+  padding:17px 10px;
+  font-size:16px;
+  font-weight:bold;
+  background:#123b2a;
+  color:#fff;
+  cursor:pointer;
+}
+
+.boton:active{
+  transform:scale(.98);
+}
+
+.tarjeta{
+  background:#fff;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
+}
+
+input{
+  width:100%;
+  padding:12px;
+  margin:5px 0 12px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  font-size:16px;
+}
+
+.boton-verde{
+  background:#287a4d;
+}
+
+.boton-gris{
+  background:#777;
+}
+
+.articulo{
+  background:#fff;
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,.06);
+}
+
+.articulo strong{
+  font-size:18px;
+}
+
+.oculto{
+  display:none;
+}
+
+.volver{
+  margin-bottom:15px;
+}
+
+@media(max-width:500px){
+  .menu{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🪑 Mueblería Mercado</h1>
+<p>Para tu hogar</p>
+</header>
+
+<div id="conexion">Conectando con la base de datos...</div>
+
+<main class="contenedor">
+
+<!-- MENÚ -->
+
+<section id="menu" class="pantalla activa">
+
+<div class="tarjeta">
+<h2>Inicio</h2>
+<p>Selecciona el módulo que deseas utilizar.</p>
+</div>
+
+<div class="menu">
+
+<button class="boton" onclick="mostrar('inicio')">
+🏠 Inicio
+</button>
+
+<button class="boton" onclick="mostrar('inventario')">
+📦 Inventario
+</button>
+
+<button class="boton" onclick="mostrar('ventas')">
+💰 Ventas
+</button>
+
+<button class="boton" onclick="mostrar('compras')">
+🛒 Compras
+</button>
+
+<button class="boton" onclick="mostrar('clientes')">
+👥 Clientes
+</button>
+
+<button class="boton" onclick="mostrar('proveedores')">
+🚚 Proveedores
+</button>
+
+<button class="boton" onclick="mostrar('gastos')">
+💸 Gastos
+</button>
+
+<button class="boton" onclick="mostrar('reportes')">
+📊 Reportes
+</button>
+
+<button class="boton" onclick="mostrar('administracion')">
+⚙️ Administración
+</button>
+
+</div>
+</section>
+
+
+<!-- INICIO -->
+
+<section id="inicio" class="pantalla">
+
+<div class="tarjeta">
+<h2>🏠 Inicio</h2>
+
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Bienvenido a Mueblería Mercado.</p>
+</div>
+
+</section>
+
+
+<!-- INVENTARIO -->
+
+<section id="inventario" class="pantalla">
+
+<div class="tarjeta">
+
+<h2>📦 Inventario</h2>
+
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+</div>
+
+<div class="tarjeta">
+
+<button
+class="boton boton-verde"
+onclick="nuevoArticulo()">
+➕ Nuevo artículo
+</button>
+
+<input
+id="buscar"
+type="text"
+placeholder="Buscar por código o nombre"
+oninput="buscarArticulos()">
+
+</div>
+
+<div
+id="formulario"
+class="tarjeta oculto">
+
+<h3>Nuevo artículo</h3>
+
+<input
+id="codigo"
+type="text"
+placeholder="Código">
+
+<input
+id="nombre"
+type="text"
+placeholder="Nombre del artículo">
+
+<input
+id="costo"
+type="number"
+step="0.01"
+placeholder="Costo">
+
+<input
+id="precio"
+type="number"
+step="0.01"
+placeholder="Precio al público">
+
+<input
+id="stock"
+type="number"
+placeholder="Stock">
+
+<input
+id="minimo"
+type="number"
+placeholder="Stock mínimo">
+
+<button
+class="boton boton-verde"
+onclick="guardarArticulo()">
+💾 Guardar artículo
+</button>
+
+</div>
+
+<div id="lista">
+Cargando inventario...
+</div>
+
+</section>
+
+
+<!-- VENTAS -->
+
+<section id="ventas" class="pantalla">
+
+<div class="tarjeta">
+<h2>💰 Ventas</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de ventas.</p>
+</div>
+
+</section>
+
+
+<!-- COMPRAS -->
+
+<section id="compras" class="pantalla">
+
+<div class="tarjeta">
+<h2>🛒 Compras</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de compras.</p>
+</div>
+
+</section>
+
+
+<!-- CLIENTES -->
+
+<section id="clientes" class="pantalla">
+
+<div class="tarjeta">
+<h2>👥 Clientes</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de clientes.</p>
+</div>
+
+</section>
+
+
+<!-- PROVEEDORES -->
+
+<section id="proveedores" class="pantalla">
+
+<div class="tarjeta">
+<h2>🚚 Proveedores</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de proveedores.</p>
+</div>
+
+</section>
+
+
+<!-- GASTOS -->
+
+<section id="gastos" class="pantalla">
+
+<div class="tarjeta">
+<h2>💸 Gastos</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de gastos.</p>
+</div>
+
+</section>
+
+
+<!-- REPORTES -->
+
+<section id="reportes" class="pantalla">
+
+<div class="tarjeta">
+<h2>📊 Reportes</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de reportes.</p>
+</div>
+
+</section>
+
+
+<!-- ADMINISTRACIÓN -->
+
+<section id="administracion" class="pantalla">
+
+<div class="tarjeta">
+<h2>⚙️ Administración</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de administración.</p>
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://ggaqknpwlohpbyxeyque.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+
+/* CONEXIÓN */
+
+async function comprobarConexion(){
+
+const mensaje=document.getElementById("conexion");
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/categorias?select=id&limit=1",
+{
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY
+}
+}
+);
+
+if(respuesta.ok){
+
+mensaje.textContent=
+"✅ Conectado correctamente con Supabase.";
+
+}else{
+
+mensaje.textContent=
+"⚠️ Supabase responde, pero falta configurar permisos.";
+
+}
+
+}catch(error){
+
+console.log(error);
+
+mensaje.textContent=
+"⚠️ Aplicación funcionando. Revisar conexión.";
+
+}
+
+}
+
+
+/* NAVEGACIÓN */
+
+function mostrar(pantalla){
+
+document.querySelectorAll(".pantalla")
+.forEach(function(p){
+p.classList.remove("activa");
+});
+
+const destino=document.getElementById(pantalla);
+
+if(!destino){
+
+alert("No se encontró el módulo: "+pantalla);
+return;
+
+}
+
+destino.classList.add("activa");
+
+if(pantalla==="inventario"){
+cargarArticulos();
+}
+
+window.scrollTo(0,0);
+
+}
+
+
+/* INVENTARIO */
+
+let articulos=[];
+
+
+async function cargarArticulos(){
+
+const lista=document.getElementById("lista");
+
+lista.innerHTML="Cargando inventario...";
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY
+}
+}
+);
+
+if(!respuesta.ok){
+
+lista.innerHTML=
+"⚠️ No se pudieron cargar los artículos.";
+
+return;
+
+}
+
+articulos=await respuesta.json();
+
+mostrarArticulos(articulos);
+
+}catch(error){
+
+console.log(error);
+
+lista.innerHTML=
+"⚠️ Error al cargar inventario.";
+
+}
+
+}
+
+
+/* MOSTRAR ARTÍCULOS */
+
+function mostrarArticulos(listaArticulos){
+
+const lista=document.getElementById("lista");
+
+if(listaArticulos.length===0){
+
+lista.innerHTML=
+'<div class="tarjeta">No hay artículos registrados.</div>';
+
+return;
+
+}
+
+lista.innerHTML="";
+
+listaArticulos.forEach(function(a){
+
+const div=document.createElement("div");
+
+div.className="articulo";
+
+div.innerHTML=
+"<strong>"+(a.nombre||"")+"</strong>"+
+"<br>Código: "+(a.codigo||"")+
+"<br>Costo: $"+Number(a.costo||0).toFixed(2)+
+"<br>Precio público: $"+
+Number(a.precio_publico||0).toFixed(2)+
+"<br>Stock: "+Number(a.stock||0)+
+"<br>Stock mínimo: "+Number(a.stock_minimo||0);
+
+lista.appendChild(div);
+
+});
+
+}
+
+
+/* BUSCAR */
+
+function buscarArticulos(){
+
+const texto=document
+.getElementById("buscar")
+.value
+.toLowerCase()
+.trim();
+
+const resultados=articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarArticulos(resultados);
+
+}
+
+
+/* NUEVO ARTÍCULO */
+
+function nuevoArticulo(){
+
+document
+.getElementById("formulario")
+.classList.remove("oculto");
+
+}
+
+
+/* GUARDAR */
+
+async function guardarArticulo(){
+
+const codigo=document
+.getElementById("codigo")
+.value
+.trim();
+
+const nombre=document
+.getElementById("nombre")
+.value
+.trim();
+
+const costo=Number(
+document.getElementById("costo").value||0
+);
+
+const precio=Number(
+document.getElementById("precio").value||0
+);
+
+const stock=Number(
+document.getElementById("stock").value||0
+);
+
+const minimo=Number(
+document.getElementById("minimo").value||0
+);
+
+
+if(!codigo){
+
+alert("Escribe el código.");
+return;
+
+}
+
+if(!nombre){
+
+alert("Escribe el nombre.");
+return;
+
+}
+
+
+const datos={
+
+codigo:codigo,
+nombre:nombre,
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:minimo,
+activo:true
+
+};
+
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos",
+{
+method:"POST",
+
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json",
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify(datos)
+
+}
+);
+
+
+if(!respuesta.ok){
+
+const error=await respuesta.text();
+
+console.log(error);
+
+alert(
+"No se pudo guardar el artículo."
+);
+
+return;
+
+}
+
+
+alert("✅ Artículo guardado.");
+
+
+document
+.getElementById("formulario")
+.classList.add("oculto");
+
+
+document.getElementById("codigo").value="";
+document.getElementById("nombre").value="";
+document.getElementById("costo").value="";
+document.getElementById("precio").value="";
+document.getElementById("stock").value="";
+document.getElementById("minimo").value="";
+
+
+cargarArticulos();
+
+
+}catch(error){
+
+console.log(error);
+
+alert("❌ Error de conexión.");
+
+}
+
+}
+
+
+/* ARRANQUE */
+
+comprobarConexion();
+
+</script>
+
+</body>
+</html>
