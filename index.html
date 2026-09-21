@@ -167,7 +167,9 @@ margin-top:15px
 padding:8px;
 border-radius:7px;
 margin-top:10px;
-display:none
+display:none;
+white-space:pre-wrap;
+word-break:break-word
 }
 
 .ok{
@@ -576,6 +578,7 @@ cargarInventario();
 if(id==="ventas"){
 actualizarFechaVenta();
 cargarVentas();
+cargarArticulosVenta();
 }
 
 }
@@ -1199,7 +1202,12 @@ headers:headersSupabase
 
 if(!respuesta.ok){
 
-console.error(await respuesta.text());
+const error=await respuesta.text();
+
+console.error(
+"Error cargando artículos:",
+error
+);
 
 return;
 
@@ -1244,11 +1252,6 @@ return;
 
 }
 
-
-/*
-Busca tanto por código como por nombre.
-*/
-
 const encontrados=
 articulosVenta.filter(articulo=>{
 
@@ -1262,6 +1265,30 @@ return codigo.includes(texto) ||
 nombre.includes(texto);
 
 }).slice(0,20);
+
+
+/*
+Si el código escrito coincide exactamente
+con un solo artículo, se selecciona
+automáticamente.
+*/
+
+if(encontrados.length===1){
+
+const unico=encontrados[0];
+
+const codigo=
+String(unico.codigo||"").toLowerCase();
+
+if(codigo===texto){
+
+seleccionarArticuloVenta(unico);
+
+return;
+
+}
+
+}
 
 
 if(encontrados.length===0){
@@ -1517,7 +1544,7 @@ return;
 
 
 /*
-Se guarda fecha y hora exactas.
+Fecha y hora exactas.
 */
 
 const fechaHoraVenta=
@@ -1568,13 +1595,16 @@ const error=
 await respuestaVenta.text();
 
 console.error(
-"Error creando venta:",
+"ERROR CREANDO VENTA:",
+respuestaVenta.status,
 error
 );
 
 mostrarMensaje(
 "mensajeVenta",
-"❌ No se pudo registrar la venta.",
+"❌ ERROR SUPABASE AL CREAR LA VENTA:\n\n"+
+"HTTP "+respuestaVenta.status+
+"\n\n"+error,
 false
 );
 
@@ -1619,13 +1649,16 @@ const error=
 await respuestaDetalle.text();
 
 console.error(
-"Error detalle venta:",
+"ERROR DETALLE VENTA:",
+respuestaDetalle.status,
 error
 );
 
 mostrarMensaje(
 "mensajeVenta",
-"❌ La venta se creó pero no se pudo guardar el detalle.",
+"❌ ERROR SUPABASE EN EL DETALLE:\n\n"+
+"HTTP "+respuestaDetalle.status+
+"\n\n"+error,
 false
 );
 
@@ -1667,13 +1700,16 @@ const error=
 await respuestaStock.text();
 
 console.error(
-"Error actualizando stock:",
+"ERROR ACTUALIZANDO STOCK:",
+respuestaStock.status,
 error
 );
 
 mostrarMensaje(
 "mensajeVenta",
-"⚠️ La venta se registró, pero hubo un problema actualizando el stock.",
+"⚠️ LA VENTA SE REGISTRÓ, PERO SUPABASE RECHAZÓ LA ACTUALIZACIÓN DEL STOCK:\n\n"+
+"HTTP "+respuestaStock.status+
+"\n\n"+error,
 false
 );
 
@@ -1704,6 +1740,9 @@ document.getElementById("totalVenta").textContent="0.00";
 document.getElementById("articuloSeleccionado").style.display=
 "none";
 
+document.getElementById("resultadosArticulos").style.display=
+"none";
+
 articuloVentaSeleccionado=null;
 
 
@@ -1717,13 +1756,14 @@ cargarVentas();
 }catch(error){
 
 console.error(
-"Error registrando venta:",
+"ERROR GENERAL REGISTRANDO VENTA:",
 error
 );
 
 mostrarMensaje(
 "mensajeVenta",
-"❌ Error al registrar la venta.",
+"❌ ERROR GENERAL:\n\n"+
+(error.message||error),
 false
 );
 
@@ -1750,7 +1790,12 @@ headers:headersSupabase
 
 if(!respuesta.ok){
 
-console.error(await respuesta.text());
+const error=await respuesta.text();
+
+console.error(
+"Error cargando ventas:",
+error
+);
 
 return;
 
