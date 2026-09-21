@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mueblería Mercado</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -18,23 +16,21 @@
   <p id="conexion">Conectando con la base de datos...</p>
 
   <script>
-    const SUPABASE_URL = "https://ggaqknpwlohpbyxeyque.supabase.co";
+    const SUPABASE_URL =
+      "https://ggaqknpwlohpbyxeyque.supabase.co";
 
-    const SUPABASE_KEY = "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
-
-    const supabase = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+    const SUPABASE_KEY =
+      "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
     async function comprobarConexion() {
+
       const mensaje = document.getElementById("conexion");
 
       try {
+
         const respuesta = await fetch(
           SUPABASE_URL + "/rest/v1/categorias?select=id&limit=1",
           {
-            method: "GET",
             headers: {
               "apikey": SUPABASE_KEY,
               "Authorization": "Bearer " + SUPABASE_KEY
@@ -43,14 +39,28 @@
         );
 
         if (respuesta.ok) {
-          mensaje.textContent = "✅ Conectado correctamente con Supabase.";
+
+          mensaje.textContent =
+            "✅ Conectado correctamente con Supabase.";
+
         } else {
-          mensaje.textContent = "⚠️ Supabase responde, pero falta configurar permisos.";
-          console.log(await respuesta.text());
+
+          const error = await respuesta.text();
+
+          console.log("Respuesta Supabase:", error);
+
+          mensaje.textContent =
+            "⚠️ Supabase responde, pero falta configurar permisos.";
+
         }
+
       } catch (error) {
-        mensaje.textContent = "❌ Error de conexión con Supabase.";
-        console.log(error);
+
+        console.log("Error:", error);
+
+        mensaje.textContent =
+          "❌ Error de conexión con Supabase.";
+
       }
     }
 
