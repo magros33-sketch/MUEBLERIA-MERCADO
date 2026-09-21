@@ -1,67 +1,2041 @@
 <!doctype html>
 <html lang="es">
 <head>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>Mueblería Mercado</title>
 
 <style>
-*{box-sizing:border-box}
+
+*{
+box-sizing:border-box;
+}
 
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:#f4f7f5;
-color:#17221b
+color:#17221b;
 }
 
 header{
 background:#123b2a;
 color:#fff;
 padding:18px;
-text-align:center
 }
 
 header h1{
 margin:0;
-font-size:24px
+font-size:24px;
 }
 
 header p{
 margin:5px 0 0;
-font-size:14px
+opacity:.9;
 }
 
 #conexion{
-margin:10px;
-padding:12px;
-border-radius:8px;
+padding:10px 15px;
 background:#fff;
-font-weight:bold;
-text-align:center
+font-size:14px;
 }
 
-.menu{
-display:grid;
-grid-template-columns:repeat(2,1fr);
+nav{
+display:flex;
 gap:8px;
-padding:10px
-}
-
-.menu button{
-border:0;
-border-radius:10px;
-padding:13px 8px;
+overflow-x:auto;
+padding:10px;
 background:#fff;
-font-weight:bold;
-color:#123b2a;
-box-shadow:0 1px 5px #0002
+border-bottom:1px solid #ddd;
 }
 
-.menu button:hover{
-background:#e7eee9
+nav button{
+border:0;
+background:#e5eee9;
+padding:10px 14px;
+border-radius:8px;
+white-space:nowrap;
+font-weight:bold;
+}
+
+nav button:hover{
+background:#d5e5dd;
+}
+
+main{
+padding:15px;
+max-width:1100px;
+margin:auto;
 }
 
 .seccion{
 display:none;
-padding:
+}
+
+.seccion.activa{
+display:block;
+}
+
+.card{
+background:#fff;
+padding:16px;
+margin-bottom:15px;
+border-radius:12px;
+box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+
+h2{
+margin-top:0;
+color:#123b2a;
+}
+
+h3{
+color:#123b2a;
+}
+
+label{
+display:block;
+font-weight:bold;
+margin-top:10px;
+margin-bottom:5px;
+}
+
+input,
+select,
+button,
+textarea{
+font:inherit;
+}
+
+input,
+select,
+textarea{
+width:100%;
+padding:11px;
+border:1px solid #ccc;
+border-radius:8px;
+background:#fff;
+}
+
+textarea{
+min-height:90px;
+resize:vertical;
+}
+
+button{
+cursor:pointer;
+}
+
+.btn{
+border:0;
+background:#123b2a;
+color:#fff;
+padding:11px 16px;
+border-radius:8px;
+margin-top:12px;
+font-weight:bold;
+}
+
+.btn-sec{
+border:0;
+background:#e5eee9;
+color:#123b2a;
+padding:10px 14px;
+border-radius:8px;
+font-weight:bold;
+}
+
+.btn-danger{
+border:0;
+background:#b42318;
+color:#fff;
+padding:10px 14px;
+border-radius:8px;
+font-weight:bold;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:12px;
+}
+
+.tabla-wrap{
+overflow-x:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:12px;
+background:#fff;
+}
+
+th,
+td{
+padding:9px;
+border-bottom:1px solid #ddd;
+text-align:left;
+font-size:14px;
+}
+
+th{
+background:#edf3ef;
+}
+
+.total{
+font-size:22px;
+font-weight:bold;
+color:#123b2a;
+margin-top:15px;
+}
+
+.info{
+background:#edf7f0;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+.alerta{
+background:#fff3cd;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+.error{
+background:#fde8e7;
+color:#9b1c1c;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+.sugerencias{
+border:1px solid #ccc;
+border-top:0;
+background:#fff;
+border-radius:0 0 8px 8px;
+max-height:250px;
+overflow-y:auto;
+}
+
+.sugerencia{
+padding:11px;
+border-bottom:1px solid #eee;
+cursor:pointer;
+}
+
+.sugerencia:hover{
+background:#edf3ef;
+}
+
+.articulo-seleccionado{
+background:#f1f6f3;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+.oculto{
+display:none!important;
+}
+
+.pequeno{
+font-size:13px;
+color:#555;
+}
+
+@media(max-width:600px){
+
+header h1{
+font-size:21px;
+}
+
+main{
+padding:10px;
+}
+
+.card{
+padding:13px;
+}
+
+th,
+td{
+font-size:13px;
+padding:7px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>Mueblería Mercado</h1>
+<p>para tu hogar</p>
+
+</header>
+
+<div id="conexion">
+⏳ Conectando con la base de datos...
+</div>
+
+<nav>
+
+<button onclick="mostrarSeccion('inicio')">Inicio</button>
+<button onclick="mostrarSeccion('inventario')">Inventario</button>
+<button onclick="mostrarSeccion('ventas')">Ventas</button>
+<button onclick="mostrarSeccion('compras')">Compras</button>
+<button onclick="mostrarSeccion('clientes')">Clientes</button>
+<button onclick="mostrarSeccion('proveedores')">Proveedores</button>
+<button onclick="mostrarSeccion('gastos')">Gastos</button>
+<button onclick="mostrarSeccion('reportes')">Reportes</button>
+<button onclick="mostrarSeccion('administracion')">Administración</button>
+
+</nav>
+
+<main>
+
+<!-- INICIO -->
+
+<section id="inicio" class="seccion activa">
+
+<div class="card">
+
+<h2>Inicio</h2>
+
+<p>Bienvenido a Mueblería Mercado.</p>
+
+<div id="resumenInicio">
+
+Cargando información...
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- INVENTARIO -->
+
+<section id="inventario" class="seccion">
+
+<div class="card">
+
+<h2>Inventario</h2>
+
+<div class="grid">
+
+<div>
+<label>Código</label>
+<input id="codigoArticulo" type="text">
+</div>
+
+<div>
+<label>Nombre del artículo</label>
+<input id="nombreArticulo" type="text">
+</div>
+
+<div>
+<label>Costo</label>
+<input id="costoArticulo" type="number" step="0.01">
+</div>
+
+<div>
+<label>Precio al público</label>
+<input id="precioArticulo" type="number" step="0.01">
+</div>
+
+<div>
+<label>Stock</label>
+<input id="stockArticulo" type="number" min="0">
+</div>
+
+<div>
+<label>Stock mínimo</label>
+<input id="stockMinimoArticulo" type="number" min="0">
+</div>
+
+</div>
+
+<button class="btn" onclick="guardarArticulo()">
+Guardar artículo
+</button>
+
+<button class="btn-sec" onclick="limpiarFormularioArticulo()">
+Limpiar
+</button>
+
+<div id="mensajeInventario"></div>
+
+</div>
+
+
+<div class="card">
+
+<h3>Inventario actual</h3>
+
+<div class="tabla-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Código</th>
+<th>Artículo</th>
+<th>Costo</th>
+<th>Precio público</th>
+<th>Stock</th>
+<th>Mínimo</th>
+<th>Acción</th>
+</tr>
+
+</thead>
+
+<tbody id="tablaInventario">
+
+<tr>
+<td colspan="7">Cargando...</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- VENTAS -->
+
+<section id="ventas" class="seccion">
+
+<div class="card">
+
+<h2>Ventas</h2>
+
+<div class="grid">
+
+<div>
+
+<label>Fecha de venta</label>
+
+<input
+id="fechaVenta"
+type="text"
+readonly
+>
+
+</div>
+
+<div>
+
+<label>Tipo de cliente</label>
+
+<select id="tipoCliente" onchange="cambiarTipoCliente()">
+
+<option value="publico_general">
+Público en general
+</option>
+
+<option value="cliente">
+Cliente
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<div id="campoCliente" class="oculto">
+
+<label>ID del cliente</label>
+
+<input
+id="clienteId"
+type="text"
+placeholder="ID del cliente"
+>
+
+</div>
+
+
+<label>Buscar artículo por código o nombre</label>
+
+<input
+id="buscarArticulo"
+type="text"
+placeholder="Escribe código o nombre"
+autocomplete="off"
+oninput="buscarArticulosVenta()"
+>
+
+<div
+id="listaSugerencias"
+class="sugerencias">
+</div>
+
+
+<div
+id="articuloSeleccionado"
+class="articulo-seleccionado oculto">
+
+<strong>Artículo seleccionado</strong>
+
+<div id="infoArticuloVenta"></div>
+
+<input
+id="articuloIdVenta"
+type="hidden"
+>
+
+</div>
+
+
+<div class="grid">
+
+<div>
+
+<label>Cantidad</label>
+
+<input
+id="cantidadVenta"
+type="number"
+min="1"
+value="1"
+oninput="actualizarTotalVenta()"
+>
+
+</div>
+
+<div>
+
+<label>Precio unitario</label>
+
+<input
+id="precioUnitarioVenta"
+type="number"
+min="0"
+step="0.01"
+oninput="actualizarTotalVenta()"
+>
+
+</div>
+
+</div>
+
+
+<label>Método de pago</label>
+
+<select id="metodoPago">
+
+<option value="efectivo">
+Efectivo
+</option>
+
+<option value="tarjeta">
+Tarjeta
+</option>
+
+<option value="transferencia">
+Transferencia
+</option>
+
+<option value="aplazo">
+Aplazo
+</option>
+
+</select>
+
+
+<div class="total">
+
+Total:
+$<span id="totalVenta">0.00</span>
+
+</div>
+
+
+<button
+class="btn"
+onclick="guardarVenta()">
+
+Registrar venta
+
+</button>
+
+
+<div id="mensajeVenta"></div>
+
+</div>
+
+
+<div class="card">
+
+<h3>Historial de ventas</h3>
+
+<div class="tabla-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Fecha</th>
+<th>Tipo</th>
+<th>Pago</th>
+<th>Total</th>
+<th>Estado</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tablaVentas">
+
+<tr>
+<td colspan="5">
+Cargando...
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- COMPRAS -->
+
+<section id="compras" class="seccion">
+
+<div class="card">
+
+<h2>Compras</h2>
+
+<div class="grid">
+
+<div>
+
+<label>Proveedor</label>
+
+<input
+id="proveedorCompra"
+type="text"
+placeholder="ID del proveedor"
+>
+
+</div>
+
+<div>
+
+<label>Total de compra</label>
+
+<input
+id="totalCompra"
+type="number"
+step="0.01"
+min="0"
+>
+
+</div>
+
+</div>
+
+
+<h3>Artículo comprado</h3>
+
+<div class="grid">
+
+<div>
+
+<label>Artículo</label>
+
+<select id="articuloCompra">
+<option value="">Seleccionar artículo</option>
+</select>
+
+</div>
+
+<div>
+
+<label>Cantidad</label>
+
+<input
+id="cantidadCompra"
+type="number"
+min="1"
+>
+
+</div>
+
+<div>
+
+<label>Costo unitario</label>
+
+<input
+id="costoCompra"
+type="number"
+step="0.01"
+min="0"
+>
+
+</div>
+
+</div>
+
+
+<button
+class="btn"
+onclick="guardarCompra()">
+
+Registrar compra
+
+</button>
+
+
+<div id="mensajeCompra"></div>
+
+</div>
+
+</section>
+
+
+<!-- CLIENTES -->
+
+<section id="clientes" class="seccion">
+
+<div class="card">
+
+<h2>Clientes</h2>
+
+<p>
+Módulo preparado para registrar y administrar clientes.
+</p>
+
+</div>
+
+</section>
+
+
+<!-- PROVEEDORES -->
+
+<section id="proveedores" class="seccion">
+
+<div class="card">
+
+<h2>Proveedores</h2>
+
+<p>
+Módulo preparado para registrar y administrar proveedores.
+</p>
+
+</div>
+
+</section>
+
+
+<!-- GASTOS -->
+
+<section id="gastos" class="seccion">
+
+<div class="card">
+
+<h2>Gastos</h2>
+
+<div class="grid">
+
+<div>
+
+<label>Concepto</label>
+
+<input
+id="conceptoGasto"
+type="text"
+placeholder="Sueldos, gasolina, etc."
+>
+
+</div>
+
+<div>
+
+<label>Importe</label>
+
+<input
+id="importeGasto"
+type="number"
+step="0.01"
+min="0"
+>
+
+</div>
+
+</div>
+
+<button
+class="btn"
+onclick="guardarGasto()">
+
+Registrar gasto
+
+</button>
+
+<div id="mensajeGasto"></div>
+
+</div>
+
+</section>
+
+
+<!-- REPORTES -->
+
+<section id="reportes" class="seccion">
+
+<div class="card">
+
+<h2>Reportes</h2>
+
+<p>
+Aquí se podrán consultar ventas, compras, ganancias y artículos más y menos vendidos.
+</p>
+
+<button
+class="btn"
+onclick="cargarReporteArticulos()">
+
+Ver artículos más y menos vendidos
+
+</button>
+
+<div id="reporteArticulos"></div>
+
+</div>
+
+</section>
+
+
+<!-- ADMINISTRACION -->
+
+<section id="administracion" class="seccion">
+
+<div class="card">
+
+<h2>Administración</h2>
+
+<p>
+Área reservada para administración y configuración general.
+</p>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+/* =========================================
+   SUPABASE
+========================================= */
+
+const SUPABASE_URL =
+"https://ggaqknpwlohpbyxeyque.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+const headersSupabase = {
+
+"apikey":SUPABASE_KEY,
+
+"Authorization":"Bearer "+SUPABASE_KEY,
+
+"Content-Type":"application/json"
+
+};
+
+
+/* =========================================
+   NAVEGACIÓN
+========================================= */
+
+function mostrarSeccion(id){
+
+document.querySelectorAll(".seccion")
+.forEach(function(seccion){
+
+seccion.classList.remove("activa");
+
+});
+
+const seccion=document.getElementById(id);
+
+if(seccion){
+
+seccion.classList.add("activa");
+
+}
+
+if(id==="inventario"){
+
+cargarInventario();
+
+}
+
+if(id==="ventas"){
+
+actualizarFechaVenta();
+cargarHistorialVentas();
+
+}
+
+if(id==="compras"){
+
+cargarArticulosCompra();
+
+}
+
+}
+
+
+/* =========================================
+   CONEXIÓN
+========================================= */
+
+async function comprobarConexion(){
+
+const conexion=document.getElementById("conexion");
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?select=id&limit=1",
+
+{
+
+method:"GET",
+
+headers:headersSupabase
+
+}
+
+);
+
+if(respuesta.ok){
+
+conexion.innerHTML=
+"✅ Conectado correctamente con Supabase.";
+
+}else{
+
+const errorTexto=await respuesta.text();
+
+console.error(
+"Error Supabase:",
+respuesta.status,
+errorTexto
+);
+
+conexion.innerHTML=
+"❌ Error de conexión con Supabase: "+
+respuesta.status;
+
+}
+
+}catch(error){
+
+console.error(
+"Error de conexión:",
+error
+);
+
+conexion.innerHTML=
+"❌ No se pudo conectar con Supabase.";
+
+}
+
+}
+
+
+/* =========================================
+   INVENTARIO
+========================================= */
+
+async function cargarInventario(){
+
+const tabla=document.getElementById("tablaInventario");
+
+tabla.innerHTML=
+"<tr><td colspan='7'>Cargando...</td></tr>";
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+
+{
+
+headers:headersSupabase
+
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error(
+await respuesta.text()
+);
+
+}
+
+const articulos=await respuesta.json();
+
+if(!articulos.length){
+
+tabla.innerHTML=
+"<tr><td colspan='7'>No hay artículos registrados.</td></tr>";
+
+return;
+
+}
+
+tabla.innerHTML="";
+
+articulos.forEach(function(articulo){
+
+const tr=document.createElement("tr");
+
+tr.innerHTML=`
+
+<td>${escapeHtml(articulo.codigo||"")}</td>
+
+<td>${escapeHtml(articulo.nombre||"")}</td>
+
+<td>$${Number(articulo.costo||0).toFixed(2)}</td>
+
+<td>$${Number(articulo.precio_publico||0).toFixed(2)}</td>
+
+<td>${Number(articulo.stock||0)}</td>
+
+<td>${Number(articulo.stock_minimo||0)}</td>
+
+<td>
+
+<button
+class="btn-sec"
+onclick='editarArticulo(${JSON.stringify(articulo)})'>
+
+Editar
+
+</button>
+
+</td>
+
+`;
+
+tabla.appendChild(tr);
+
+});
+
+}catch(error){
+
+console.error(error);
+
+tabla.innerHTML=
+
+`<tr>
+<td colspan="7">
+❌ Error al cargar inventario.
+</td>
+</tr>`;
+
+}
+
+}
+
+
+async function guardarArticulo(){
+
+const codigo=
+document.getElementById("codigoArticulo").value.trim();
+
+const nombre=
+document.getElementById("nombreArticulo").value.trim();
+
+const costo=
+Number(document.getElementById("costoArticulo").value);
+
+const precio=
+Number(document.getElementById("precioArticulo").value);
+
+const stock=
+Number(document.getElementById("stockArticulo").value);
+
+const stockMinimo=
+Number(document.getElementById("stockMinimoArticulo").value);
+
+const mensaje=
+document.getElementById("mensajeInventario");
+
+if(!codigo || !nombre){
+
+mensaje.innerHTML=
+"<div class='error'>Faltan código y nombre.</div>";
+
+return;
+
+}
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos",
+
+{
+
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+codigo,
+
+nombre,
+
+categoria_id:
+"771aa9b4-ff75-4211-854c-e2944a327071",
+
+costo,
+
+precio_publico:precio,
+
+stock,
+
+stock_minimo:stockMinimo,
+
+activo:true
+
+})
+
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error(
+await respuesta.text()
+);
+
+}
+
+mensaje.innerHTML=
+"<div class='info'>✅ Artículo guardado correctamente.</div>";
+
+limpiarFormularioArticulo();
+
+cargarInventario();
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+"<div class='error'>❌ Error al guardar artículo:<br>"+
+escapeHtml(error.message)+
+"</div>";
+
+}
+
+}
+
+
+function editarArticulo(articulo){
+
+document.getElementById("codigoArticulo").value=
+articulo.codigo||"";
+
+document.getElementById("nombreArticulo").value=
+articulo.nombre||"";
+
+document.getElementById("costoArticulo").value=
+articulo.costo||0;
+
+document.getElementById("precioArticulo").value=
+articulo.precio_publico||0;
+
+document.getElementById("stockArticulo").value=
+articulo.stock||0;
+
+document.getElementById("stockMinimoArticulo").value=
+articulo.stock_minimo||0;
+
+const boton=document.querySelector(
+"#inventario .btn"
+);
+
+boton.textContent="Actualizar artículo";
+
+boton.onclick=function(){
+
+actualizarArticulo(articulo.id);
+
+};
+
+}
+
+
+async function actualizarArticulo(id){
+
+const codigo=
+document.getElementById("codigoArticulo").value.trim();
+
+const nombre=
+document.getElementById("nombreArticulo").value.trim();
+
+const costo=
+Number(document.getElementById("costoArticulo").value);
+
+const precio=
+Number(document.getElementById("precioArticulo").value);
+
+const stock=
+Number(document.getElementById("stockArticulo").value);
+
+const stockMinimo=
+Number(document.getElementById("stockMinimoArticulo").value);
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+encodeURIComponent(id),
+
+{
+
+method:"PATCH",
+
+headers:headersSupabase,
+
+body:JSON.stringify({
+
+codigo,
+
+nombre,
+
+costo,
+
+precio_publico:precio,
+
+stock,
+
+stock_minimo:stockMinimo
+
+})
+
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error(
+await respuesta.text()
+);
+
+}
+
+document.getElementById("mensajeInventario").innerHTML=
+"<div class='info'>✅ Artículo actualizado.</div>";
+
+limpiarFormularioArticulo();
+
+cargarInventario();
+
+}catch(error){
+
+console.error(error);
+
+document.getElementById("mensajeInventario").innerHTML=
+"<div class='error'>❌ Error al actualizar:<br>"+
+escapeHtml(error.message)+
+"</div>";
+
+}
+
+}
+
+
+function limpiarFormularioArticulo(){
+
+document.getElementById("codigoArticulo").value="";
+document.getElementById("nombreArticulo").value="";
+document.getElementById("costoArticulo").value="";
+document.getElementById("precioArticulo").value="";
+document.getElementById("stockArticulo").value="";
+document.getElementById("stockMinimoArticulo").value="";
+
+const boton=document.querySelector(
+"#inventario .btn"
+);
+
+boton.textContent="Guardar artículo";
+
+boton.onclick=guardarArticulo;
+
+}
+
+
+/* =========================================
+   FECHA DE VENTA
+========================================= */
+
+function actualizarFechaVenta(){
+
+const ahora=new Date();
+
+const dia=
+String(ahora.getDate())
+.padStart(2,"0");
+
+const mes=
+String(ahora.getMonth()+1)
+.padStart(2,"0");
+
+const anio=
+ahora.getFullYear();
+
+const campo=
+document.getElementById("fechaVenta");
+
+if(campo){
+
+campo.value=
+dia+"/"+mes+"/"+anio;
+
+}
+
+}
+
+
+/* =========================================
+   TIPO DE CLIENTE
+========================================= */
+
+function cambiarTipoCliente(){
+
+const tipo=
+document.getElementById("tipoCliente").value;
+
+const campo=
+document.getElementById("campoCliente");
+
+if(tipo==="cliente"){
+
+campo.classList.remove("oculto");
+
+}else{
+
+campo.classList.add("oculto");
+
+document.getElementById("clienteId").value="";
+
+}
+
+}
+
+
+/* =========================================
+   BÚSQUEDA DE ARTÍCULOS PARA VENTA
+========================================= */
+
+let articulosVenta=[];
+
+
+async function buscarArticulosVenta(){
+
+const texto=
+document.getElementById("buscarArticulo")
+.value
+.trim()
+.toLowerCase();
+
+const lista=
+document.getElementById("listaSugerencias");
+
+if(texto.length===0){
+
+lista.innerHTML="";
+return;
+
+}
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+
+{
+
+headers:headersSupabase
+
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error(
+await respuesta.text()
+);
+
+}
+
+articulosVenta=await respuesta.json();
+
+const resultados=
+articulosVenta.filter(function(articulo){
+
+const nombre=
+String(articulo.nombre||"")
+.toLowerCase();
+
+const codigo=
+String(articulo.codigo||"")
+.toLowerCase();
+
+return nombre.includes(texto)
+||
+codigo.includes(texto);
+
+});
+
+if(!resultados.length){
+
+lista.innerHTML=
+"<div class='sugerencia'>Artículo no encontrado.</div>";
+
+return;
+
+}
+
+lista.innerHTML="";
+
+resultados.slice(0,20).forEach(function(articulo){
+
+const div=document.createElement("div");
+
+div.className="sugerencia";
+
+div.innerHTML=`
+
+<strong>
+${escapeHtml(articulo.nombre||"")}
+</strong>
+
+<br>
+
+<span class="pequeno">
+
+Código:
+${escapeHtml(articulo.codigo||"")}
+
+&nbsp; | &nbsp;
+
+Stock:
+${Number(articulo.stock||0)}
+
+&nbsp; | &nbsp;
+
+$${Number(articulo.precio_publico||0).toFixed(2)}
+
+</span>
+
+`;
+
+div.onclick=function(){
+
+seleccionarArticuloVenta(articulo);
+
+};
+
+lista.appendChild(div);
+
+});
+
+}catch(error){
+
+console.error(error);
+
+lista.innerHTML=
+"<div class='sugerencia'>Error al buscar artículo.</div>";
+
+}
+
+}
+
+
+function seleccionarArticuloVenta(articulo){
+
+document.getElementById("buscarArticulo").value=
+articulo.nombre||"";
+
+document.getElementById("listaSugerencias").innerHTML="";
+
+document.getElementById("articuloIdVenta").value=
+articulo.id;
+
+document.getElementById("precioUnitarioVenta").value=
+Number(articulo.precio_publico||0).toFixed(2);
+
+document.getElementById("cantidadVenta").value=1;
+
+const bloque=
+document.getElementById("articuloSeleccionado");
+
+bloque.classList.remove("oculto");
+
+document.getElementById("infoArticuloVenta").innerHTML=`
+
+<strong>
+${escapeHtml(articulo.nombre||"")}
+</strong>
+
+<br>
+
+Código:
+${escapeHtml(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>
+${Number(articulo.stock||0)}
+</strong>
+
+<br>
+
+Precio público:
+<strong>
+$${Number(articulo.precio_publico||0).toFixed(2)}
+</strong>
+
+`;
+
+actualizarTotalVenta();
+
+}
+
+
+function actualizarTotalVenta(){
+
+const cantidad=
+Number(
+document.getElementById("cantidadVenta").value
+)||0;
+
+const precio=
+Number(
+document.getElementById("precioUnitarioVenta").value
+)||0;
+
+const total=
+cantidad*precio;
+
+document.getElementById("totalVenta").textContent=
+total.toFixed(2);
+
+}
+
+
+/* =========================================
+   GUARDAR VENTA
+========================================= */
+
+async function guardarVenta(){
+
+const mensaje=
+document.getElementById("mensajeVenta");
+
+mensaje.innerHTML="";
+
+const tipoCliente=
+document.getElementById("tipoCliente").value;
+
+const clienteId=
+document.getElementById("clienteId").value.trim();
+
+const articuloId=
+document.getElementById("articuloIdVenta").value;
+
+const cantidad=
+Number(
+document.getElementById("cantidadVenta").value
+);
+
+const precioUnitario=
+Number(
+document.getElementById("precioUnitarioVenta").value
+);
+
+const metodoPago=
+document.getElementById("metodoPago").value;
+
+const total=
+cantidad*precioUnitario;
+
+
+/* VALIDACIONES */
+
+if(!articuloId){
+
+mensaje.innerHTML=
+"<div class='error'>❌ Selecciona un artículo.</div>";
+
+return;
+
+}
+
+if(!cantidad || cantidad<=0){
+
+mensaje.innerHTML=
+"<div class='error'>❌ La cantidad no es válida.</div>";
+
+return;
+
+}
+
+if(precioUnitario<0){
+
+mensaje.innerHTML=
+"<div class='error'>❌ El precio no puede ser negativo.</div>";
+
+return;
+
+}
+
+if(tipoCliente==="cliente" && !clienteId){
+
+mensaje.innerHTML=
+"<div class='error'>❌ Introduce el ID del cliente.</div>";
+
+return;
+
+}
+
+
+/* OBTENER ARTÍCULO */
+
+let articulo;
+
+try{
+
+const respuestaArticulo=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId)+
+"&select=*",
+
+{
+
+headers:headersSupabase
+
+}
+
+);
+
+if(!respuestaArticulo.ok){
+
+throw new Error(
+await respuestaArticulo.text()
+);
+
+}
+
+const datosArticulo=
+await respuestaArticulo.json();
+
+if(!datosArticulo.length){
+
+mensaje.innerHTML=
+"<div class='error'>❌ El artículo no existe.</div>";
+
+return;
+
+}
+
+articulo=datosArticulo[0];
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+"<div class='error'>❌ No se pudo consultar el artículo.</div>";
+
+return;
+
+}
+
+
+if(Number(articulo.stock||0)<cantidad){
+
+mensaje.innerHTML=
+"<div class='error'>❌ Stock insuficiente. Stock disponible: "+
+Number(articulo.stock||0)+
+"</div>";
+
+return;
+
+}
+
+
+const fechaHoraVenta=
+new Date().toISOString();
+
+
+/* =========================================
+   CREAR CABECERA DE VENTA
+========================================= */
+
+try{
+
+console.log(
+"Creando venta con metodo_pago:",
+metodoPago
+);
+
+const respuestaVenta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/ventas",
+
+{
+
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+cliente_id:
+tipoCliente==="cliente"
+? clienteId
+: null,
+
+fecha:fechaHoraVenta,
+
+tipo_cliente:tipoCliente,
+
+/*
+IMPORTANTE:
+la columna real de Supabase es
+metodo_pago
+SIN ACENTO
+*/
+
+metodo_pago:metodoPago,
+
+total:total,
+
+estado:"completada",
+
+notas:"Venta registrada desde la aplicación"
+
+})
+
+}
+
+);
+
+if(!respuestaVenta.ok){
+
+const errorTexto=
+await respuestaVenta.text();
+
+console.error(
+"ERROR SUPABASE AL CREAR LA VENTA:",
+respuestaVenta.status,
+errorTexto
+);
+
+throw new Error(
+"HTTP "+
+respuestaVenta.status+
+" "+
+errorTexto
+);
+
+}
+
+const ventasGuardadas=
+await respuestaVenta.json();
+
+if(!ventasGuardadas.length){
+
+throw new Error(
+"Supabase no devolvió la venta creada."
+);
+
+}
+
+const ventaGuardada=
+ventasGuardadas[0];
+
+
+/* =========================================
+   CREAR DETALLE
+========================================= */
+
+const respuestaDetalle=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/ventas_detalle",
+
+{
+
+method:"POST",
+
+headers:headersSupabase,
+
+body:JSON.stringify({
+
+venta_id:ventaGuardada.id,
+
+"artículo_id":articuloId,
+
+cantidad:cantidad,
+
+precio_unitario:precioUnitario,
+
+subtotal:total
+
+})
+
+}
+
+);
+
+if(!respuestaDetalle.ok){
+
+const errorDetalle=
+await respuestaDetalle.text();
+
+console.error(
+"ERROR SUPABASE AL CREAR DETALLE:",
+errorDetalle
+);
+
+throw new Error(
+"Error al crear el detalle: "+
+errorDetalle
+);
+
+}
+
+
+/* =========================================
+   DESCONTAR STOCK
+========================================= */
+
+const nuevoStock=
+Number(articulo.stock||0)-cantidad;
+
+const respuestaStock=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+
+{
+
+method:"PATCH",
+
+headers:headersSupabase,
+
+body:JSON.stringify({
+
+stock:nuevoStock
+
+})
+
+}
+
+);
+
+if(!respuestaStock.ok){
+
+const errorStock=
+await respuestaStock.text();
+
+console.error(
+"ERROR SUPABASE AL ACTUALIZAR STOCK:",
+errorStock
+);
+
+throw new Error(
+"Venta creada, pero no se pudo actualizar el stock: "+
+errorStock
+);
+
+}
+
+
+/* =========================================
+   ÉXITO
+========================================= */
+
+mensaje.innerHTML=
+"<div class='info'>"+
+"✅ Venta registrada correctamente.<br>"+
+"Total: $"+
+total.toFixed(2)+
+"</div>";
+
+limpiarVenta();
+
+cargarHistorialVentas();
+
+cargarInventario();
+
+}catch(error){
+
+console.error(
+"ERROR SUPABASE AL CREAR LA VENTA:",
+error
+);
+
+mensaje.innerHTML=
+"<div class='error'>"+
+"<strong>ERROR SUPABASE AL CREAR LA VENTA:</strong><br><br>"+
+escapeHtml(error.message)+
+"</div>";
+
+}
+
+}
+
+
+/* =========================================
+   LIMPIAR VENTA
+========================================= */
+
+function limpiarVenta(){
+
+document.getElementById("buscarArticulo").value="";
+
+document.getElementById("listaSugerencias").innerHTML="";
+
+document.getElementById("articuloIdVenta").value="";
+
+document.getElementById("cantidadVenta").value=1;
+
+document.getElementById("precioUnitarioVenta").value="";
+
+document.getElementById("totalVenta").textContent=
+"0.00";
+
+document.getElementById("articuloSeleccionado")
+.classList.add("oculto");
+
+document.getElementById("infoArticuloVenta")
+.innerHTML="";
+
+document.getElementById("tipoCliente").value=
+"publico_general";
+
+document.getElementById("clienteId").value="";
+
+document.getElementById("campoCliente")
+.classList.add("oculto");
+
+document.getElementById("metodoPago").value=
+"efectivo";
+
+actualizarFechaVenta();
+
+}
+
+
+/* =========================================
+   HISTORIAL DE VENTAS
+========================================= */
+
+async function cargarHistorialVentas(){
+
+const tabla=
+document.getElementById("tablaVentas");
+
+tabla.innerHTML=
+"<tr><td colspan='5'>Cargando...</td></tr>";
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/ventas?select=*&order=fecha.desc&limit=100",
+
+{
+
+headers:headersSupabase
+
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error(
+await respuesta.text()
+);
+
+}
+
+const ventas=
+await respuesta.json();
+
+if(!ventas.length){
+
+tabla.innerHTML=
+"<tr><
