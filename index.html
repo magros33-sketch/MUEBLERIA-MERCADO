@@ -241,8 +241,7 @@ Conectando con la base de datos...
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -312,15 +311,13 @@ type="number"
 
 <button
 id="botonGuardarArticulo"
-onclick="guardarArticulo()"
->
+onclick="guardarArticulo()">
 💾 Guardar artículo
 </button>
 
 <button
 class="secundario"
-onclick="cancelarEdicion()"
->
+onclick="cancelarEdicion()">
 Cancelar
 </button>
 
@@ -339,8 +336,7 @@ Cancelar
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -412,8 +408,7 @@ placeholder="Ejemplo: 3500"
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -430,8 +425,7 @@ Próximamente: registro de ventas y apartados.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -448,8 +442,7 @@ Próximamente: clientes.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -466,8 +459,7 @@ Próximamente: proveedores.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -484,8 +476,7 @@ Próximamente: gastos.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -502,8 +493,7 @@ Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')"
->
+onclick="mostrarPantalla('inicio')">
 ← Volver
 </button>
 
@@ -767,7 +757,9 @@ articulos.filter(function(a){
 return String(a.codigo||"")
 .toLowerCase()
 .includes(texto)
+
 ||
+
 String(a.nombre||"")
 .toLowerCase()
 .includes(texto);
@@ -1380,7 +1372,6 @@ $${Number(articulo.costo||0).toFixed(2)}
 
 /* =====================================================
    REGISTRAR COMPRA
-   AHORA GUARDA HISTORIAL + DETALLE + STOCK
    ===================================================== */
 
 async function registrarCompra(){
@@ -1408,7 +1399,7 @@ document.getElementById("compraCosto").value||0
 );
 
 
-/* Buscar automáticamente por código */
+/* Buscar por código */
 
 if(!articulo&&codigo){
 
@@ -1423,7 +1414,7 @@ return String(a.codigo||"")
 }
 
 
-/* Buscar automáticamente por nombre */
+/* Buscar por nombre */
 
 if(!articulo&&nombre){
 
@@ -1462,7 +1453,7 @@ mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ Indica la cantidad recibida.
+Indica la cantidad recibida.
 
 </div>
 `;
@@ -1478,7 +1469,7 @@ mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ El costo no puede ser negativo.
+El costo no puede ser negativo.
 
 </div>
 `;
@@ -1498,7 +1489,7 @@ cantidad*costo;
 
 
 /* =====================================================
-   1. GUARDAR CABECERA DE LA COMPRA
+   1. GUARDAR CABECERA DE COMPRA
    ===================================================== */
 
 const respuestaCompra=
@@ -1533,8 +1524,12 @@ notas:"Compra registrada desde la aplicación"
 
 if(!respuestaCompra.ok){
 
+const errorTexto=
+await respuestaCompra.text();
+
 console.error(
-await respuestaCompra.text()
+"Error guardando compra:",
+errorTexto
 );
 
 mensaje.innerHTML=
@@ -1554,18 +1549,21 @@ return;
 const comprasGuardadas=
 await respuestaCompra.json();
 
-const compraGuardada=
+const compra=
 comprasGuardadas[0];
 
 
-if(!compraGuardada||
-!compraGuardada.id){
+if(!compra||!compra.id){
+
+console.error(
+"No se recibió el ID de la compra."
+);
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ La compra no devolvió un identificador válido.
+❌ La compra no devolvió un ID válido.
 
 </div>
 `;
@@ -1593,7 +1591,7 @@ headers:{
 
 body:JSON.stringify({
 
-id_compra:compraGuardada.id,
+id_compra:compra.id,
 
 id_articulo:articulo.id,
 
@@ -1611,17 +1609,19 @@ subtotal:subtotal
 
 if(!respuestaDetalle.ok){
 
+const errorTexto=
+await respuestaDetalle.text();
+
 console.error(
-await respuestaDetalle.text()
+"Error guardando detalle:",
+errorTexto
 );
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ La compra se creó, pero no se pudo guardar el detalle.
-
-No se modificó el stock.
+❌ Se creó la compra, pero no se pudo guardar el detalle.
 
 </div>
 `;
@@ -1632,7 +1632,7 @@ return;
 
 
 /* =====================================================
-   3. ACTUALIZAR STOCK Y COSTO
+   3. ACTUALIZAR INVENTARIO
    ===================================================== */
 
 const respuestaArticulo=
@@ -1640,7 +1640,6 @@ await fetch(
 SUPABASE_URL+
 "/rest/v1/articulos?id=eq."+
 encodeURIComponent(articulo.id),
-
 {
 method:"PATCH",
 
@@ -1658,24 +1657,24 @@ costo:costo
 })
 
 }
-
 );
 
 
 if(!respuestaArticulo.ok){
 
+const errorTexto=
+await respuestaArticulo.text();
+
 console.error(
-await respuestaArticulo.text()
+"Error actualizando artículo:",
+errorTexto
 );
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ La compra quedó guardada,
-pero no se pudo actualizar el stock.
-
-Revisa Inventario antes de volver a registrar esta compra.
+❌ La compra quedó registrada, pero no se pudo actualizar el inventario.
 
 </div>
 `;
@@ -1686,21 +1685,24 @@ return;
 
 
 /* =====================================================
-   ÉXITO
+   COMPRA COMPLETADA
    ===================================================== */
 
 mensaje.innerHTML=
 `
 <div class="mensaje-exito">
 
-<strong>
-✅ Compra registrada correctamente
-</strong>
+<strong>✅ Compra registrada correctamente</strong>
 
 <br><br>
 
 Artículo:
 ${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
 
 <br>
 
@@ -1722,37 +1724,32 @@ $${costo.toFixed(2)}
 Total de compra:
 $${subtotal.toFixed(2)}
 
-<br><br>
-
-📋 La compra quedó guardada en el historial.
-
 </div>
 `;
 
 
+/* Limpiar */
+
 articuloCompraSeleccionado=null;
 
 campoCompraCodigo.value="";
-
 campoCompraNombre.value="";
 
 document.getElementById("compraCantidad").value="";
-
 document.getElementById("compraCosto").value="";
 
 document.getElementById("estadoCodigo").innerHTML="";
-
 document.getElementById("estadoNombre").innerHTML="";
-
 document.getElementById("resultadoCompra").innerHTML="";
-
 
 await cargarArticulos();
 
-
 }catch(error){
 
-console.error(error);
+console.error(
+"Error registrando compra:",
+error
+);
 
 mensaje.innerHTML=
 `
