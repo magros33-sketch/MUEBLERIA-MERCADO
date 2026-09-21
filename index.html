@@ -7,414 +7,253 @@
 
 <style>
 *{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#f4f7f5;
-  color:#17221b;
-}
-
-header{
-  background:#123b2a;
-  color:white;
-  padding:18px;
-  text-align:center;
-}
-
-header h1{
-  margin:0;
-  font-size:23px;
-}
-
-header p{
-  margin:5px 0 0;
-  font-size:14px;
-}
-
-#conexion{
-  margin:12px;
-  padding:10px;
-  border-radius:8px;
-  background:#fff;
-  text-align:center;
-  font-size:14px;
-}
-
-main{
-  padding:14px;
-  max-width:700px;
-  margin:auto;
-}
-
-button{
-  width:100%;
-  border:0;
-  border-radius:10px;
-  padding:14px;
-  margin:6px 0;
-  font-size:16px;
-  cursor:pointer;
-  background:#123b2a;
-  color:white;
-}
-
-button.secundario{
-  background:#777;
-}
-
-button.editar{
-  background:#245c44;
-  font-size:14px;
-  padding:10px;
-}
-
-.menu button{
-  margin-bottom:9px;
-}
-
-.pantalla{
-  display:none;
-}
-
-.pantalla.activa{
-  display:block;
-}
-
-.tarjeta{
-  background:white;
-  border-radius:12px;
-  padding:15px;
-  margin:10px 0;
-  box-shadow:0 2px 7px rgba(0,0,0,.08);
-}
-
-input{
-  width:100%;
-  padding:13px;
-  margin:6px 0 10px;
-  border:1px solid #ccc;
-  border-radius:8px;
-  font-size:16px;
-}
-
-label{
-  display:block;
-  font-weight:bold;
-  margin-top:8px;
-}
-
-.mensaje-exito{
-  background:#dff5e5;
-  color:#17652e;
-  padding:12px;
-  border-radius:8px;
-  margin:10px 0;
-}
-
-.mensaje-error{
-  background:#ffe2e2;
-  color:#a00000;
-  padding:12px;
-  border-radius:8px;
-  margin:10px 0;
-}
-
-.info-articulo{
-  background:#eef5f1;
-  border-radius:8px;
-  padding:12px;
-  margin:8px 0;
-}
-
-.oculto{
-  display:none;
-}
-
-h2{
-  margin-top:5px;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7f5;color:#17221b}
+header{background:#123b2a;color:#fff;padding:18px;text-align:center}
+header h1{margin:0;font-size:23px}
+header p{margin:5px 0 0;font-size:14px}
+#conexion{margin:12px;padding:10px;border-radius:8px;background:#fff;text-align:center;font-size:14px}
+main{padding:14px;max-width:700px;margin:auto}
+button{width:100%;border:0;border-radius:10px;padding:14px;margin:6px 0;font-size:16px;cursor:pointer;background:#123b2a;color:#fff}
+button.secundario{background:#777}
+button.editar{background:#245c44;font-size:14px;padding:10px}
+.menu button{margin-bottom:9px}
+.pantalla{display:none}
+.pantalla.activa{display:block}
+.tarjeta{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
+input{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+label{display:block;font-weight:bold;margin-top:8px}
+.mensaje-exito{background:#dff5e5;color:#17652e;padding:12px;border-radius:8px;margin:10px 0}
+.mensaje-error{background:#ffe2e2;color:#a00000;padding:12px;border-radius:8px;margin:10px 0}
+.info-articulo{background:#eef5f1;border-radius:8px;padding:12px;margin:8px 0}
+.oculto{display:none}
+h2{margin-top:5px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>🪑 Mueblería Mercado</h1>
-  <p>Para tu hogar</p>
+<h1>🪑 Mueblería Mercado</h1>
+<p>Para tu hogar</p>
 </header>
 
 <div id="conexion">Conectando con la base de datos...</div>
 
 <main>
 
-<!-- ================= INICIO ================= -->
-
+<!-- INICIO -->
 <section id="inicio" class="pantalla activa">
 
-  <div class="menu">
+<div class="menu">
 
-    <button onclick="mostrarPantalla('inventario')">
-      📦 Inventario
-    </button>
+<button onclick="mostrarPantalla('inventario')">📦 Inventario</button>
+<button onclick="mostrarPantalla('ventas')">💰 Ventas</button>
+<button onclick="mostrarPantalla('compras')">🛒 Compras</button>
+<button onclick="mostrarPantalla('clientes')">👥 Clientes</button>
+<button onclick="mostrarPantalla('proveedores')">🚚 Proveedores</button>
+<button onclick="mostrarPantalla('gastos')">💸 Gastos</button>
+<button onclick="mostrarPantalla('reportes')">📊 Reportes</button>
+<button onclick="mostrarPantalla('administracion')">⚙️ Administración</button>
 
-    <button onclick="mostrarPantalla('ventas')">
-      💰 Ventas
-    </button>
-
-    <button onclick="mostrarPantalla('compras')">
-      🛒 Compras
-    </button>
-
-    <button onclick="mostrarPantalla('clientes')">
-      👥 Clientes
-    </button>
-
-    <button onclick="mostrarPantalla('proveedores')">
-      🚚 Proveedores
-    </button>
-
-    <button onclick="mostrarPantalla('gastos')">
-      💸 Gastos
-    </button>
-
-    <button onclick="mostrarPantalla('reportes')">
-      📊 Reportes
-    </button>
-
-    <button onclick="mostrarPantalla('administracion')">
-      ⚙️ Administración
-    </button>
-
-  </div>
+</div>
 
 </section>
 
 
-<!-- ================= INVENTARIO ================= -->
-
+<!-- INVENTARIO -->
 <section id="inventario" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>📦 Inventario</h2>
+<h2>📦 Inventario</h2>
 
-  <button onclick="mostrarFormularioArticulo()">
-    ➕ Nuevo artículo
-  </button>
+<button onclick="mostrarFormularioArticulo()">➕ Nuevo artículo</button>
 
-  <input
-    id="buscarArticulo"
-    type="text"
-    placeholder="Buscar por código o nombre"
-    oninput="filtrarArticulos()"
-  >
+<input
+id="buscarArticulo"
+type="text"
+placeholder="Buscar por código o nombre"
+oninput="filtrarArticulos()"
+>
 
-  <div id="formArticulo" class="tarjeta oculto">
+<div id="formArticulo" class="tarjeta oculto">
 
-    <h3 id="tituloFormulario">Nuevo artículo</h3>
+<h3 id="tituloFormulario">Nuevo artículo</h3>
 
-    <label>Código</label>
-    <input id="codigoArticulo" type="text">
+<label>Código</label>
+<input id="codigoArticulo" type="text">
 
-    <label>Nombre</label>
-    <input id="nombreArticulo" type="text">
+<label>Nombre</label>
+<input id="nombreArticulo" type="text">
 
-    <label>Costo</label>
-    <input id="costoArticulo" type="number" step="0.01">
+<label>Costo</label>
+<input id="costoArticulo" type="number" step="0.01">
 
-    <label>Precio al público</label>
-    <input id="precioArticulo" type="number" step="0.01">
+<label>Precio al público</label>
+<input id="precioArticulo" type="number" step="0.01">
 
-    <label>Stock</label>
-    <input id="stockArticulo" type="number">
+<label>Stock</label>
+<input id="stockArticulo" type="number">
 
-    <label>Stock mínimo</label>
-    <input id="stockMinimoArticulo" type="number">
+<label>Stock mínimo</label>
+<input id="stockMinimoArticulo" type="number">
 
-    <button id="botonGuardarArticulo" onclick="guardarArticulo()">
-      💾 Guardar artículo
-    </button>
+<button id="botonGuardarArticulo" onclick="guardarArticulo()">
+💾 Guardar artículo
+</button>
 
-    <button class="secundario" onclick="cancelarEdicion()">
-      Cancelar
-    </button>
+<button class="secundario" onclick="cancelarEdicion()">Cancelar</button>
 
-    <div id="mensajeArticulo"></div>
+<div id="mensajeArticulo"></div>
 
-  </div>
+</div>
 
-  <div id="listaArticulos"></div>
+<div id="listaArticulos"></div>
 
 </section>
 
 
-<!-- ================= COMPRAS ================= -->
-
+<!-- COMPRAS -->
 <section id="compras" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>🛒 Compras</h2>
+<h2>🛒 Compras</h2>
 
-  <div class="tarjeta">
+<div class="tarjeta">
 
-    <h3>Registrar compra</h3>
+<h3>Registrar compra</h3>
 
-    <label>Código del artículo</label>
+<label>Código del artículo</label>
 
-    <input
-      id="compraCodigo"
-      type="text"
-      placeholder="Escribe el código"
-      autocomplete="off"
-      oninput="buscarArticuloCompraPorCodigo()"
-    >
+<input
+id="compraCodigo"
+type="text"
+placeholder="Escribe el código"
+autocomplete="off"
+>
 
-    <label>Nombre del artículo</label>
+<label>Nombre del artículo</label>
 
-    <input
-      id="compraNombre"
-      type="text"
-      placeholder="O escribe el nombre"
-      autocomplete="off"
-      oninput="buscarArticuloCompraPorNombre()"
-    >
+<input
+id="compraNombre"
+type="text"
+placeholder="O escribe el nombre"
+autocomplete="off"
+>
 
-    <div id="resultadoCompra"></div>
+<div id="resultadoCompra"></div>
 
-    <label>Cantidad recibida</label>
+<label>Cantidad recibida</label>
 
-    <input
-      id="compraCantidad"
-      type="number"
-      min="1"
-      placeholder="Cantidad"
-    >
+<input
+id="compraCantidad"
+type="number"
+min="1"
+placeholder="Cantidad"
+>
 
-    <label>Costo de compra</label>
+<label>Costo de compra</label>
 
-    <input
-      id="compraCosto"
-      type="number"
-      min="0"
-      step="0.01"
-      placeholder="Costo"
-    >
+<input
+id="compraCosto"
+type="number"
+min="0"
+step="0.01"
+placeholder="Costo"
+>
 
-    <button onclick="registrarCompra()">
-      💾 Registrar compra
-    </button>
+<button onclick="registrarCompra()">
+💾 Registrar compra
+</button>
 
-    <div id="mensajeCompra"></div>
+<div id="mensajeCompra"></div>
 
-  </div>
+</div>
 
 </section>
 
 
-<!-- ================= VENTAS ================= -->
-
+<!-- VENTAS -->
 <section id="ventas" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>💰 Ventas</h2>
+<h2>💰 Ventas</h2>
 
-  <div class="tarjeta">
-    Próximamente: registro de ventas y apartados.
-  </div>
+<div class="tarjeta">
+Próximamente: registro de ventas y apartados.
+</div>
 
 </section>
 
 
-<!-- ================= CLIENTES ================= -->
-
+<!-- CLIENTES -->
 <section id="clientes" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>👥 Clientes</h2>
+<h2>👥 Clientes</h2>
 
-  <div class="tarjeta">
-    Próximamente: clientes.
-  </div>
+<div class="tarjeta">
+Próximamente: clientes.
+</div>
 
 </section>
 
 
-<!-- ================= PROVEEDORES ================= -->
-
+<!-- PROVEEDORES -->
 <section id="proveedores" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>🚚 Proveedores</h2>
+<h2>🚚 Proveedores</h2>
 
-  <div class="tarjeta">
-    Próximamente: proveedores.
-  </div>
+<div class="tarjeta">
+Próximamente: proveedores.
+</div>
 
 </section>
 
 
-<!-- ================= GASTOS ================= -->
-
+<!-- GASTOS -->
 <section id="gastos" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>💸 Gastos</h2>
+<h2>💸 Gastos</h2>
 
-  <div class="tarjeta">
-    Próximamente: gastos.
-  </div>
+<div class="tarjeta">
+Próximamente: gastos.
+</div>
 
 </section>
 
 
-<!-- ================= REPORTES ================= -->
-
+<!-- REPORTES -->
 <section id="reportes" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>📊 Reportes</h2>
+<h2>📊 Reportes</h2>
 
-  <div class="tarjeta">
-    Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
-  </div>
+<div class="tarjeta">
+Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
+</div>
 
 </section>
 
 
-<!-- ================= ADMINISTRACIÓN ================= -->
-
+<!-- ADMINISTRACIÓN -->
 <section id="administracion" class="pantalla">
 
-  <button class="secundario" onclick="mostrarPantalla('inicio')">
-    ← Volver
-  </button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
-  <h2>⚙️ Administración</h2>
+<h2>⚙️ Administración</h2>
 
-  <div class="tarjeta">
-    Próximamente: administración y ganancias.
-  </div>
+<div class="tarjeta">
+Próximamente: administración y ganancias.
+</div>
 
 </section>
 
@@ -423,818 +262,807 @@ h2{
 
 <script>
 
-/* =====================================================
-   SUPABASE
-===================================================== */
-
 const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
 const SUPABASE_KEY =
 "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
-
 const headersSupabase = {
-  "apikey": SUPABASE_KEY,
-  "Authorization": "Bearer " + SUPABASE_KEY,
-  "Content-Type": "application/json"
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json"
 };
 
-
-/* =====================================================
-   VARIABLES
-===================================================== */
-
-let articulos = [];
-let articuloEditando = null;
-let articuloCompraSeleccionado = null;
+let articulos=[];
+let articuloEditando=null;
+let articuloCompraSeleccionado=null;
 
 
-/* =====================================================
-   NAVEGACIÓN
-===================================================== */
+/* ================= NAVEGACIÓN ================= */
 
 function mostrarPantalla(id){
 
-  document.querySelectorAll(".pantalla")
-    .forEach(p => p.classList.remove("activa"));
+document.querySelectorAll(".pantalla")
+.forEach(p=>p.classList.remove("activa"));
 
-  document.getElementById(id)
-    .classList.add("activa");
+document.getElementById(id).classList.add("activa");
 
-  if(id === "inventario"){
-    cargarArticulos();
-  }
+if(id==="inventario"){
+cargarArticulos();
+}
 
 }
 
 
-/* =====================================================
-   CONEXIÓN
-===================================================== */
+/* ================= CONEXIÓN ================= */
 
 async function comprobarConexion(){
 
-  try{
+try{
 
-    const respuesta = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/categorias?select=id&limit=1",
-      {
-        headers:headersSupabase
-      }
-    );
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/categorias?select=id&limit=1",
+{headers:headersSupabase}
+);
 
-    if(respuesta.ok){
+if(respuesta.ok){
 
-      document.getElementById("conexion").innerHTML =
-        "✅ Conectado correctamente con Supabase.";
+document.getElementById("conexion").innerHTML=
+"✅ Conectado correctamente con Supabase.";
 
-    }else{
+}else{
 
-      document.getElementById("conexion").innerHTML =
-        "❌ No se pudo conectar con Supabase.";
+document.getElementById("conexion").innerHTML=
+"❌ No se pudo conectar con Supabase.";
 
-    }
+}
 
-  }catch(error){
+}catch(error){
 
-    document.getElementById("conexion").innerHTML =
-      "❌ Error de conexión.";
+document.getElementById("conexion").innerHTML=
+"❌ Error de conexión.";
 
-  }
+}
 
 }
 
 
-/* =====================================================
-   INVENTARIO
-===================================================== */
+/* ================= INVENTARIO ================= */
 
 async function cargarArticulos(){
 
-  try{
+try{
 
-    const respuesta = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
-      {
-        headers:headersSupabase
-      }
-    );
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{headers:headersSupabase}
+);
 
-    if(!respuesta.ok){
-      throw new Error("No se pudieron cargar los artículos.");
-    }
+if(!respuesta.ok){
+throw new Error("No se pudieron cargar los artículos.");
+}
 
-    articulos = await respuesta.json();
+articulos=await respuesta.json();
 
-    mostrarArticulos(articulos);
+mostrarArticulos(articulos);
 
-  }catch(error){
+}catch(error){
 
-    document.getElementById("listaArticulos").innerHTML =
-      '<div class="mensaje-error">' +
-      error.message +
-      '</div>';
+document.getElementById("listaArticulos").innerHTML=
+'<div class="mensaje-error">'+
+error.message+
+'</div>';
 
-  }
+}
 
 }
 
 
 function mostrarArticulos(lista){
 
-  const contenedor =
-    document.getElementById("listaArticulos");
+const contenedor=document.getElementById("listaArticulos");
 
-  contenedor.innerHTML = "";
+contenedor.innerHTML="";
 
-  if(lista.length === 0){
+if(lista.length===0){
 
-    contenedor.innerHTML =
-      '<div class="tarjeta">No hay artículos.</div>';
+contenedor.innerHTML=
+'<div class="tarjeta">No hay artículos.</div>';
 
-    return;
-  }
+return;
 
+}
 
-  lista.forEach(articulo => {
+lista.forEach(articulo=>{
 
-    const tarjeta =
-      document.createElement("div");
+const tarjeta=document.createElement("div");
 
-    tarjeta.className = "tarjeta";
+tarjeta.className="tarjeta";
 
-    tarjeta.innerHTML = `
+tarjeta.innerHTML=`
 
-      <strong>${escaparHTML(articulo.nombre)}</strong>
+<strong>${escaparHTML(articulo.nombre)}</strong>
 
-      <br>
-      Código:
-      ${escaparHTML(articulo.codigo || "")}
+<br>
+Código: ${escaparHTML(articulo.codigo||"")}
 
-      <br>
-      Costo:
-      $${Number(articulo.costo || 0).toFixed(2)}
+<br>
+Costo: $${Number(articulo.costo||0).toFixed(2)}
 
-      <br>
-      Precio público:
-      $${Number(articulo.precio_publico || 0).toFixed(2)}
+<br>
+Precio público: $${Number(articulo.precio_publico||0).toFixed(2)}
 
-      <br>
-      Stock:
-      ${articulo.stock || 0}
+<br>
+Stock: ${articulo.stock||0}
 
-      <br>
-      Stock mínimo:
-      ${articulo.stock_minimo || 0}
+<br>
+Stock mínimo: ${articulo.stock_minimo||0}
 
-      <button
-        class="editar"
-        onclick="editarArticulo('${articulo.id}')">
-        ✏️ Editar
-      </button>
-    `;
+<button
+class="editar"
+onclick="editarArticulo('${articulo.id}')">
+✏️ Editar
+</button>
+`;
 
-    contenedor.appendChild(tarjeta);
+contenedor.appendChild(tarjeta);
 
-  });
+});
 
 }
 
 
 function filtrarArticulos(){
 
-  const texto =
-    document.getElementById("buscarArticulo")
-    .value
-    .toLowerCase()
-    .trim();
+const texto=
+document.getElementById("buscarArticulo")
+.value
+.toLowerCase()
+.trim();
 
-  const filtrados =
-    articulos.filter(a =>
-      String(a.codigo || "")
-        .toLowerCase()
-        .includes(texto)
-      ||
-      String(a.nombre || "")
-        .toLowerCase()
-        .includes(texto)
-    );
+const filtrados=articulos.filter(a=>
+String(a.codigo||"").toLowerCase().includes(texto) ||
+String(a.nombre||"").toLowerCase().includes(texto)
+);
 
-  mostrarArticulos(filtrados);
+mostrarArticulos(filtrados);
 
 }
 
 
 function mostrarFormularioArticulo(){
 
-  articuloEditando = null;
+articuloEditando=null;
 
-  document.getElementById("tituloFormulario").textContent =
-    "Nuevo artículo";
+document.getElementById("tituloFormulario").textContent=
+"Nuevo artículo";
 
-  document.getElementById("botonGuardarArticulo").textContent =
-    "💾 Guardar artículo";
+document.getElementById("botonGuardarArticulo").textContent=
+"💾 Guardar artículo";
 
-  document.getElementById("formArticulo")
-    .classList.remove("oculto");
+document.getElementById("formArticulo")
+.classList.remove("oculto");
 
-  limpiarFormularioArticulo();
+limpiarFormularioArticulo();
 
 }
 
 
 function limpiarFormularioArticulo(){
 
-  document.getElementById("codigoArticulo").value = "";
-  document.getElementById("nombreArticulo").value = "";
-  document.getElementById("costoArticulo").value = "";
-  document.getElementById("precioArticulo").value = "";
-  document.getElementById("stockArticulo").value = "";
-  document.getElementById("stockMinimoArticulo").value = "";
-  document.getElementById("mensajeArticulo").innerHTML = "";
+document.getElementById("codigoArticulo").value="";
+document.getElementById("nombreArticulo").value="";
+document.getElementById("costoArticulo").value="";
+document.getElementById("precioArticulo").value="";
+document.getElementById("stockArticulo").value="";
+document.getElementById("stockMinimoArticulo").value="";
+document.getElementById("mensajeArticulo").innerHTML="";
 
 }
 
 
 function cancelarEdicion(){
 
-  articuloEditando = null;
+articuloEditando=null;
 
-  document.getElementById("formArticulo")
-    .classList.add("oculto");
+document.getElementById("formArticulo")
+.classList.add("oculto");
 
-  limpiarFormularioArticulo();
+limpiarFormularioArticulo();
 
 }
 
 
 function editarArticulo(id){
 
-  const articulo =
-    articulos.find(a => a.id === id);
+const articulo=articulos.find(a=>a.id===id);
 
-  if(!articulo) return;
+if(!articulo)return;
 
-  articuloEditando = articulo;
+articuloEditando=articulo;
 
-  document.getElementById("tituloFormulario").textContent =
-    "Editar artículo";
+document.getElementById("tituloFormulario").textContent=
+"Editar artículo";
 
-  document.getElementById("botonGuardarArticulo").textContent =
-    "💾 Guardar cambios";
+document.getElementById("botonGuardarArticulo").textContent=
+"💾 Guardar cambios";
 
-  document.getElementById("codigoArticulo").value =
-    articulo.codigo || "";
+document.getElementById("codigoArticulo").value=
+articulo.codigo||"";
 
-  document.getElementById("nombreArticulo").value =
-    articulo.nombre || "";
+document.getElementById("nombreArticulo").value=
+articulo.nombre||"";
 
-  document.getElementById("costoArticulo").value =
-    articulo.costo || 0;
+document.getElementById("costoArticulo").value=
+articulo.costo||0;
 
-  document.getElementById("precioArticulo").value =
-    articulo.precio_publico || 0;
+document.getElementById("precioArticulo").value=
+articulo.precio_publico||0;
 
-  document.getElementById("stockArticulo").value =
-    articulo.stock || 0;
+document.getElementById("stockArticulo").value=
+articulo.stock||0;
 
-  document.getElementById("stockMinimoArticulo").value =
-    articulo.stock_minimo || 0;
+document.getElementById("stockMinimoArticulo").value=
+articulo.stock_minimo||0;
 
-  document.getElementById("formArticulo")
-    .classList.remove("oculto");
+document.getElementById("formArticulo")
+.classList.remove("oculto");
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
 
 }
 
 
 async function guardarArticulo(){
 
-  const codigo =
-    document.getElementById("codigoArticulo").value.trim();
+const codigo=
+document.getElementById("codigoArticulo").value.trim();
 
-  const nombre =
-    document.getElementById("nombreArticulo").value.trim();
+const nombre=
+document.getElementById("nombreArticulo").value.trim();
 
-  const costo =
-    Number(document.getElementById("costoArticulo").value || 0);
+const costo=
+Number(document.getElementById("costoArticulo").value||0);
 
-  const precio =
-    Number(document.getElementById("precioArticulo").value || 0);
+const precio=
+Number(document.getElementById("precioArticulo").value||0);
 
-  const stock =
-    Number(document.getElementById("stockArticulo").value || 0);
+const stock=
+Number(document.getElementById("stockArticulo").value||0);
 
-  const stockMinimo =
-    Number(document.getElementById("stockMinimoArticulo").value || 0);
+const stockMinimo=
+Number(document.getElementById("stockMinimoArticulo").value||0);
 
-  const mensaje =
-    document.getElementById("mensajeArticulo");
+const mensaje=
+document.getElementById("mensajeArticulo");
 
+if(!codigo||!nombre){
 
-  if(!codigo || !nombre){
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'Código y nombre son obligatorios.'+
+'</div>';
 
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      'Código y nombre son obligatorios.' +
-      '</div>';
+return;
 
-    return;
-  }
+}
 
+try{
 
-  try{
+const datos={
+codigo,
+nombre,
+costo,
+precio_publico:precio,
+stock,
+stock_minimo:stockMinimo
+};
 
-    const datos = {
+let respuesta;
 
-      codigo:codigo,
-      nombre:nombre,
-      costo:costo,
-      precio_publico:precio,
-      stock:stock,
-      stock_minimo:stockMinimo
+if(articuloEditando){
 
-    };
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloEditando.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify(datos)
+}
+);
 
+}else{
 
-    let respuesta;
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify(datos)
+}
+);
 
+}
 
-    if(articuloEditando){
+if(!respuesta.ok){
 
-      respuesta = await fetch(
-        SUPABASE_URL +
-        "/rest/v1/articulos?id=eq." +
-        encodeURIComponent(articuloEditando.id),
-        {
-          method:"PATCH",
-          headers:{
-            ...headersSupabase,
-            "Prefer":"return=minimal"
-          },
-          body:JSON.stringify(datos)
-        }
-      );
+const errorTexto=await respuesta.text();
 
-    }else{
+throw new Error(
+errorTexto||
+"No se pudo guardar el artículo."
+);
 
-      respuesta = await fetch(
-        SUPABASE_URL +
-        "/rest/v1/articulos",
-        {
-          method:"POST",
-          headers:{
-            ...headersSupabase,
-            "Prefer":"return=minimal"
-          },
-          body:JSON.stringify(datos)
-        }
-      );
+}
 
-    }
+mensaje.innerHTML=
+'<div class="mensaje-exito">'+
+'✅ Artículo guardado correctamente.'+
+'</div>';
 
+await cargarArticulos();
 
-    if(!respuesta.ok){
+setTimeout(()=>{
+cancelarEdicion();
+},800);
 
-      const errorTexto =
-        await respuesta.text();
+}catch(error){
 
-      throw new Error(
-        errorTexto ||
-        "No se pudo guardar el artículo."
-      );
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'❌ '+escaparHTML(error.message)+
+'</div>';
 
-    }
-
-
-    mensaje.innerHTML =
-      '<div class="mensaje-exito">' +
-      '✅ Artículo guardado correctamente.' +
-      '</div>';
-
-
-    await cargarArticulos();
-
-    setTimeout(() => {
-      cancelarEdicion();
-    },800);
-
-
-  }catch(error){
-
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      '❌ ' + escaparHTML(error.message) +
-      '</div>';
-
-  }
+}
 
 }
 
 
 /* =====================================================
    COMPRAS
-   BÚSQUEDA POR CÓDIGO O NOMBRE
+   AQUÍ ESTÁ LA CORRECCIÓN
 ===================================================== */
 
-function buscarArticuloCompraPorCodigo(){
+const campoCompraCodigo=
+document.getElementById("compraCodigo");
 
-  const codigo =
-    document.getElementById("compraCodigo")
-    .value
-    .trim()
-    .toLowerCase();
+const campoCompraNombre=
+document.getElementById("compraNombre");
 
 
-  articuloCompraSeleccionado = null;
+/*
+Cuando escribimos código:
 
-  document.getElementById("compraNombre").value = "";
-  document.getElementById("resultadoCompra").innerHTML = "";
+- busca el artículo
+- si encuentra UNO, completa nombre
+- pero no bloquea ni vuelve a escribir si el usuario borra
+*/
+
+campoCompraCodigo.addEventListener("input",function(){
+
+const codigo=this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("resultadoCompra").innerHTML="";
 
 
-  if(!codigo) return;
+if(!codigo){
 
-
-  const encontrados =
-    articulos.filter(a =>
-      String(a.codigo || "")
-        .toLowerCase()
-        .includes(codigo)
-    );
-
-
-  if(encontrados.length === 1){
-
-    seleccionarArticuloCompra(encontrados[0]);
-
-  }else if(encontrados.length > 1){
-
-    mostrarOpcionesCompra(encontrados);
-
-  }
+campoCompraNombre.value="";
+return;
 
 }
 
 
-function buscarArticuloCompraPorNombre(){
-
-  const nombre =
-    document.getElementById("compraNombre")
-    .value
-    .trim()
-    .toLowerCase();
+const encontrados=articulos.filter(a=>
+String(a.codigo||"")
+.toLowerCase()
+.includes(codigo)
+);
 
 
-  articuloCompraSeleccionado = null;
+if(encontrados.length===1){
 
-  document.getElementById("compraCodigo").value = "";
-  document.getElementById("resultadoCompra").innerHTML = "";
+const articulo=encontrados[0];
+
+articuloCompraSeleccionado=articulo;
+
+campoCompraNombre.value=articulo.nombre||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo||0;
+
+mostrarInfoCompra(articulo);
+
+}
+
+else if(encontrados.length>1){
+
+mostrarOpcionesCompra(encontrados);
+
+}
+
+});
 
 
-  if(!nombre) return;
+/*
+Cuando escribimos nombre:
+
+- busca el artículo
+- si encuentra UNO, completa código
+- pero permite borrar y volver a escribir
+*/
+
+campoCompraNombre.addEventListener("input",function(){
+
+const nombre=this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("resultadoCompra").innerHTML="";
 
 
-  const encontrados =
-    articulos.filter(a =>
-      String(a.nombre || "")
-        .toLowerCase()
-        .includes(nombre)
-    );
+if(!nombre){
+
+campoCompraCodigo.value="";
+return;
+
+}
 
 
-  if(encontrados.length === 1){
+const encontrados=articulos.filter(a=>
+String(a.nombre||"")
+.toLowerCase()
+.includes(nombre)
+);
 
-    seleccionarArticuloCompra(encontrados[0]);
 
-  }else if(encontrados.length > 1){
+if(encontrados.length===1){
 
-    mostrarOpcionesCompra(encontrados);
+const articulo=encontrados[0];
 
-  }
+articuloCompraSeleccionado=articulo;
+
+campoCompraCodigo.value=articulo.codigo||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo||0;
+
+mostrarInfoCompra(articulo);
+
+}
+
+else if(encontrados.length>1){
+
+mostrarOpcionesCompra(encontrados);
+
+}
+
+});
+
+
+function mostrarInfoCompra(articulo){
+
+document.getElementById("resultadoCompra").innerHTML=`
+
+<div class="info-articulo">
+
+<strong>
+${escaparHTML(articulo.nombre||"")}
+</strong>
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock actual:
+${articulo.stock||0}
+
+<br>
+
+Costo actual:
+$${Number(articulo.costo||0).toFixed(2)}
+
+</div>
+
+`;
 
 }
 
 
 function mostrarOpcionesCompra(lista){
 
-  const resultado =
-    document.getElementById("resultadoCompra");
+const resultado=
+document.getElementById("resultadoCompra");
 
-  resultado.innerHTML =
-    "<strong>Selecciona el artículo:</strong>";
+resultado.innerHTML=
+"<strong>Selecciona el artículo:</strong>";
 
-  lista.slice(0,8).forEach(articulo => {
+lista.slice(0,8).forEach(articulo=>{
 
-    const boton =
-      document.createElement("button");
+const boton=document.createElement("button");
 
-    boton.type = "button";
+boton.type="button";
 
-    boton.style.background = "#e9f0ec";
-    boton.style.color = "#17221b";
-    boton.style.textAlign = "left";
-    boton.style.fontSize = "14px";
+boton.style.background="#e9f0ec";
+boton.style.color="#17221b";
+boton.style.textAlign="left";
+boton.style.fontSize="14px";
 
-    boton.innerHTML =
-      escaparHTML(articulo.codigo || "") +
-      " — " +
-      escaparHTML(articulo.nombre || "");
+boton.innerHTML=
+escaparHTML(articulo.codigo||"")+
+" — "+
+escaparHTML(articulo.nombre||"");
 
-    boton.onclick = function(){
+boton.onclick=function(){
 
-      seleccionarArticuloCompra(articulo);
+seleccionarArticuloCompra(articulo);
 
-    };
+};
 
-    resultado.appendChild(boton);
+resultado.appendChild(boton);
 
-  });
+});
 
 }
 
 
 function seleccionarArticuloCompra(articulo){
 
-  articuloCompraSeleccionado = articulo;
+articuloCompraSeleccionado=articulo;
 
+campoCompraCodigo.value=
+articulo.codigo||"";
 
-  document.getElementById("compraCodigo").value =
-    articulo.codigo || "";
+campoCompraNombre.value=
+articulo.nombre||"";
 
-  document.getElementById("compraNombre").value =
-    articulo.nombre || "";
+document.getElementById("compraCosto").value=
+articulo.costo||0;
 
-  document.getElementById("compraCosto").value =
-    articulo.costo || 0;
-
-
-  document.getElementById("resultadoCompra").innerHTML = `
-
-    <div class="info-articulo">
-
-      <strong>
-        ${escaparHTML(articulo.nombre || "")}
-      </strong>
-
-      <br>
-
-      Código:
-      ${escaparHTML(articulo.codigo || "")}
-
-      <br>
-
-      Stock actual:
-      ${articulo.stock || 0}
-
-      <br>
-
-      Costo actual:
-      $${Number(articulo.costo || 0).toFixed(2)}
-
-    </div>
-
-  `;
+mostrarInfoCompra(articulo);
 
 }
 
 
-/* =====================================================
-   REGISTRAR COMPRA
-===================================================== */
+/* ================= REGISTRAR COMPRA ================= */
 
 async function registrarCompra(){
 
-  const codigo =
-    document.getElementById("compraCodigo")
-    .value
-    .trim();
+const codigo=
+document.getElementById("compraCodigo")
+.value.trim();
 
-  const cantidad =
-    Number(
-      document.getElementById("compraCantidad")
-      .value || 0
-    );
+const cantidad=
+Number(
+document.getElementById("compraCantidad")
+.value||0
+);
 
-  const costo =
-    Number(
-      document.getElementById("compraCosto")
-      .value || 0
-    );
+const costo=
+Number(
+document.getElementById("compraCosto")
+.value||0
+);
 
-  const mensaje =
-    document.getElementById("mensajeCompra");
+const mensaje=
+document.getElementById("mensajeCompra");
 
+mensaje.innerHTML="";
 
-  mensaje.innerHTML = "";
 
+if(!codigo){
 
-  if(!codigo){
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'Escribe o selecciona un artículo.'+
+'</div>';
 
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      'Escribe o selecciona un artículo.' +
-      '</div>';
+return;
 
-    return;
-  }
+}
 
+if(cantidad<=0){
 
-  if(cantidad <= 0){
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'La cantidad debe ser mayor que 0.'+
+'</div>';
 
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      'La cantidad debe ser mayor que 0.' +
-      '</div>';
+return;
 
-    return;
-  }
+}
 
+if(costo<0){
 
-  if(costo < 0){
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'El costo no puede ser negativo.'+
+'</div>';
 
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      'El costo no puede ser negativo.' +
-      '</div>';
-
-    return;
-  }
-
-
-  try{
-
-    let articulo =
-      articuloCompraSeleccionado;
-
-
-    if(!articulo){
-
-      const respuestaBusqueda =
-        await fetch(
-          SUPABASE_URL +
-          "/rest/v1/articulos?codigo=eq." +
-          encodeURIComponent(codigo) +
-          "&select=*",
-          {
-            headers:headersSupabase
-          }
-        );
-
-
-      if(!respuestaBusqueda.ok){
-
-        throw new Error(
-          "No se pudo buscar el artículo."
-        );
-
-      }
-
-
-      const resultados =
-        await respuestaBusqueda.json();
-
-
-      if(resultados.length === 0){
-
-        throw new Error(
-          "No existe un artículo con ese código."
-        );
-
-      }
-
-
-      articulo = resultados[0];
-
-    }
-
-
-    const nuevoStock =
-      Number(articulo.stock || 0) +
-      cantidad;
-
-
-    const respuesta =
-      await fetch(
-
-        SUPABASE_URL +
-        "/rest/v1/articulos?id=eq." +
-        encodeURIComponent(articulo.id),
-
-        {
-          method:"PATCH",
-
-          headers:{
-            ...headersSupabase,
-            "Prefer":"return=minimal"
-          },
-
-          body:JSON.stringify({
-
-            stock:nuevoStock,
-            costo:costo
-
-          })
-        }
-
-      );
-
-
-    if(!respuesta.ok){
-
-      const texto =
-        await respuesta.text();
-
-      throw new Error(
-        texto ||
-        "No se pudo actualizar el inventario."
-      );
-
-    }
-
-
-    mensaje.innerHTML = `
-
-      <div class="mensaje-exito">
-
-        ✅ Compra registrada correctamente.
-
-        <br><br>
-
-        <strong>
-          ${escaparHTML(articulo.nombre || "")}
-        </strong>
-
-        <br>
-
-        Cantidad recibida:
-        ${cantidad}
-
-        <br>
-
-        Stock anterior:
-        ${Number(articulo.stock || 0)}
-
-        <br>
-
-        Nuevo stock:
-        ${nuevoStock}
-
-        <br>
-
-        Costo:
-        $${costo.toFixed(2)}
-
-      </div>
-
-    `;
-
-
-    document.getElementById("compraCantidad").value = "";
-
-    articuloCompraSeleccionado = null;
-
-    await cargarArticulos();
-
-
-  }catch(error){
-
-    mensaje.innerHTML =
-      '<div class="mensaje-error">' +
-      '❌ ' +
-      escaparHTML(error.message) +
-      '</div>';
-
-  }
+return;
 
 }
 
 
-/* =====================================================
-   SEGURIDAD HTML
-===================================================== */
+try{
+
+let articulo=articuloCompraSeleccionado;
+
+
+if(!articulo){
+
+const respuestaBusqueda=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?codigo=eq."+
+encodeURIComponent(codigo)+
+"&select=*",
+{
+headers:headersSupabase
+}
+);
+
+if(!respuestaBusqueda.ok){
+
+throw new Error(
+"No se pudo buscar el artículo."
+);
+
+}
+
+const resultados=
+await respuestaBusqueda.json();
+
+if(resultados.length===0){
+
+throw new Error(
+"No existe un artículo con ese código."
+);
+
+}
+
+articulo=resultados[0];
+
+}
+
+
+const nuevoStock=
+Number(articulo.stock||0)+cantidad;
+
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:nuevoStock,
+costo:costo
+
+})
+
+}
+
+);
+
+
+if(!respuesta.ok){
+
+const texto=await respuesta.text();
+
+throw new Error(
+texto||
+"No se pudo actualizar el inventario."
+);
+
+}
+
+
+mensaje.innerHTML=`
+
+<div class="mensaje-exito">
+
+✅ Compra registrada correctamente.
+
+<br><br>
+
+<strong>
+${escaparHTML(articulo.nombre||"")}
+</strong>
+
+<br>
+
+Cantidad recibida:
+${cantidad}
+
+<br>
+
+Stock anterior:
+${Number(articulo.stock||0)}
+
+<br>
+
+Nuevo stock:
+${nuevoStock}
+
+<br>
+
+Costo:
+$${costo.toFixed(2)}
+
+</div>
+
+`;
+
+
+document.getElementById("compraCodigo").value="";
+document.getElementById("compraNombre").value="";
+document.getElementById("compraCantidad").value="";
+document.getElementById("compraCosto").value="";
+
+document.getElementById("resultadoCompra").innerHTML="";
+
+articuloCompraSeleccionado=null;
+
+await cargarArticulos();
+
+
+}catch(error){
+
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'❌ '+escaparHTML(error.message)+
+'</div>';
+
+}
+
+}
+
+
+/* ================= SEGURIDAD ================= */
 
 function escaparHTML(valor){
 
-  return String(valor ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+return String(valor??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
 
 }
 
 
-/* =====================================================
-   INICIO
-===================================================== */
+/* ================= INICIO ================= */
 
 comprobarConexion();
 cargarArticulos();
