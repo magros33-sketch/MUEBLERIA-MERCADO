@@ -7,29 +7,159 @@
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f7f5;color:#17221b}
-header{background:#123b2a;color:#fff;padding:18px;text-align:center}
-header h1{margin:0;font-size:23px}
-header p{margin:5px 0 0;font-size:14px}
-#conexion{margin:12px;padding:10px;border-radius:8px;background:#fff;text-align:center;font-size:14px}
-main{padding:14px;max-width:700px;margin:auto}
-button{width:100%;border:0;border-radius:10px;padding:14px;margin:6px 0;font-size:16px;cursor:pointer;background:#123b2a;color:#fff}
-button.secundario{background:#777}
-button.editar{background:#245c44;font-size:14px;padding:10px}
-.menu button{margin-bottom:9px}
-.pantalla{display:none}
-.pantalla.activa{display:block}
-.tarjeta{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
-input,select,textarea{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
-textarea{min-height:80px;resize:vertical}
-label{display:block;font-weight:bold;margin-top:8px}
-.mensaje-exito{background:#dff5e5;color:#17652e;padding:12px;border-radius:8px;margin:10px 0}
-.mensaje-error{background:#ffe2e2;color:#a00000;padding:12px;border-radius:8px;margin:10px 0}
-.info-articulo{background:#eef5f1;border-radius:8px;padding:12px;margin:8px 0}
-.resumen-compra{background:#f0f4f1;border-radius:10px;padding:14px;margin-top:10px}
-.total-compra{font-size:22px;font-weight:bold;text-align:right;margin-top:10px}
-.oculto{display:none}
-h2{margin-top:5px}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7f5;
+  color:#17221b;
+}
+
+header{
+  background:#123b2a;
+  color:#fff;
+  padding:18px;
+  text-align:center;
+}
+
+header h1{
+  margin:0;
+  font-size:23px;
+}
+
+header p{
+  margin:5px 0 0;
+  font-size:14px;
+}
+
+#conexion{
+  margin:12px;
+  padding:10px;
+  border-radius:8px;
+  background:#fff;
+  text-align:center;
+  font-size:14px;
+}
+
+main{
+  padding:14px;
+  max-width:700px;
+  margin:auto;
+}
+
+button{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:14px;
+  margin:6px 0;
+  font-size:16px;
+  cursor:pointer;
+  background:#123b2a;
+  color:#fff;
+}
+
+button.secundario{
+  background:#777;
+}
+
+button.editar{
+  background:#245c44;
+  font-size:14px;
+  padding:10px;
+}
+
+.menu button{
+  margin-bottom:9px;
+}
+
+.pantalla{
+  display:none;
+}
+
+.pantalla.activa{
+  display:block;
+}
+
+.tarjeta{
+  background:#fff;
+  border-radius:12px;
+  padding:15px;
+  margin:10px 0;
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
+}
+
+input,select,textarea{
+  width:100%;
+  padding:13px;
+  margin:6px 0 10px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  font-size:16px;
+}
+
+textarea{
+  min-height:80px;
+  resize:vertical;
+}
+
+label{
+  display:block;
+  font-weight:bold;
+  margin-top:8px;
+}
+
+.mensaje-exito{
+  background:#dff5e5;
+  color:#17652e;
+  padding:12px;
+  border-radius:8px;
+  margin:10px 0;
+}
+
+.mensaje-error{
+  background:#ffe2e2;
+  color:#a00000;
+  padding:12px;
+  border-radius:8px;
+  margin:10px 0;
+}
+
+.info-articulo{
+  background:#eef5f1;
+  border-radius:8px;
+  padding:12px;
+  margin:8px 0;
+}
+
+.opcion-articulo{
+  background:#e9f0ec;
+  color:#17221b;
+  text-align:left;
+  font-size:14px;
+}
+
+.resumen-compra{
+  background:#f0f4f1;
+  border-radius:10px;
+  padding:14px;
+  margin-top:10px;
+}
+
+.total-compra{
+  font-size:22px;
+  font-weight:bold;
+  text-align:right;
+  margin-top:10px;
+}
+
+.oculto{
+  display:none;
+}
+
+h2{
+  margin-top:5px;
+}
 </style>
 </head>
 
@@ -40,7 +170,9 @@ h2{margin-top:5px}
 <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">Conectando con la base de datos...</div>
+<div id="conexion">
+Conectando con la base de datos...
+</div>
 
 <main>
 
@@ -179,7 +311,7 @@ type="date"
 <input
 id="compraCodigo"
 type="text"
-placeholder="Escribe el código"
+placeholder="Escribe código"
 autocomplete="off"
 >
 
@@ -188,7 +320,7 @@ autocomplete="off"
 <input
 id="compraNombre"
 type="text"
-placeholder="O escribe el nombre"
+placeholder="Escribe nombre"
 autocomplete="off"
 >
 
@@ -224,7 +356,8 @@ $0.00
 </div>
 
 <div class="total-compra">
-Total: <span id="totalCompra">$0.00</span>
+Total:
+<span id="totalCompra">$0.00</span>
 </div>
 
 </div>
@@ -357,13 +490,13 @@ Próximamente: administración y ganancias.
 SUPABASE
 ===================================================== */
 
-const SUPABASE_URL =
+const SUPABASE_URL=
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
-const SUPABASE_KEY =
+const SUPABASE_KEY=
 "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
-const headersSupabase = {
+const headersSupabase={
 "apikey":SUPABASE_KEY,
 "Authorization":"Bearer "+SUPABASE_KEY,
 "Content-Type":"application/json"
@@ -456,7 +589,11 @@ SUPABASE_URL+
 );
 
 if(!respuesta.ok){
-throw new Error("No se pudieron cargar los artículos.");
+
+throw new Error(
+"No se pudieron cargar los artículos."
+);
+
 }
 
 articulos=await respuesta.json();
@@ -549,22 +686,17 @@ function filtrarArticulos(){
 
 const texto=
 document.getElementById("buscarArticulo")
-.value
-.toLowerCase()
+.value.toLowerCase()
 .trim();
 
 const filtrados=articulos.filter(a=>
-
 String(a.codigo||"")
 .toLowerCase()
 .includes(texto)
-
 ||
-
 String(a.nombre||"")
 .toLowerCase()
 .includes(texto)
-
 );
 
 mostrarArticulos(filtrados);
@@ -576,11 +708,11 @@ function mostrarFormularioArticulo(){
 
 articuloEditando=null;
 
-document.getElementById("tituloFormulario").textContent=
-"Nuevo artículo";
+document.getElementById("tituloFormulario")
+.textContent="Nuevo artículo";
 
-document.getElementById("botonGuardarArticulo").textContent=
-"💾 Guardar artículo";
+document.getElementById("botonGuardarArticulo")
+.textContent="💾 Guardar artículo";
 
 document.getElementById("formArticulo")
 .classList.remove("oculto");
@@ -624,11 +756,11 @@ if(!articulo)return;
 
 articuloEditando=articulo;
 
-document.getElementById("tituloFormulario").textContent=
-"Editar artículo";
+document.getElementById("tituloFormulario")
+.textContent="Editar artículo";
 
-document.getElementById("botonGuardarArticulo").textContent=
-"💾 Guardar cambios";
+document.getElementById("botonGuardarArticulo")
+.textContent="💾 Guardar cambios";
 
 document.getElementById("codigoArticulo").value=
 articulo.codigo||"";
@@ -720,729 +852,4 @@ if(articuloEditando){
 
 respuesta=await fetch(
 SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(articuloEditando.id),
-{
-method:"PATCH",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify(datos)
-}
-);
-
-}else{
-
-respuesta=await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos",
-{
-method:"POST",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify(datos)
-}
-);
-
-}
-
-if(!respuesta.ok){
-
-const errorTexto=
-await respuesta.text();
-
-throw new Error(
-errorTexto||
-"No se pudo guardar el artículo."
-);
-
-}
-
-mensaje.innerHTML=
-'<div class="mensaje-exito">'+
-'✅ Artículo guardado correctamente.'+
-'</div>';
-
-await cargarArticulos();
-
-setTimeout(()=>{
-cancelarEdicion();
-},800);
-
-}catch(error){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'❌ '+escaparHTML(error.message)+
-'</div>';
-
-}
-
-}
-
-
-/* =====================================================
-PROVEEDORES
-===================================================== */
-
-async function cargarProveedores(){
-
-const selector=
-document.getElementById("compraProveedor");
-
-try{
-
-const respuesta=await fetch(
-
-SUPABASE_URL+
-"/rest/v1/proveedores?select=id,nombre&activo=eq.true&order=nombre.asc",
-
-{
-headers:headersSupabase
-}
-
-);
-
-if(!respuesta.ok){
-
-throw new Error("No se pudieron cargar los proveedores.");
-
-}
-
-proveedores=await respuesta.json();
-
-selector.innerHTML=
-'<option value="">Seleccionar proveedor</option>';
-
-proveedores.forEach(proveedor=>{
-
-const opcion=document.createElement("option");
-
-opcion.value=proveedor.id;
-
-opcion.textContent=proveedor.nombre;
-
-selector.appendChild(opcion);
-
-});
-
-}catch(error){
-
-selector.innerHTML=
-'<option value="">No se pudieron cargar proveedores</option>';
-
-}
-
-}
-
-
-/* =====================================================
-FECHA
-===================================================== */
-
-function prepararFechaCompra(){
-
-const campo=
-document.getElementById("compraFecha");
-
-if(!campo.value){
-
-const hoy=new Date();
-
-const fechaLocal=
-hoy.getFullYear()+"-"+
-String(hoy.getMonth()+1).padStart(2,"0")+"-"+
-String(hoy.getDate()).padStart(2,"0");
-
-campo.value=fechaLocal;
-
-}
-
-}
-
-
-/* =====================================================
-BÚSQUEDA DE ARTÍCULO EN COMPRAS
-===================================================== */
-
-document
-.getElementById("compraCodigo")
-.addEventListener("input",function(){
-
-const codigo=
-this.value.trim().toLowerCase();
-
-articuloCompraSeleccionado=null;
-
-document.getElementById("resultadoCompra")
-.innerHTML="";
-
-if(!codigo){
-
-document.getElementById("compraNombre").value="";
-document.getElementById("compraCosto").value="";
-
-calcularSubtotalCompra();
-
-return;
-
-}
-
-const encontrados=articulos.filter(a=>
-
-String(a.codigo||"")
-.toLowerCase()
-.includes(codigo)
-
-);
-
-if(encontrados.length===1){
-
-seleccionarArticuloCompra(encontrados[0]);
-
-}
-
-else if(encontrados.length>1){
-
-mostrarOpcionesCompra(encontrados);
-
-}
-
-});
-
-
-document
-.getElementById("compraNombre")
-.addEventListener("input",function(){
-
-const nombre=
-this.value.trim().toLowerCase();
-
-articuloCompraSeleccionado=null;
-
-document.getElementById("resultadoCompra")
-.innerHTML="";
-
-if(!nombre){
-
-document.getElementById("compraCodigo").value="";
-document.getElementById("compraCosto").value="";
-
-calcularSubtotalCompra();
-
-return;
-
-}
-
-const encontrados=articulos.filter(a=>
-
-String(a.nombre||"")
-.toLowerCase()
-.includes(nombre)
-
-);
-
-if(encontrados.length===1){
-
-seleccionarArticuloCompra(encontrados[0]);
-
-}
-
-else if(encontrados.length>1){
-
-mostrarOpcionesCompra(encontrados);
-
-}
-
-});
-
-
-function seleccionarArticuloCompra(articulo){
-
-articuloCompraSeleccionado=articulo;
-
-document.getElementById("compraCodigo").value=
-articulo.codigo||"";
-
-document.getElementById("compraNombre").value=
-articulo.nombre||"";
-
-document.getElementById("compraCosto").value=
-articulo.costo||0;
-
-mostrarInfoCompra(articulo);
-
-calcularSubtotalCompra();
-
-}
-
-
-function mostrarInfoCompra(articulo){
-
-document.getElementById("resultadoCompra").innerHTML=`
-
-<div class="info-articulo">
-
-<strong>
-${escaparHTML(articulo.nombre||"")}
-</strong>
-
-<br>
-
-Código:
-${escaparHTML(articulo.codigo||"")}
-
-<br>
-
-Stock actual:
-${articulo.stock||0}
-
-<br>
-
-Costo actual:
-$${Number(articulo.costo||0).toFixed(2)}
-
-</div>
-
-`;
-
-}
-
-
-function mostrarOpcionesCompra(lista){
-
-const resultado=
-document.getElementById("resultadoCompra");
-
-resultado.innerHTML=
-"<strong>Selecciona el artículo:</strong>";
-
-lista.slice(0,8).forEach(articulo=>{
-
-const boton=document.createElement("button");
-
-boton.type="button";
-
-boton.style.background="#e9f0ec";
-boton.style.color="#17221b";
-boton.style.textAlign="left";
-boton.style.fontSize="14px";
-
-boton.innerHTML=
-escaparHTML(articulo.codigo||"")+
-" — "+
-escaparHTML(articulo.nombre||"");
-
-boton.onclick=function(){
-
-seleccionarArticuloCompra(articulo);
-
-};
-
-resultado.appendChild(boton);
-
-});
-
-}
-
-
-/* =====================================================
-SUBTOTAL
-===================================================== */
-
-function calcularSubtotalCompra(){
-
-const cantidad=
-Number(
-document.getElementById("compraCantidad").value||0
-);
-
-const costo=
-Number(
-document.getElementById("compraCosto").value||0
-);
-
-const subtotal=cantidad*costo;
-
-document.getElementById("subtotalCompra")
-.textContent=
-"$"+subtotal.toFixed(2);
-
-document.getElementById("totalCompra")
-.textContent=
-"$"+subtotal.toFixed(2);
-
-return subtotal;
-
-}
-
-
-/* =====================================================
-REGISTRAR COMPRA COMPLETA
-===================================================== */
-
-async function registrarCompraCompleta(){
-
-const mensaje=
-document.getElementById("mensajeCompra");
-
-mensaje.innerHTML="";
-
-
-const proveedorId=
-document.getElementById("compraProveedor").value;
-
-const fecha=
-document.getElementById("compraFecha").value;
-
-const cantidad=
-Number(
-document.getElementById("compraCantidad").value||0
-);
-
-const costo=
-Number(
-document.getElementById("compraCosto").value||0
-);
-
-const notas=
-document.getElementById("compraNotas").value.trim();
-
-
-if(!proveedorId){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'Selecciona un proveedor.'+
-'</div>';
-
-return;
-
-}
-
-
-if(!fecha){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'Selecciona una fecha.'+
-'</div>';
-
-return;
-
-}
-
-
-if(!articuloCompraSeleccionado){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'Selecciona un artículo.'+
-'</div>';
-
-return;
-
-}
-
-
-if(cantidad<=0){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'La cantidad debe ser mayor que 0.'+
-'</div>';
-
-return;
-
-}
-
-
-if(costo<0){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'El costo no puede ser negativo.'+
-'</div>';
-
-return;
-
-}
-
-
-const subtotal=
-calcularSubtotalCompra();
-
-
-try{
-
-
-/* =========================
-1. CREAR COMPRA
-========================= */
-
-const respuestaCompra=await fetch(
-
-SUPABASE_URL+
-"/rest/v1/compras",
-
-{
-method:"POST",
-
-headers:{
-...headersSupabase,
-"Prefer":"return=representation"
-},
-
-body:JSON.stringify({
-
-id_proveedor:proveedorId,
-fecha:fecha,
-total:subtotal,
-estado:"completada",
-notas:notas||null
-
-})
-
-}
-
-);
-
-
-if(!respuestaCompra.ok){
-
-const texto=
-await respuestaCompra.text();
-
-throw new Error(
-texto||
-"No se pudo guardar la compra."
-);
-
-}
-
-
-const comprasGuardadas=
-await respuestaCompra.json();
-
-
-if(!comprasGuardadas.length){
-
-throw new Error(
-"No se recibió el ID de la compra."
-);
-
-}
-
-
-const idCompra=
-comprasGuardadas[0].id;
-
-
-/* =========================
-2. CREAR DETALLE
-========================= */
-
-const respuestaDetalle=await fetch(
-
-SUPABASE_URL+
-"/rest/v1/compra_detalles",
-
-{
-method:"POST",
-
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-
-body:JSON.stringify({
-
-id_compra:idCompra,
-id_articulo:articuloCompraSeleccionado.id,
-cantidad:cantidad,
-costo:costo,
-subtotal:subtotal
-
-})
-
-}
-
-);
-
-
-if(!respuestaDetalle.ok){
-
-const texto=
-await respuestaDetalle.text();
-
-throw new Error(
-texto||
-"No se pudo guardar el detalle de la compra."
-);
-
-}
-
-
-/* =========================
-3. ACTUALIZAR STOCK
-========================= */
-
-const stockAnterior=
-Number(
-articuloCompraSeleccionado.stock||0
-);
-
-const nuevoStock=
-stockAnterior+cantidad;
-
-
-const respuestaStock=await fetch(
-
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(
-articuloCompraSeleccionado.id
-),
-
-{
-method:"PATCH",
-
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-
-body:JSON.stringify({
-
-stock:nuevoStock,
-costo:costo
-
-})
-
-}
-
-);
-
-
-if(!respuestaStock.ok){
-
-const texto=
-await respuestaStock.text();
-
-throw new Error(
-texto||
-"La compra se guardó, pero no se pudo actualizar el stock."
-);
-
-}
-
-
-/* =========================
-4. MOSTRAR ÉXITO
-========================= */
-
-mensaje.innerHTML=`
-
-<div class="mensaje-exito">
-
-✅ <strong>Compra registrada correctamente.</strong>
-
-<br><br>
-
-Artículo:
-<strong>
-${escaparHTML(
-articuloCompraSeleccionado.nombre||""
-)}
-</strong>
-
-<br>
-
-Cantidad:
-${cantidad}
-
-<br>
-
-Costo:
-$${costo.toFixed(2)}
-
-<br>
-
-Subtotal:
-$${subtotal.toFixed(2)}
-
-<br>
-
-Nuevo stock:
-${nuevoStock}
-
-</div>
-
-`;
-
-
-/* =========================
-5. LIMPIAR
-========================= */
-
-document.getElementById("compraCodigo").value="";
-document.getElementById("compraNombre").value="";
-document.getElementById("compraCantidad").value="";
-document.getElementById("compraCosto").value="";
-document.getElementById("compraNotas").value="";
-
-document.getElementById("resultadoCompra").innerHTML="";
-
-document.getElementById("subtotalCompra")
-.textContent="$0.00";
-
-document.getElementById("totalCompra")
-.textContent="$0.00";
-
-articuloCompraSeleccionado=null;
-
-await cargarArticulos();
-
-
-}catch(error){
-
-mensaje.innerHTML=
-'<div class="mensaje-error">'+
-'❌ '+escaparHTML(error.message)+
-'</div>';
-
-}
-
-}
-
-
-/* =====================================================
-SEGURIDAD HTML
-===================================================== */
-
-function escaparHTML(valor){
-
-return String(valor??"")
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#039;");
-
-}
-
-
-/* =====================================================
-INICIO
-===================================================== */
-
-comprobarConexion();
-cargarArticulos();
-
-</script>
-
-</body>
-</html>
+"/rest/v1/articulos?id=
