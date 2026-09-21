@@ -241,7 +241,8 @@ Conectando con la base de datos...
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -311,13 +312,15 @@ type="number"
 
 <button
 id="botonGuardarArticulo"
-onclick="guardarArticulo()">
+onclick="guardarArticulo()"
+>
 💾 Guardar artículo
 </button>
 
 <button
 class="secundario"
-onclick="cancelarEdicion()">
+onclick="cancelarEdicion()"
+>
 Cancelar
 </button>
 
@@ -336,7 +339,8 @@ Cancelar
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -408,7 +412,8 @@ placeholder="Ejemplo: 3500"
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -425,7 +430,8 @@ Próximamente: registro de ventas y apartados.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -442,7 +448,8 @@ Próximamente: clientes.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -459,7 +466,8 @@ Próximamente: proveedores.
 
 <button
 class="secundario"
-onclick="mostrarPantalla('inicio')">
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -476,4 +484,63 @@ Próximamente: gastos.
 
 <button
 class="secundario"
-onclick="mostrarPantalla
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
+<h2>📊 Reportes</h2>
+
+<div class="tarjeta">
+Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
+</div>
+
+</section>
+
+
+<section id="administracion" class="pantalla">
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
+<h2>⚙️ Administración</h2>
+
+<div class="tarjeta">
+Próximamente: administración y ganancias.
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+/* =====================================================
+   SUPABASE
+   ===================================================== */
+
+const SUPABASE_URL =
+"https://ggaqknpwlohpbyxeyque.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+const headersSupabase = {
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json"
+};
+
+
+/* =====================================================
+   VARIABLES
+   ===================================================== */
+
+let articulos=[];
+let articuloEditando=null;
+let articuloCompraSeleccionado
