@@ -112,6 +112,10 @@ font-size:16px;
 background:#fff
 }
 
+input[readonly]{
+background:#f1f1f1
+}
+
 label{
 display:block;
 font-weight:bold;
@@ -436,13 +440,22 @@ onclick="mostrarPantalla('inicio')"
 
 <h3>Registrar venta</h3>
 
+<label>Fecha de la venta</label>
+
+<input
+id="fechaVenta"
+type="text"
+readonly
+>
+
 <div class="ayuda">
-Busca el artículo por código o nombre.
+La fecha y hora se guardan automáticamente.
 </div>
 
 <label>Tipo de cliente</label>
 
 <select id="ventaTipoCliente">
+
 <option value="publico_general">
 Público en general
 </option>
@@ -450,6 +463,7 @@ Público en general
 <option value="cliente">
 Cliente
 </option>
+
 </select>
 
 <div id="campoClienteVenta" class="oculto">
@@ -718,6 +732,7 @@ cargarArticulos();
 
 if(id==="ventas"){
 cargarArticulos();
+actualizarFechaVenta();
 }
 
 }
@@ -1864,6 +1879,36 @@ document.getElementById("ventaNombre");
 
 
 /* =====================================================
+   FECHA DE VENTA
+   ===================================================== */
+
+function actualizarFechaVenta(){
+
+const ahora=new Date();
+
+const dia=
+String(ahora.getDate()).padStart(2,"0");
+
+const mes=
+String(ahora.getMonth()+1).padStart(2,"0");
+
+const anio=
+ahora.getFullYear();
+
+const campo=
+document.getElementById("fechaVenta");
+
+if(campo){
+
+campo.value=
+dia+"/"+mes+"/"+anio;
+
+}
+
+}
+
+
+/* =====================================================
    TIPO DE CLIENTE
    ===================================================== */
 
@@ -1921,8 +1966,6 @@ return;
 }
 
 
-/* Código exacto */
-
 const exacto=
 articulos.find(function(a){
 
@@ -1939,8 +1982,6 @@ return;
 
 }
 
-
-/* Coincidencias */
 
 const encontrados=
 articulos.filter(function(a){
@@ -1999,8 +2040,6 @@ return;
 }
 
 
-/* Nombre exacto */
-
 const exacto=
 articulos.find(function(a){
 
@@ -2017,8 +2056,6 @@ return;
 
 }
 
-
-/* Coincidencias */
 
 const encontrados=
 articulos.filter(function(a){
@@ -2393,6 +2430,14 @@ const nuevoStock=
 stockActual-cantidad;
 
 
+/* =====================================================
+   FECHA Y HORA EXACTAS
+   ===================================================== */
+
+const fechaHoraVenta=
+new Date().toISOString();
+
+
 try{
 
 
@@ -2414,18 +2459,18 @@ headers:{
 
 body:JSON.stringify({
 
-id_cliente:
+"cliente id":
 tipoCliente==="cliente"
 ?cliente
 :null,
 
 fecha:
-new Date().toISOString(),
+fechaHoraVenta,
 
-tipo_cliente:
+"tipo cliente":
 tipoCliente,
 
-metodo_pago:
+"método pago":
 metodoPago,
 
 total:
@@ -2513,7 +2558,7 @@ headers:{
 
 body:JSON.stringify({
 
-id_venta:
+"id venta":
 ventaGuardada.id,
 
 articulo:
@@ -2522,7 +2567,7 @@ articulo.id,
 cantidad:
 cantidad,
 
-precio_unitario:
+"precio unitario":
 precio,
 
 subtotal:
@@ -2625,6 +2670,8 @@ return;
    ÉXITO
    ===================================================== */
 
+actualizarFechaVenta();
+
 mensaje.innerHTML=
 `
 <div class="mensaje-exito">
@@ -2634,6 +2681,11 @@ mensaje.innerHTML=
 </strong>
 
 <br><br>
+
+Fecha:
+${document.getElementById("fechaVenta").value}
+
+<br>
 
 Artículo:
 ${escaparHTML(articulo.nombre||"")}
@@ -2740,6 +2792,8 @@ return String(texto)
 /* =====================================================
    INICIAR
    ===================================================== */
+
+actualizarFechaVenta();
 
 comprobarConexion();
 
