@@ -7,34 +7,179 @@
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f7f5;color:#17221b}
-header{background:#123b2a;color:#fff;padding:18px;text-align:center}
-header h1{margin:0;font-size:23px}
-header p{margin:5px 0 0;font-size:14px}
-#conexion{margin:12px;padding:10px;border-radius:8px;background:#fff;text-align:center;font-size:14px}
-main{padding:14px;max-width:700px;margin:auto}
-button{width:100%;border:0;border-radius:10px;padding:14px;margin:6px 0;font-size:16px;cursor:pointer;background:#123b2a;color:#fff}
-button.secundario{background:#777}
-button.editar{background:#245c44;font-size:14px;padding:10px}
-button.eliminar{background:#a00000;font-size:14px;padding:10px}
-button.opcion{background:#eef5f1;color:#17221b;text-align:left;border:1px solid #d0ddd5}
-.menu button{margin-bottom:9px}
-.pantalla{display:none}
-.pantalla.activa{display:block}
-.tarjeta{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
-input{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
-label{display:block;font-weight:bold;margin-top:8px}
-.mensaje-exito{background:#dff5e5;color:#17652e;padding:12px;border-radius:8px;margin:10px 0}
-.mensaje-error{background:#ffe2e2;color:#a00000;padding:12px;border-radius:8px;margin:10px 0}
-.info-articulo{background:#eef5f1;border-radius:8px;padding:12px;margin:8px 0}
-.oculto{display:none}
-h2{margin-top:5px}
-.articulo{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
-.articulo strong{font-size:18px}
-.dato{margin:5px 0}
-.separador{height:1px;background:#ddd;margin:12px 0}
-.estado-ok{color:#17652e;font-weight:bold}
-.ayuda{font-size:13px;color:#666;margin:3px 0 10px}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f4f7f5;
+color:#17221b
+}
+
+header{
+background:#123b2a;
+color:#fff;
+padding:18px;
+text-align:center
+}
+
+header h1{
+margin:0;
+font-size:23px
+}
+
+header p{
+margin:5px 0 0;
+font-size:14px
+}
+
+#conexion{
+margin:12px;
+padding:10px;
+border-radius:8px;
+background:#fff;
+text-align:center;
+font-size:14px
+}
+
+main{
+padding:14px;
+max-width:700px;
+margin:auto
+}
+
+button{
+width:100%;
+border:0;
+border-radius:10px;
+padding:14px;
+margin:6px 0;
+font-size:16px;
+cursor:pointer;
+background:#123b2a;
+color:#fff
+}
+
+button.secundario{
+background:#777
+}
+
+button.editar{
+background:#245c44;
+font-size:14px;
+padding:10px
+}
+
+button.eliminar{
+background:#a00000;
+font-size:14px;
+padding:10px
+}
+
+button.opcion{
+background:#eef5f1;
+color:#17221b;
+text-align:left;
+border:1px solid #d0ddd5
+}
+
+.menu button{
+margin-bottom:9px
+}
+
+.pantalla{
+display:none
+}
+
+.pantalla.activa{
+display:block
+}
+
+.tarjeta{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:10px 0;
+box-shadow:0 2px 7px rgba(0,0,0,.08)
+}
+
+input{
+width:100%;
+padding:13px;
+margin:6px 0 10px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:16px
+}
+
+label{
+display:block;
+font-weight:bold;
+margin-top:8px
+}
+
+.mensaje-exito{
+background:#dff5e5;
+color:#17652e;
+padding:12px;
+border-radius:8px;
+margin:10px 0
+}
+
+.mensaje-error{
+background:#ffe2e2;
+color:#a00000;
+padding:12px;
+border-radius:8px;
+margin:10px 0
+}
+
+.info-articulo{
+background:#eef5f1;
+border-radius:8px;
+padding:12px;
+margin:8px 0
+}
+
+.oculto{
+display:none
+}
+
+h2{
+margin-top:5px
+}
+
+.articulo{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:10px 0;
+box-shadow:0 2px 7px rgba(0,0,0,.08)
+}
+
+.articulo strong{
+font-size:18px
+}
+
+.dato{
+margin:5px 0
+}
+
+.separador{
+height:1px;
+background:#ddd;
+margin:12px 0
+}
+
+.estado-ok{
+color:#17652e;
+font-weight:bold
+}
+
+.ayuda{
+font-size:13px;
+color:#666;
+margin:3px 0 10px
+}
 </style>
 </head>
 
@@ -45,7 +190,9 @@ h2{margin-top:5px}
 <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">Conectando con la base de datos...</div>
+<div id="conexion">
+Conectando con la base de datos...
+</div>
 
 <main>
 
@@ -53,26 +200,57 @@ h2{margin-top:5px}
 
 <div class="menu">
 
-<button onclick="mostrarPantalla('inventario')">📦 Inventario</button>
-<button onclick="mostrarPantalla('ventas')">💰 Ventas</button>
-<button onclick="mostrarPantalla('compras')">🛒 Compras</button>
-<button onclick="mostrarPantalla('clientes')">👥 Clientes</button>
-<button onclick="mostrarPantalla('proveedores')">🚚 Proveedores</button>
-<button onclick="mostrarPantalla('gastos')">💸 Gastos</button>
-<button onclick="mostrarPantalla('reportes')">📊 Reportes</button>
-<button onclick="mostrarPantalla('administracion')">⚙️ Administración</button>
+<button onclick="mostrarPantalla('inventario')">
+📦 Inventario
+</button>
+
+<button onclick="mostrarPantalla('ventas')">
+💰 Ventas
+</button>
+
+<button onclick="mostrarPantalla('compras')">
+🛒 Compras
+</button>
+
+<button onclick="mostrarPantalla('clientes')">
+👥 Clientes
+</button>
+
+<button onclick="mostrarPantalla('proveedores')">
+🚚 Proveedores
+</button>
+
+<button onclick="mostrarPantalla('gastos')">
+💸 Gastos
+</button>
+
+<button onclick="mostrarPantalla('reportes')">
+📊 Reportes
+</button>
+
+<button onclick="mostrarPantalla('administracion')">
+⚙️ Administración
+</button>
 
 </div>
+
 </section>
 
 
 <section id="inventario" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>📦 Inventario</h2>
 
-<button onclick="mostrarFormularioArticulo()">➕ Nuevo artículo</button>
+<button onclick="mostrarFormularioArticulo()">
+➕ Nuevo artículo
+</button>
 
 <input
 id="buscarArticulo"
@@ -84,31 +262,67 @@ oninput="filtrarArticulos()"
 
 <div id="formArticulo" class="tarjeta oculto">
 
-<h3 id="tituloFormulario">Nuevo artículo</h3>
+<h3 id="tituloFormulario">
+Nuevo artículo
+</h3>
 
 <label>Código</label>
-<input id="codigoArticulo" type="text">
+
+<input
+id="codigoArticulo"
+type="text"
+>
 
 <label>Nombre</label>
-<input id="nombreArticulo" type="text">
+
+<input
+id="nombreArticulo"
+type="text"
+>
 
 <label>Costo</label>
-<input id="costoArticulo" type="number" step="0.01">
+
+<input
+id="costoArticulo"
+type="number"
+step="0.01"
+>
 
 <label>Precio al público</label>
-<input id="precioArticulo" type="number" step="0.01">
+
+<input
+id="precioArticulo"
+type="number"
+step="0.01"
+>
 
 <label>Stock</label>
-<input id="stockArticulo" type="number">
+
+<input
+id="stockArticulo"
+type="number"
+>
 
 <label>Stock mínimo</label>
-<input id="stockMinimoArticulo" type="number">
 
-<button id="botonGuardarArticulo" onclick="guardarArticulo()">
+<input
+id="stockMinimoArticulo"
+type="number"
+>
+
+<button
+id="botonGuardarArticulo"
+onclick="guardarArticulo()"
+>
 💾 Guardar artículo
 </button>
 
-<button class="secundario" onclick="cancelarEdicion()">Cancelar</button>
+<button
+class="secundario"
+onclick="cancelarEdicion()"
+>
+Cancelar
+</button>
 
 <div id="mensajeArticulo"></div>
 
@@ -123,7 +337,10 @@ oninput="filtrarArticulos()"
 
 <section id="compras" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
 ← Volver
 </button>
 
@@ -192,46 +409,110 @@ placeholder="Ejemplo: 3500"
 
 
 <section id="ventas" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>💰 Ventas</h2>
-<div class="tarjeta">Próximamente: registro de ventas y apartados.</div>
+
+<div class="tarjeta">
+Próximamente: registro de ventas y apartados.
+</div>
+
 </section>
 
 
 <section id="clientes" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>👥 Clientes</h2>
-<div class="tarjeta">Próximamente: clientes.</div>
+
+<div class="tarjeta">
+Próximamente: clientes.
+</div>
+
 </section>
 
 
 <section id="proveedores" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>🚚 Proveedores</h2>
-<div class="tarjeta">Próximamente: proveedores.</div>
+
+<div class="tarjeta">
+Próximamente: proveedores.
+</div>
+
 </section>
 
 
 <section id="gastos" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>💸 Gastos</h2>
-<div class="tarjeta">Próximamente: gastos.</div>
+
+<div class="tarjeta">
+Próximamente: gastos.
+</div>
+
 </section>
 
 
 <section id="reportes" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>📊 Reportes</h2>
+
 <div class="tarjeta">
 Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
 </div>
+
 </section>
 
 
 <section id="administracion" class="pantalla">
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
+
 <h2>⚙️ Administración</h2>
-<div class="tarjeta">Próximamente: administración y ganancias.</div>
+
+<div class="tarjeta">
+Próximamente: administración y ganancias.
+</div>
+
 </section>
 
 </main>
@@ -403,6 +684,7 @@ No hay artículos registrados.
 `;
 
 return;
+
 }
 
 contenedor.innerHTML=
@@ -474,6 +756,7 @@ document.getElementById("buscarArticulo")
 if(!texto){
 
 mostrarArticulos(articulos);
+
 return;
 
 }
@@ -522,7 +805,6 @@ document.getElementById("costoArticulo").value="";
 document.getElementById("precioArticulo").value="";
 document.getElementById("stockArticulo").value="";
 document.getElementById("stockMinimoArticulo").value="";
-
 document.getElementById("mensajeArticulo").innerHTML="";
 
 }
@@ -594,16 +876,24 @@ const nombre=
 document.getElementById("nombreArticulo").value.trim();
 
 const costo=
-Number(document.getElementById("costoArticulo").value||0);
+Number(
+document.getElementById("costoArticulo").value||0
+);
 
 const precio=
-Number(document.getElementById("precioArticulo").value||0);
+Number(
+document.getElementById("precioArticulo").value||0
+);
 
 const stock=
-Number(document.getElementById("stockArticulo").value||0);
+Number(
+document.getElementById("stockArticulo").value||0
+);
 
 const stockMinimo=
-Number(document.getElementById("stockMinimoArticulo").value||0);
+Number(
+document.getElementById("stockMinimoArticulo").value||0
+);
 
 const mensaje=
 document.getElementById("mensajeArticulo");
@@ -618,6 +908,7 @@ El código y el nombre son obligatorios.
 `;
 
 return;
+
 }
 
 try{
@@ -687,6 +978,7 @@ No se pudo guardar el artículo.
 `;
 
 return;
+
 }
 
 mensaje.innerHTML=
@@ -773,6 +1065,7 @@ console.error(await respuesta.text());
 alert("No se pudo eliminar el artículo.");
 
 return;
+
 }
 
 await cargarArticulos();
@@ -803,7 +1096,7 @@ document.getElementById("compraNombre");
  -------------------------------------------------------
  CÓDIGO
  -------------------------------------------------------
-*/
+ */
 
 campoCompraCodigo.addEventListener(
 "input",
@@ -882,7 +1175,7 @@ No se encontró ese código.
  -------------------------------------------------------
  NOMBRE
  -------------------------------------------------------
-*/
+ */
 
 campoCompraNombre.addEventListener(
 "input",
@@ -976,13 +1269,21 @@ type="button"
 class="opcion"
 onclick="seleccionarArticuloCompraPorId('${a.id}')"
 >
+
 📦 ${escaparHTML(a.nombre||"")}
+
 <br>
+
 Código: ${escaparHTML(a.codigo||"")}
+
 <br>
+
 Stock actual: ${Number(a.stock||0)}
+
 <br>
+
 Costo: $${Number(a.costo||0).toFixed(2)}
+
 </button>
 `;
 
@@ -1079,6 +1380,7 @@ $${Number(articulo.costo||0).toFixed(2)}
 
 /* =====================================================
    REGISTRAR COMPRA
+   AHORA GUARDA HISTORIAL + DETALLE + STOCK
    ===================================================== */
 
 async function registrarCompra(){
@@ -1141,8 +1443,11 @@ if(!articulo){
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
+
 ❌ No encontramos ese artículo.
+
 Escribe el código o nombre exactamente como aparece en Inventario.
+
 </div>
 `;
 
@@ -1156,7 +1461,9 @@ if(!cantidad||cantidad<1){
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-Indica la cantidad recibida.
+
+❌ Indica la cantidad recibida.
+
 </div>
 `;
 
@@ -1170,7 +1477,9 @@ if(costo<0){
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-El costo no puede ser negativo.
+
+❌ El costo no puede ser negativo.
+
 </div>
 `;
 
@@ -1184,33 +1493,56 @@ try{
 const nuevoStock=
 Number(articulo.stock||0)+cantidad;
 
-const respuesta=
+const subtotal=
+cantidad*costo;
+
+
+/* =====================================================
+   1. GUARDAR CABECERA DE LA COMPRA
+   ===================================================== */
+
+const respuestaCompra=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(articulo.id),
+"/rest/v1/compras",
 {
-method:"PATCH",
+method:"POST",
+
 headers:{
 ...headersSupabase,
-"Prefer":"return=minimal"
+"Prefer":"return=representation"
 },
+
 body:JSON.stringify({
-stock:nuevoStock,
-costo:costo
+
+id_proveedor:null,
+
+fecha:new Date().toISOString(),
+
+total:subtotal,
+
+estado:"completada",
+
+notas:"Compra registrada desde la aplicación"
+
 })
+
 }
 );
 
 
-if(!respuesta.ok){
+if(!respuestaCompra.ok){
 
-console.error(await respuesta.text());
+console.error(
+await respuestaCompra.text()
+);
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-❌ No se pudo registrar la compra.
+
+❌ No se pudo guardar la compra.
+
 </div>
 `;
 
@@ -1219,11 +1551,151 @@ return;
 }
 
 
+const comprasGuardadas=
+await respuestaCompra.json();
+
+const compraGuardada=
+comprasGuardadas[0];
+
+
+if(!compraGuardada||
+!compraGuardada.id){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra no devolvió un identificador válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   2. GUARDAR DETALLE
+   ===================================================== */
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compra_detalles",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id_compra:compraGuardada.id,
+
+id_articulo:articulo.id,
+
+cantidad:cantidad,
+
+costo:costo,
+
+subtotal:subtotal
+
+})
+
+}
+);
+
+
+if(!respuestaDetalle.ok){
+
+console.error(
+await respuestaDetalle.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra se creó, pero no se pudo guardar el detalle.
+
+No se modificó el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   3. ACTUALIZAR STOCK Y COSTO
+   ===================================================== */
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:nuevoStock,
+
+costo:costo
+
+})
+
+}
+
+);
+
+
+if(!respuestaArticulo.ok){
+
+console.error(
+await respuestaArticulo.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra quedó guardada,
+pero no se pudo actualizar el stock.
+
+Revisa Inventario antes de volver a registrar esta compra.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   ÉXITO
+   ===================================================== */
+
 mensaje.innerHTML=
 `
 <div class="mensaje-exito">
 
-<strong>✅ Compra registrada</strong>
+<strong>
+✅ Compra registrada correctamente
+</strong>
 
 <br><br>
 
@@ -1245,6 +1717,15 @@ ${nuevoStock}
 Costo:
 $${costo.toFixed(2)}
 
+<br>
+
+Total de compra:
+$${subtotal.toFixed(2)}
+
+<br><br>
+
+📋 La compra quedó guardada en el historial.
+
 </div>
 `;
 
@@ -1252,14 +1733,19 @@ $${costo.toFixed(2)}
 articuloCompraSeleccionado=null;
 
 campoCompraCodigo.value="";
+
 campoCompraNombre.value="";
 
 document.getElementById("compraCantidad").value="";
+
 document.getElementById("compraCosto").value="";
 
 document.getElementById("estadoCodigo").innerHTML="";
+
 document.getElementById("estadoNombre").innerHTML="";
+
 document.getElementById("resultadoCompra").innerHTML="";
+
 
 await cargarArticulos();
 
@@ -1271,7 +1757,9 @@ console.error(error);
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
+
 ❌ Error de conexión con Supabase.
+
 </div>
 `;
 
