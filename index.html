@@ -20,11 +20,14 @@ button.editar{background:#245c44;font-size:14px;padding:10px}
 .pantalla{display:none}
 .pantalla.activa{display:block}
 .tarjeta{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
-input{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+input,select,textarea{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+textarea{min-height:80px;resize:vertical}
 label{display:block;font-weight:bold;margin-top:8px}
 .mensaje-exito{background:#dff5e5;color:#17652e;padding:12px;border-radius:8px;margin:10px 0}
 .mensaje-error{background:#ffe2e2;color:#a00000;padding:12px;border-radius:8px;margin:10px 0}
 .info-articulo{background:#eef5f1;border-radius:8px;padding:12px;margin:8px 0}
+.resumen-compra{background:#f0f4f1;border-radius:10px;padding:14px;margin-top:10px}
+.total-compra{font-size:22px;font-weight:bold;text-align:right;margin-top:10px}
 .oculto{display:none}
 h2{margin-top:5px}
 </style>
@@ -41,33 +44,62 @@ h2{margin-top:5px}
 
 <main>
 
-<!-- INICIO -->
+<!-- ================= INICIO ================= -->
+
 <section id="inicio" class="pantalla activa">
 
 <div class="menu">
 
-<button onclick="mostrarPantalla('inventario')">📦 Inventario</button>
-<button onclick="mostrarPantalla('ventas')">💰 Ventas</button>
-<button onclick="mostrarPantalla('compras')">🛒 Compras</button>
-<button onclick="mostrarPantalla('clientes')">👥 Clientes</button>
-<button onclick="mostrarPantalla('proveedores')">🚚 Proveedores</button>
-<button onclick="mostrarPantalla('gastos')">💸 Gastos</button>
-<button onclick="mostrarPantalla('reportes')">📊 Reportes</button>
-<button onclick="mostrarPantalla('administracion')">⚙️ Administración</button>
+<button onclick="mostrarPantalla('inventario')">
+📦 Inventario
+</button>
+
+<button onclick="mostrarPantalla('ventas')">
+💰 Ventas
+</button>
+
+<button onclick="mostrarPantalla('compras')">
+🛒 Compras
+</button>
+
+<button onclick="mostrarPantalla('clientes')">
+👥 Clientes
+</button>
+
+<button onclick="mostrarPantalla('proveedores')">
+🚚 Proveedores
+</button>
+
+<button onclick="mostrarPantalla('gastos')">
+💸 Gastos
+</button>
+
+<button onclick="mostrarPantalla('reportes')">
+📊 Reportes
+</button>
+
+<button onclick="mostrarPantalla('administracion')">
+⚙️ Administración
+</button>
 
 </div>
 
 </section>
 
 
-<!-- INVENTARIO -->
+<!-- ================= INVENTARIO ================= -->
+
 <section id="inventario" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>📦 Inventario</h2>
 
-<button onclick="mostrarFormularioArticulo()">➕ Nuevo artículo</button>
+<button onclick="mostrarFormularioArticulo()">
+➕ Nuevo artículo
+</button>
 
 <input
 id="buscarArticulo"
@@ -102,7 +134,9 @@ oninput="filtrarArticulos()"
 💾 Guardar artículo
 </button>
 
-<button class="secundario" onclick="cancelarEdicion()">Cancelar</button>
+<button class="secundario" onclick="cancelarEdicion()">
+Cancelar
+</button>
 
 <div id="mensajeArticulo"></div>
 
@@ -113,16 +147,32 @@ oninput="filtrarArticulos()"
 </section>
 
 
-<!-- COMPRAS -->
+<!-- ================= COMPRAS ================= -->
+
 <section id="compras" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>🛒 Compras</h2>
 
 <div class="tarjeta">
 
 <h3>Registrar compra</h3>
+
+<label>Proveedor</label>
+
+<select id="compraProveedor">
+<option value="">Seleccionar proveedor</option>
+</select>
+
+<label>Fecha</label>
+
+<input
+id="compraFecha"
+type="date"
+>
 
 <label>Código del artículo</label>
 
@@ -151,6 +201,7 @@ id="compraCantidad"
 type="number"
 min="1"
 placeholder="Cantidad"
+oninput="calcularSubtotalCompra()"
 >
 
 <label>Costo de compra</label>
@@ -160,10 +211,32 @@ id="compraCosto"
 type="number"
 min="0"
 step="0.01"
-placeholder="Costo"
+placeholder="Costo por pieza"
+oninput="calcularSubtotalCompra()"
 >
 
-<button onclick="registrarCompra()">
+<div class="resumen-compra">
+
+<strong>Subtotal</strong>
+
+<div id="subtotalCompra">
+$0.00
+</div>
+
+<div class="total-compra">
+Total: <span id="totalCompra">$0.00</span>
+</div>
+
+</div>
+
+<label>Notas</label>
+
+<textarea
+id="compraNotas"
+placeholder="Notas de la compra (opcional)"
+></textarea>
+
+<button onclick="registrarCompraCompleta()">
 💾 Registrar compra
 </button>
 
@@ -174,10 +247,13 @@ placeholder="Costo"
 </section>
 
 
-<!-- VENTAS -->
+<!-- ================= VENTAS ================= -->
+
 <section id="ventas" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>💰 Ventas</h2>
 
@@ -188,10 +264,13 @@ Próximamente: registro de ventas y apartados.
 </section>
 
 
-<!-- CLIENTES -->
+<!-- ================= CLIENTES ================= -->
+
 <section id="clientes" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>👥 Clientes</h2>
 
@@ -202,10 +281,13 @@ Próximamente: clientes.
 </section>
 
 
-<!-- PROVEEDORES -->
+<!-- ================= PROVEEDORES ================= -->
+
 <section id="proveedores" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>🚚 Proveedores</h2>
 
@@ -216,10 +298,13 @@ Próximamente: proveedores.
 </section>
 
 
-<!-- GASTOS -->
+<!-- ================= GASTOS ================= -->
+
 <section id="gastos" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>💸 Gastos</h2>
 
@@ -230,10 +315,13 @@ Próximamente: gastos.
 </section>
 
 
-<!-- REPORTES -->
+<!-- ================= REPORTES ================= -->
+
 <section id="reportes" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>📊 Reportes</h2>
 
@@ -244,10 +332,13 @@ Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
 </section>
 
 
-<!-- ADMINISTRACIÓN -->
+<!-- ================= ADMINISTRACIÓN ================= -->
+
 <section id="administracion" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>⚙️ Administración</h2>
 
@@ -262,6 +353,10 @@ Próximamente: administración y ganancias.
 
 <script>
 
+/* =====================================================
+SUPABASE
+===================================================== */
+
 const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
@@ -274,28 +369,45 @@ const headersSupabase = {
 "Content-Type":"application/json"
 };
 
+
+/* =====================================================
+VARIABLES
+===================================================== */
+
 let articulos=[];
+let proveedores=[];
 let articuloEditando=null;
 let articuloCompraSeleccionado=null;
 
 
-/* ================= NAVEGACIÓN ================= */
+/* =====================================================
+NAVEGACIÓN
+===================================================== */
 
 function mostrarPantalla(id){
 
 document.querySelectorAll(".pantalla")
 .forEach(p=>p.classList.remove("activa"));
 
-document.getElementById(id).classList.add("activa");
+document.getElementById(id)
+.classList.add("activa");
 
 if(id==="inventario"){
 cargarArticulos();
 }
 
+if(id==="compras"){
+cargarArticulos();
+cargarProveedores();
+prepararFechaCompra();
+}
+
 }
 
 
-/* ================= CONEXIÓN ================= */
+/* =====================================================
+CONEXIÓN
+===================================================== */
 
 async function comprobarConexion(){
 
@@ -329,7 +441,9 @@ document.getElementById("conexion").innerHTML=
 }
 
 
-/* ================= INVENTARIO ================= */
+/* =====================================================
+INVENTARIO
+===================================================== */
 
 async function cargarArticulos(){
 
@@ -363,7 +477,8 @@ error.message+
 
 function mostrarArticulos(lista){
 
-const contenedor=document.getElementById("listaArticulos");
+const contenedor=
+document.getElementById("listaArticulos");
 
 contenedor.innerHTML="";
 
@@ -384,28 +499,43 @@ tarjeta.className="tarjeta";
 
 tarjeta.innerHTML=`
 
-<strong>${escaparHTML(articulo.nombre)}</strong>
+<strong>
+${escaparHTML(articulo.nombre)}
+</strong>
 
 <br>
-Código: ${escaparHTML(articulo.codigo||"")}
+
+Código:
+${escaparHTML(articulo.codigo||"")}
 
 <br>
-Costo: $${Number(articulo.costo||0).toFixed(2)}
+
+Costo:
+$${Number(articulo.costo||0).toFixed(2)}
 
 <br>
-Precio público: $${Number(articulo.precio_publico||0).toFixed(2)}
+
+Precio público:
+$${Number(articulo.precio_publico||0).toFixed(2)}
 
 <br>
-Stock: ${articulo.stock||0}
+
+Stock:
+${articulo.stock||0}
 
 <br>
-Stock mínimo: ${articulo.stock_minimo||0}
+
+Stock mínimo:
+${articulo.stock_minimo||0}
 
 <button
 class="editar"
 onclick="editarArticulo('${articulo.id}')">
+
 ✏️ Editar
+
 </button>
+
 `;
 
 contenedor.appendChild(tarjeta);
@@ -424,8 +554,17 @@ document.getElementById("buscarArticulo")
 .trim();
 
 const filtrados=articulos.filter(a=>
-String(a.codigo||"").toLowerCase().includes(texto) ||
-String(a.nombre||"").toLowerCase().includes(texto)
+
+String(a.codigo||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(a.nombre||"")
+.toLowerCase()
+.includes(texto)
+
 );
 
 mostrarArticulos(filtrados);
@@ -478,7 +617,8 @@ limpiarFormularioArticulo();
 
 function editarArticulo(id){
 
-const articulo=articulos.find(a=>a.id===id);
+const articulo=
+articulos.find(a=>a.id===id);
 
 if(!articulo)return;
 
@@ -522,22 +662,32 @@ behavior:"smooth"
 async function guardarArticulo(){
 
 const codigo=
-document.getElementById("codigoArticulo").value.trim();
+document.getElementById("codigoArticulo")
+.value.trim();
 
 const nombre=
-document.getElementById("nombreArticulo").value.trim();
+document.getElementById("nombreArticulo")
+.value.trim();
 
 const costo=
-Number(document.getElementById("costoArticulo").value||0);
+Number(
+document.getElementById("costoArticulo").value||0
+);
 
 const precio=
-Number(document.getElementById("precioArticulo").value||0);
+Number(
+document.getElementById("precioArticulo").value||0
+);
 
 const stock=
-Number(document.getElementById("stockArticulo").value||0);
+Number(
+document.getElementById("stockArticulo").value||0
+);
 
 const stockMinimo=
-Number(document.getElementById("stockMinimoArticulo").value||0);
+Number(
+document.getElementById("stockMinimoArticulo").value||0
+);
 
 const mensaje=
 document.getElementById("mensajeArticulo");
@@ -556,11 +706,11 @@ return;
 try{
 
 const datos={
-codigo,
-nombre,
-costo,
+codigo:codigo,
+nombre:nombre,
+costo:costo,
 precio_publico:precio,
-stock,
+stock:stock,
 stock_minimo:stockMinimo
 };
 
@@ -601,7 +751,8 @@ body:JSON.stringify(datos)
 
 if(!respuesta.ok){
 
-const errorTexto=await respuesta.text();
+const errorTexto=
+await respuesta.text();
 
 throw new Error(
 errorTexto||
@@ -634,61 +785,123 @@ mensaje.innerHTML=
 
 
 /* =====================================================
-   COMPRAS
-   AQUÍ ESTÁ LA CORRECCIÓN
+PROVEEDORES
 ===================================================== */
 
-const campoCompraCodigo=
-document.getElementById("compraCodigo");
+async function cargarProveedores(){
 
-const campoCompraNombre=
-document.getElementById("compraNombre");
+const selector=
+document.getElementById("compraProveedor");
+
+try{
+
+const respuesta=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/proveedores?select=id,nombre&activo=eq.true&order=nombre.asc",
+
+{
+headers:headersSupabase
+}
+
+);
+
+if(!respuesta.ok){
+
+throw new Error("No se pudieron cargar los proveedores.");
+
+}
+
+proveedores=await respuesta.json();
+
+selector.innerHTML=
+'<option value="">Seleccionar proveedor</option>';
+
+proveedores.forEach(proveedor=>{
+
+const opcion=document.createElement("option");
+
+opcion.value=proveedor.id;
+
+opcion.textContent=proveedor.nombre;
+
+selector.appendChild(opcion);
+
+});
+
+}catch(error){
+
+selector.innerHTML=
+'<option value="">No se pudieron cargar proveedores</option>';
+
+}
+
+}
 
 
-/*
-Cuando escribimos código:
+/* =====================================================
+FECHA
+===================================================== */
 
-- busca el artículo
-- si encuentra UNO, completa nombre
-- pero no bloquea ni vuelve a escribir si el usuario borra
-*/
+function prepararFechaCompra(){
 
-campoCompraCodigo.addEventListener("input",function(){
+const campo=
+document.getElementById("compraFecha");
 
-const codigo=this.value.trim().toLowerCase();
+if(!campo.value){
+
+const hoy=new Date();
+
+const fechaLocal=
+hoy.getFullYear()+"-"+
+String(hoy.getMonth()+1).padStart(2,"0")+"-"+
+String(hoy.getDate()).padStart(2,"0");
+
+campo.value=fechaLocal;
+
+}
+
+}
+
+
+/* =====================================================
+BÚSQUEDA DE ARTÍCULO EN COMPRAS
+===================================================== */
+
+document
+.getElementById("compraCodigo")
+.addEventListener("input",function(){
+
+const codigo=
+this.value.trim().toLowerCase();
 
 articuloCompraSeleccionado=null;
 
-document.getElementById("resultadoCompra").innerHTML="";
-
+document.getElementById("resultadoCompra")
+.innerHTML="";
 
 if(!codigo){
 
-campoCompraNombre.value="";
+document.getElementById("compraNombre").value="";
+document.getElementById("compraCosto").value="";
+
+calcularSubtotalCompra();
+
 return;
 
 }
 
-
 const encontrados=articulos.filter(a=>
+
 String(a.codigo||"")
 .toLowerCase()
 .includes(codigo)
-);
 
+);
 
 if(encontrados.length===1){
 
-const articulo=encontrados[0];
-
-articuloCompraSeleccionado=articulo;
-
-campoCompraNombre.value=articulo.nombre||"";
-
-document.getElementById("compraCosto").value=
-articulo.costo||0;
-
-mostrarInfoCompra(articulo);
+seleccionarArticuloCompra(encontrados[0]);
 
 }
 
@@ -701,50 +914,40 @@ mostrarOpcionesCompra(encontrados);
 });
 
 
-/*
-Cuando escribimos nombre:
+document
+.getElementById("compraNombre")
+.addEventListener("input",function(){
 
-- busca el artículo
-- si encuentra UNO, completa código
-- pero permite borrar y volver a escribir
-*/
-
-campoCompraNombre.addEventListener("input",function(){
-
-const nombre=this.value.trim().toLowerCase();
+const nombre=
+this.value.trim().toLowerCase();
 
 articuloCompraSeleccionado=null;
 
-document.getElementById("resultadoCompra").innerHTML="";
-
+document.getElementById("resultadoCompra")
+.innerHTML="";
 
 if(!nombre){
 
-campoCompraCodigo.value="";
+document.getElementById("compraCodigo").value="";
+document.getElementById("compraCosto").value="";
+
+calcularSubtotalCompra();
+
 return;
 
 }
 
-
 const encontrados=articulos.filter(a=>
+
 String(a.nombre||"")
 .toLowerCase()
 .includes(nombre)
-);
 
+);
 
 if(encontrados.length===1){
 
-const articulo=encontrados[0];
-
-articuloCompraSeleccionado=articulo;
-
-campoCompraCodigo.value=articulo.codigo||"";
-
-document.getElementById("compraCosto").value=
-articulo.costo||0;
-
-mostrarInfoCompra(articulo);
+seleccionarArticuloCompra(encontrados[0]);
 
 }
 
@@ -755,6 +958,26 @@ mostrarOpcionesCompra(encontrados);
 }
 
 });
+
+
+function seleccionarArticuloCompra(articulo){
+
+articuloCompraSeleccionado=articulo;
+
+document.getElementById("compraCodigo").value=
+articulo.codigo||"";
+
+document.getElementById("compraNombre").value=
+articulo.nombre||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo||0;
+
+mostrarInfoCompra(articulo);
+
+calcularSubtotalCompra();
+
+}
 
 
 function mostrarInfoCompra(articulo){
@@ -826,43 +1049,42 @@ resultado.appendChild(boton);
 }
 
 
-function seleccionarArticuloCompra(articulo){
+/* =====================================================
+SUBTOTAL
+===================================================== */
 
-articuloCompraSeleccionado=articulo;
-
-campoCompraCodigo.value=
-articulo.codigo||"";
-
-campoCompraNombre.value=
-articulo.nombre||"";
-
-document.getElementById("compraCosto").value=
-articulo.costo||0;
-
-mostrarInfoCompra(articulo);
-
-}
-
-
-/* ================= REGISTRAR COMPRA ================= */
-
-async function registrarCompra(){
-
-const codigo=
-document.getElementById("compraCodigo")
-.value.trim();
+function calcularSubtotalCompra(){
 
 const cantidad=
 Number(
-document.getElementById("compraCantidad")
-.value||0
+document.getElementById("compraCantidad").value||0
 );
 
 const costo=
 Number(
-document.getElementById("compraCosto")
-.value||0
+document.getElementById("compraCosto").value||0
 );
+
+const subtotal=cantidad*costo;
+
+document.getElementById("subtotalCompra")
+.textContent=
+"$"+subtotal.toFixed(2);
+
+document.getElementById("totalCompra")
+.textContent=
+"$"+subtotal.toFixed(2);
+
+return subtotal;
+
+}
+
+
+/* =====================================================
+REGISTRAR COMPRA COMPLETA
+===================================================== */
+
+async function registrarCompraCompleta(){
 
 const mensaje=
 document.getElementById("mensajeCompra");
@@ -870,16 +1092,61 @@ document.getElementById("mensajeCompra");
 mensaje.innerHTML="";
 
 
-if(!codigo){
+const proveedorId=
+document.getElementById("compraProveedor").value;
+
+const fecha=
+document.getElementById("compraFecha").value;
+
+const cantidad=
+Number(
+document.getElementById("compraCantidad").value||0
+);
+
+const costo=
+Number(
+document.getElementById("compraCosto").value||0
+);
+
+const notas=
+document.getElementById("compraNotas").value.trim();
+
+
+if(!proveedorId){
 
 mensaje.innerHTML=
 '<div class="mensaje-error">'+
-'Escribe o selecciona un artículo.'+
+'Selecciona un proveedor.'+
 '</div>';
 
 return;
 
 }
+
+
+if(!fecha){
+
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'Selecciona una fecha.'+
+'</div>';
+
+return;
+
+}
+
+
+if(!articuloCompraSeleccionado){
+
+mensaje.innerHTML=
+'<div class="mensaje-error">'+
+'Selecciona un artículo.'+
+'</div>';
+
+return;
+
+}
+
 
 if(cantidad<=0){
 
@@ -891,6 +1158,7 @@ mensaje.innerHTML=
 return;
 
 }
+
 
 if(costo<0){
 
@@ -904,56 +1172,140 @@ return;
 }
 
 
+const subtotal=
+calcularSubtotalCompra();
+
+
 try{
 
-let articulo=articuloCompraSeleccionado;
 
+/* =========================
+1. CREAR COMPRA
+========================= */
 
-if(!articulo){
+const respuestaCompra=await fetch(
 
-const respuestaBusqueda=await fetch(
 SUPABASE_URL+
-"/rest/v1/articulos?codigo=eq."+
-encodeURIComponent(codigo)+
-"&select=*",
+"/rest/v1/compras",
+
 {
-headers:headersSupabase
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+id_proveedor:proveedorId,
+fecha:fecha,
+total:subtotal,
+estado:"completada",
+notas:notas||null
+
+})
+
 }
+
 );
 
-if(!respuestaBusqueda.ok){
+
+if(!respuestaCompra.ok){
+
+const texto=
+await respuestaCompra.text();
 
 throw new Error(
-"No se pudo buscar el artículo."
+texto||
+"No se pudo guardar la compra."
 );
 
 }
 
-const resultados=
-await respuestaBusqueda.json();
 
-if(resultados.length===0){
+const comprasGuardadas=
+await respuestaCompra.json();
+
+
+if(!comprasGuardadas.length){
 
 throw new Error(
-"No existe un artículo con ese código."
+"No se recibió el ID de la compra."
 );
 
 }
 
-articulo=resultados[0];
+
+const idCompra=
+comprasGuardadas[0].id;
+
+
+/* =========================
+2. CREAR DETALLE
+========================= */
+
+const respuestaDetalle=await fetch(
+
+SUPABASE_URL+
+"/rest/v1/compra_detalles",
+
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id_compra:idCompra,
+id_articulo:articuloCompraSeleccionado.id,
+cantidad:cantidad,
+costo:costo,
+subtotal:subtotal
+
+})
 
 }
 
+);
+
+
+if(!respuestaDetalle.ok){
+
+const texto=
+await respuestaDetalle.text();
+
+throw new Error(
+texto||
+"No se pudo guardar el detalle de la compra."
+);
+
+}
+
+
+/* =========================
+3. ACTUALIZAR STOCK
+========================= */
+
+const stockAnterior=
+Number(
+articuloCompraSeleccionado.stock||0
+);
 
 const nuevoStock=
-Number(articulo.stock||0)+cantidad;
+stockAnterior+cantidad;
 
 
-const respuesta=await fetch(
+const respuestaStock=await fetch(
 
 SUPABASE_URL+
 "/rest/v1/articulos?id=eq."+
-encodeURIComponent(articulo.id),
+encodeURIComponent(
+articuloCompraSeleccionado.id
+),
 
 {
 method:"PATCH",
@@ -975,61 +1327,80 @@ costo:costo
 );
 
 
-if(!respuesta.ok){
+if(!respuestaStock.ok){
 
-const texto=await respuesta.text();
+const texto=
+await respuestaStock.text();
 
 throw new Error(
 texto||
-"No se pudo actualizar el inventario."
+"La compra se guardó, pero no se pudo actualizar el stock."
 );
 
 }
 
 
+/* =========================
+4. MOSTRAR ÉXITO
+========================= */
+
 mensaje.innerHTML=`
 
 <div class="mensaje-exito">
 
-✅ Compra registrada correctamente.
+✅ <strong>Compra registrada correctamente.</strong>
 
 <br><br>
 
+Artículo:
 <strong>
-${escaparHTML(articulo.nombre||"")}
+${escaparHTML(
+articuloCompraSeleccionado.nombre||""
+)}
 </strong>
 
 <br>
 
-Cantidad recibida:
+Cantidad:
 ${cantidad}
-
-<br>
-
-Stock anterior:
-${Number(articulo.stock||0)}
-
-<br>
-
-Nuevo stock:
-${nuevoStock}
 
 <br>
 
 Costo:
 $${costo.toFixed(2)}
 
+<br>
+
+Subtotal:
+$${subtotal.toFixed(2)}
+
+<br>
+
+Nuevo stock:
+${nuevoStock}
+
 </div>
 
 `;
 
 
+/* =========================
+5. LIMPIAR
+========================= */
+
 document.getElementById("compraCodigo").value="";
 document.getElementById("compraNombre").value="";
 document.getElementById("compraCantidad").value="";
 document.getElementById("compraCosto").value="";
+document.getElementById("compraNotas").value="";
 
 document.getElementById("resultadoCompra").innerHTML="";
+
+document.getElementById("subtotalCompra")
+.textContent="$0.00";
+
+document.getElementById("totalCompra")
+.textContent="$0.00";
 
 articuloCompraSeleccionado=null;
 
@@ -1048,7 +1419,9 @@ mensaje.innerHTML=
 }
 
 
-/* ================= SEGURIDAD ================= */
+/* =====================================================
+SEGURIDAD HTML
+===================================================== */
 
 function escaparHTML(valor){
 
@@ -1062,7 +1435,9 @@ return String(valor??"")
 }
 
 
-/* ================= INICIO ================= */
+/* =====================================================
+INICIO
+===================================================== */
 
 comprobarConexion();
 cargarArticulos();
