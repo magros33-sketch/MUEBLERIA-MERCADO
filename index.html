@@ -7,26 +7,168 @@
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f7f5;color:#17221b}
-header{background:#123b2a;color:#fff;padding:18px;text-align:center}
-header h1{margin:0;font-size:23px}
-header p{margin:5px 0 0;font-size:14px}
-#conexion{margin:12px;padding:10px;border-radius:8px;background:#fff;text-align:center;font-size:14px}
-main{padding:14px;max-width:700px;margin:auto}
-button{width:100%;border:0;border-radius:10px;padding:14px;margin:6px 0;font-size:16px;cursor:pointer;background:#123b2a;color:#fff}
-button.secundario{background:#777}
-button.editar{background:#245c44;font-size:14px;padding:10px}
-.menu button{margin-bottom:9px}
-.pantalla{display:none}
-.pantalla.activa{display:block}
-.tarjeta{background:#fff;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 2px 7px rgba(0,0,0,.08)}
-input{width:100%;padding:13px;margin:6px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
-label{display:block;font-weight:bold;margin-top:8px}
-.mensaje-exito{background:#dff5e5;color:#17652e;padding:12px;border-radius:8px;margin:10px 0}
-.mensaje-error{background:#ffe2e2;color:#a00000;padding:12px;border-radius:8px;margin:10px 0}
-.info-articulo{background:#eef5f1;border-radius:8px;padding:12px;margin:8px 0}
-.oculto{display:none}
-h2{margin-top:5px}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f4f7f5;
+color:#17221b
+}
+
+header{
+background:#123b2a;
+color:#fff;
+padding:18px;
+text-align:center
+}
+
+header h1{
+margin:0;
+font-size:23px
+}
+
+header p{
+margin:5px 0 0;
+font-size:14px
+}
+
+#conexion{
+margin:12px;
+padding:10px;
+border-radius:8px;
+background:#fff;
+text-align:center;
+font-size:14px
+}
+
+main{
+padding:14px;
+max-width:700px;
+margin:auto
+}
+
+button{
+width:100%;
+border:0;
+border-radius:10px;
+padding:14px;
+margin:6px 0;
+font-size:16px;
+cursor:pointer;
+background:#123b2a;
+color:#fff
+}
+
+button.secundario{
+background:#777
+}
+
+button.editar{
+background:#245c44;
+font-size:14px;
+padding:10px
+}
+
+button.eliminar{
+background:#a00000;
+font-size:14px;
+padding:10px
+}
+
+button.opcion{
+background:#eef5f1;
+color:#17221b;
+text-align:left;
+border:1px solid #d0ddd5
+}
+
+.menu button{
+margin-bottom:9px
+}
+
+.pantalla{
+display:none
+}
+
+.pantalla.activa{
+display:block
+}
+
+.tarjeta{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:10px 0;
+box-shadow:0 2px 7px rgba(0,0,0,.08)
+}
+
+input{
+width:100%;
+padding:13px;
+margin:6px 0 10px;
+border:1px solid #ccc;
+border-radius:8px;
+font-size:16px
+}
+
+label{
+display:block;
+font-weight:bold;
+margin-top:8px
+}
+
+.mensaje-exito{
+background:#dff5e5;
+color:#17652e;
+padding:12px;
+border-radius:8px;
+margin:10px 0
+}
+
+.mensaje-error{
+background:#ffe2e2;
+color:#a00000;
+padding:12px;
+border-radius:8px;
+margin:10px 0
+}
+
+.info-articulo{
+background:#eef5f1;
+border-radius:8px;
+padding:12px;
+margin:8px 0
+}
+
+.oculto{
+display:none
+}
+
+h2{
+margin-top:5px
+}
+
+.articulo{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:10px 0;
+box-shadow:0 2px 7px rgba(0,0,0,.08)
+}
+
+.articulo strong{
+font-size:18px
+}
+
+.dato{
+margin:5px 0
+}
+
+.separador{
+height:1px;
+background:#ddd;
+margin:12px 0
+}
 </style>
 </head>
 
@@ -37,72 +179,142 @@ h2{margin-top:5px}
 <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">Conectando con la base de datos...</div>
+<div id="conexion">
+Conectando con la base de datos...
+</div>
 
 <main>
 
-<!-- INICIO -->
+<!-- ================= INICIO ================= -->
+
 <section id="inicio" class="pantalla activa">
 
 <div class="menu">
 
-<button onclick="mostrarPantalla('inventario')">📦 Inventario</button>
-<button onclick="mostrarPantalla('ventas')">💰 Ventas</button>
-<button onclick="mostrarPantalla('compras')">🛒 Compras</button>
-<button onclick="mostrarPantalla('clientes')">👥 Clientes</button>
-<button onclick="mostrarPantalla('proveedores')">🚚 Proveedores</button>
-<button onclick="mostrarPantalla('gastos')">💸 Gastos</button>
-<button onclick="mostrarPantalla('reportes')">📊 Reportes</button>
-<button onclick="mostrarPantalla('administracion')">⚙️ Administración</button>
+<button onclick="mostrarPantalla('inventario')">
+📦 Inventario
+</button>
+
+<button onclick="mostrarPantalla('ventas')">
+💰 Ventas
+</button>
+
+<button onclick="mostrarPantalla('compras')">
+🛒 Compras
+</button>
+
+<button onclick="mostrarPantalla('clientes')">
+👥 Clientes
+</button>
+
+<button onclick="mostrarPantalla('proveedores')">
+🚚 Proveedores
+</button>
+
+<button onclick="mostrarPantalla('gastos')">
+💸 Gastos
+</button>
+
+<button onclick="mostrarPantalla('reportes')">
+📊 Reportes
+</button>
+
+<button onclick="mostrarPantalla('administracion')">
+⚙️ Administración
+</button>
 
 </div>
 
 </section>
 
 
-<!-- INVENTARIO -->
+<!-- ================= INVENTARIO ================= -->
+
 <section id="inventario" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
 
 <h2>📦 Inventario</h2>
 
-<button onclick="mostrarFormularioArticulo()">➕ Nuevo artículo</button>
+<button onclick="mostrarFormularioArticulo()">
+➕ Nuevo artículo
+</button>
 
 <input
 id="buscarArticulo"
 type="text"
 placeholder="Buscar por código o nombre"
+autocomplete="off"
 oninput="filtrarArticulos()"
 >
 
 <div id="formArticulo" class="tarjeta oculto">
 
-<h3 id="tituloFormulario">Nuevo artículo</h3>
+<h3 id="tituloFormulario">
+Nuevo artículo
+</h3>
 
 <label>Código</label>
-<input id="codigoArticulo" type="text">
+
+<input
+id="codigoArticulo"
+type="text"
+autocomplete="off"
+>
 
 <label>Nombre</label>
-<input id="nombreArticulo" type="text">
+
+<input
+id="nombreArticulo"
+type="text"
+autocomplete="off"
+>
 
 <label>Costo</label>
-<input id="costoArticulo" type="number" step="0.01">
+
+<input
+id="costoArticulo"
+type="number"
+step="0.01"
+>
 
 <label>Precio al público</label>
-<input id="precioArticulo" type="number" step="0.01">
+
+<input
+id="precioArticulo"
+type="number"
+step="0.01"
+>
 
 <label>Stock</label>
-<input id="stockArticulo" type="number">
+
+<input
+id="stockArticulo"
+type="number"
+>
 
 <label>Stock mínimo</label>
-<input id="stockMinimoArticulo" type="number">
 
-<button id="botonGuardarArticulo" onclick="guardarArticulo()">
+<input
+id="stockMinimoArticulo"
+type="number"
+>
+
+<button
+id="botonGuardarArticulo"
+onclick="guardarArticulo()"
+>
 💾 Guardar artículo
 </button>
 
-<button class="secundario" onclick="cancelarEdicion()">Cancelar</button>
+<button
+class="secundario"
+onclick="cancelarEdicion()"
+>
+Cancelar
+</button>
 
 <div id="mensajeArticulo"></div>
 
@@ -113,10 +325,16 @@ oninput="filtrarArticulos()"
 </section>
 
 
-<!-- COMPRAS -->
+<!-- ================= COMPRAS ================= -->
+
 <section id="compras" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>🛒 Compras</h2>
 
@@ -174,10 +392,16 @@ placeholder="Costo"
 </section>
 
 
-<!-- VENTAS -->
+<!-- ================= VENTAS ================= -->
+
 <section id="ventas" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>💰 Ventas</h2>
 
@@ -188,10 +412,16 @@ Próximamente: registro de ventas y apartados.
 </section>
 
 
-<!-- CLIENTES -->
+<!-- ================= CLIENTES ================= -->
+
 <section id="clientes" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>👥 Clientes</h2>
 
@@ -202,10 +432,16 @@ Próximamente: clientes.
 </section>
 
 
-<!-- PROVEEDORES -->
+<!-- ================= PROVEEDORES ================= -->
+
 <section id="proveedores" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>🚚 Proveedores</h2>
 
@@ -216,10 +452,16 @@ Próximamente: proveedores.
 </section>
 
 
-<!-- GASTOS -->
+<!-- ================= GASTOS ================= -->
+
 <section id="gastos" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>💸 Gastos</h2>
 
@@ -230,24 +472,37 @@ Próximamente: gastos.
 </section>
 
 
-<!-- REPORTES -->
+<!-- ================= REPORTES ================= -->
+
 <section id="reportes" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>📊 Reportes</h2>
 
 <div class="tarjeta">
-Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
+Próximamente: reportes de ventas,
+artículos más vendidos y menos vendidos.
 </div>
 
 </section>
 
 
-<!-- ADMINISTRACIÓN -->
+<!-- ================= ADMINISTRACIÓN ================= -->
+
 <section id="administracion" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+<button
+class="secundario"
+onclick="mostrarPantalla('inicio')"
+>
+← Volver
+</button>
 
 <h2>⚙️ Administración</h2>
 
@@ -262,6 +517,10 @@ Próximamente: administración y ganancias.
 
 <script>
 
+/* =====================================================
+   CONEXIÓN SUPABASE
+   ===================================================== */
+
 const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
@@ -274,51 +533,1086 @@ const headersSupabase = {
 "Content-Type":"application/json"
 };
 
-let articulos=[];
-let articuloEditando=null;
-let articuloCompraSeleccionado=null;
+
+/* =====================================================
+   VARIABLES
+   ===================================================== */
+
+let articulos = [];
+let articuloEditando = null;
+let articuloCompraSeleccionado = null;
+let rellenandoCompra = false;
 
 
-/* ================= NAVEGACIÓN ================= */
+/* =====================================================
+   NAVEGACIÓN
+   ===================================================== */
 
 function mostrarPantalla(id){
 
-document.querySelectorAll(".pantalla")
-.forEach(p=>p.classList.remove("activa"));
+document
+.querySelectorAll(".pantalla")
+.forEach(function(p){
+p.classList.remove("activa");
+});
 
-document.getElementById(id).classList.add("activa");
+const pantalla = document.getElementById(id);
 
-if(id==="inventario"){
+if(pantalla){
+pantalla.classList.add("activa");
+}
+
+if(id === "inventario"){
 cargarArticulos();
 }
 
 }
 
 
-/* ================= CONEXIÓN ================= */
+/* =====================================================
+   CONEXIÓN
+   ===================================================== */
 
 async function comprobarConexion(){
 
+const conexion =
+document.getElementById("conexion");
+
+conexion.innerHTML =
+"🔄 Comprobando conexión...";
+
 try{
 
-const respuesta=await fetch(
-SUPABASE_URL+
+const respuesta = await fetch(
+SUPABASE_URL +
 "/rest/v1/categorias?select=id&limit=1",
-{headers:headersSupabase}
+{
+method:"GET",
+headers:headersSupabase
+}
 );
 
 if(respuesta.ok){
 
-document.getElementById("conexion").innerHTML=
+conexion.innerHTML =
 "✅ Conectado correctamente con Supabase.";
 
 }else{
 
-document.getElementById("conexion").innerHTML=
-"❌ No se pudo conectar con Supabase.";
+const texto = await respuesta.text();
+
+console.error(
+"Error Supabase:",
+respuesta.status,
+texto
+);
+
+conexion.innerHTML =
+"❌ Error al conectar con Supabase (" +
+respuesta.status +
+").";
 
 }
 
 }catch(error){
 
-document.getElementById("
+console.error(
+"Error de conexión:",
+error
+);
+
+conexion.innerHTML =
+"❌ No se pudo conectar con Supabase.";
+
+}
+
+}
+
+
+/* =====================================================
+   CARGAR ARTÍCULOS
+   ===================================================== */
+
+async function cargarArticulos(){
+
+try{
+
+const respuesta = await fetch(
+SUPABASE_URL +
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto =
+await respuesta.text();
+
+console.error(
+"Error cargando artículos:",
+respuesta.status,
+errorTexto
+);
+
+return;
+
+}
+
+articulos = await respuesta.json();
+
+mostrarArticulos(articulos);
+
+}catch(error){
+
+console.error(
+"Error cargando artículos:",
+error
+);
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR ARTÍCULOS
+   ===================================================== */
+
+function mostrarArticulos(lista){
+
+const contenedor =
+document.getElementById("listaArticulos");
+
+if(!lista.length){
+
+contenedor.innerHTML =
+`
+<div class="tarjeta">
+No hay artículos registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML =
+lista.map(function(a){
+
+return `
+<div class="articulo">
+
+<strong>
+${escaparHTML(a.nombre || "")}
+</strong>
+
+<div class="dato">
+Código:
+${escaparHTML(a.codigo || "")}
+</div>
+
+<div class="dato">
+Costo:
+$${Number(a.costo || 0).toFixed(2)}
+</div>
+
+<div class="dato">
+Precio público:
+$${Number(a.precio_publico || 0).toFixed(2)}
+</div>
+
+<div class="dato">
+Stock:
+<strong>${Number(a.stock || 0)}</strong>
+</div>
+
+<div class="dato">
+Stock mínimo:
+${Number(a.stock_minimo || 0)}
+</div>
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarArticulo('${a.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="eliminarArticulo('${a.id}')"
+>
+🗑️ Eliminar
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+/* =====================================================
+   BUSCAR / FILTRAR ARTÍCULOS
+   ===================================================== */
+
+function filtrarArticulos(){
+
+const texto =
+document
+.getElementById("buscarArticulo")
+.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+mostrarArticulos(articulos);
+return;
+
+}
+
+const filtrados =
+articulos.filter(function(a){
+
+return (
+String(a.codigo || "")
+.toLowerCase()
+.includes(texto)
+||
+String(a.nombre || "")
+.toLowerCase()
+.includes(texto)
+);
+
+});
+
+mostrarArticulos(filtrados);
+
+}
+
+
+/* =====================================================
+   NUEVO ARTÍCULO
+   ===================================================== */
+
+function mostrarFormularioArticulo(){
+
+articuloEditando = null;
+
+document
+.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormulario")
+.innerHTML =
+"Nuevo artículo";
+
+document
+.getElementById("botonGuardarArticulo")
+.innerHTML =
+"💾 Guardar artículo";
+
+document.getElementById("codigoArticulo").value="";
+document.getElementById("nombreArticulo").value="";
+document.getElementById("costoArticulo").value="";
+document.getElementById("precioArticulo").value="";
+document.getElementById("stockArticulo").value="";
+document.getElementById("stockMinimoArticulo").value="";
+
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+/* =====================================================
+   EDITAR ARTÍCULO
+   ===================================================== */
+
+function editarArticulo(id){
+
+const articulo =
+articulos.find(function(a){
+return a.id === id;
+});
+
+if(!articulo){
+return;
+}
+
+articuloEditando = articulo;
+
+document
+.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormulario")
+.innerHTML =
+"Editar artículo";
+
+document
+.getElementById("botonGuardarArticulo")
+.innerHTML =
+"💾 Guardar cambios";
+
+document.getElementById("codigoArticulo").value =
+articulo.codigo || "";
+
+document.getElementById("nombreArticulo").value =
+articulo.nombre || "";
+
+document.getElementById("costoArticulo").value =
+articulo.costo ?? "";
+
+document.getElementById("precioArticulo").value =
+articulo.precio_publico ?? "";
+
+document.getElementById("stockArticulo").value =
+articulo.stock ?? "";
+
+document.getElementById("stockMinimoArticulo").value =
+articulo.stock_minimo ?? "";
+
+document.getElementById("mensajeArticulo").innerHTML="";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   GUARDAR ARTÍCULO
+   ===================================================== */
+
+async function guardarArticulo(){
+
+const codigo =
+document
+.getElementById("codigoArticulo")
+.value
+.trim();
+
+const nombre =
+document
+.getElementById("nombreArticulo")
+.value
+.trim();
+
+const costo =
+Number(
+document.getElementById("costoArticulo").value || 0
+);
+
+const precio =
+Number(
+document.getElementById("precioArticulo").value || 0
+);
+
+const stock =
+Number(
+document.getElementById("stockArticulo").value || 0
+);
+
+const stockMinimo =
+Number(
+document.getElementById("stockMinimoArticulo").value || 0
+);
+
+const mensaje =
+document.getElementById("mensajeArticulo");
+
+if(!codigo || !nombre){
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+El código y el nombre son obligatorios.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+let respuesta;
+
+if(articuloEditando){
+
+respuesta = await fetch(
+SUPABASE_URL +
+"/rest/v1/articulos?id=eq." +
+encodeURIComponent(articuloEditando.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+codigo:codigo,
+nombre:nombre,
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo
+
+})
+}
+);
+
+}else{
+
+respuesta = await fetch(
+SUPABASE_URL +
+"/rest/v1/articulos",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+codigo:codigo,
+nombre:nombre,
+categoria_id:
+"771aa9b4-ff75-4211-854c-e2944a327071",
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo,
+activo:true
+
+})
+}
+);
+
+}
+
+if(!respuesta.ok){
+
+const errorTexto =
+await respuesta.text();
+
+console.error(
+"Error guardando artículo:",
+respuesta.status,
+errorTexto
+);
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+No se pudo guardar el artículo.
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML =
+`
+<div class="mensaje-exito">
+✅ Artículo guardado correctamente.
+</div>
+`;
+
+articuloEditando = null;
+
+await cargarArticulos();
+
+setTimeout(function(){
+
+cancelarEdicion();
+
+},800);
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+Error de conexión con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   CANCELAR EDICIÓN
+   ===================================================== */
+
+function cancelarEdicion(){
+
+articuloEditando = null;
+
+document
+.getElementById("formArticulo")
+.classList.add("oculto");
+
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+/* =====================================================
+   ELIMINAR ARTÍCULO
+   ===================================================== */
+
+async function eliminarArticulo(id){
+
+const articulo =
+articulos.find(function(a){
+return a.id === id;
+});
+
+if(!articulo){
+return;
+}
+
+const confirmar =
+confirm(
+"¿Seguro que quieres eliminar el artículo \"" +
+articulo.nombre +
+"\"?"
+);
+
+if(!confirmar){
+return;
+}
+
+try{
+
+const respuesta = await fetch(
+SUPABASE_URL +
+"/rest/v1/articulos?id=eq." +
+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto =
+await respuesta.text();
+
+console.error(
+"Error eliminando:",
+respuesta.status,
+errorTexto
+);
+
+alert(
+"No se pudo eliminar el artículo."
+);
+
+return;
+
+}
+
+await cargarArticulos();
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Error de conexión con Supabase."
+);
+
+}
+
+}
+
+
+/* =====================================================
+   COMPRAS
+   ===================================================== */
+
+const campoCompraCodigo =
+document.getElementById("compraCodigo");
+
+const campoCompraNombre =
+document.getElementById("compraNombre");
+
+
+/*
+ IMPORTANTE:
+ Al escribir NO rellenamos automáticamente los campos.
+ Solo mostramos opciones.
+
+ Esto permite borrar, corregir y escribir libremente
+ sin que el texto vuelva a aparecer solo.
+*/
+
+
+campoCompraCodigo.addEventListener(
+"input",
+function(){
+
+if(rellenandoCompra){
+return;
+}
+
+articuloCompraSeleccionado = null;
+
+document
+.getElementById("resultadoCompra")
+.innerHTML="";
+
+const texto =
+this.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+document
+.getElementById("compraCosto")
+.value="";
+
+return;
+
+}
+
+const encontrados =
+articulos.filter(function(a){
+
+return String(a.codigo || "")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}
+
+}
+);
+
+
+campoCompraNombre.addEventListener(
+"input",
+function(){
+
+if(rellenandoCompra){
+return;
+}
+
+articuloCompraSeleccionado = null;
+
+document
+.getElementById("resultadoCompra")
+.innerHTML="";
+
+const texto =
+this.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+document
+.getElementById("compraCosto")
+.value="";
+
+return;
+
+}
+
+const encontrados =
+articulos.filter(function(a){
+
+return String(a.nombre || "")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}
+
+}
+);
+
+
+/* =====================================================
+   OPCIONES DE COMPRA
+   ===================================================== */
+
+function mostrarOpcionesCompra(lista){
+
+const contenedor =
+document.getElementById("resultadoCompra");
+
+if(!lista.length){
+
+contenedor.innerHTML="";
+return;
+
+}
+
+contenedor.innerHTML =
+`
+<div class="info-articulo">
+<strong>Selecciona el artículo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloCompra('${a.id}')"
+>
+📦 ${escaparHTML(a.nombre || "")}
+<br>
+Código: ${escaparHTML(a.codigo || "")}
+<br>
+Costo actual: $${Number(a.costo || 0).toFixed(2)}
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   SELECCIONAR ARTÍCULO PARA COMPRA
+   ===================================================== */
+
+function seleccionarArticuloCompra(id){
+
+const articulo =
+articulos.find(function(a){
+return a.id === id;
+});
+
+if(!articulo){
+return;
+}
+
+rellenandoCompra = true;
+
+articuloCompraSeleccionado =
+articulo;
+
+campoCompraCodigo.value =
+articulo.codigo || "";
+
+campoCompraNombre.value =
+articulo.nombre || "";
+
+document
+.getElementById("compraCosto")
+.value =
+articulo.costo ?? "";
+
+rellenandoCompra = false;
+
+mostrarInfoCompra(articulo);
+
+}
+
+
+/* =====================================================
+   MOSTRAR ARTÍCULO SELECCIONADO
+   ===================================================== */
+
+function mostrarInfoCompra(articulo){
+
+document
+.getElementById("resultadoCompra")
+.innerHTML =
+`
+<div class="info-articulo">
+
+<strong>
+${escaparHTML(articulo.nombre || "")}
+</strong>
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo || "")}
+
+<br>
+
+Stock actual:
+${Number(articulo.stock || 0)}
+
+<br>
+
+Costo actual:
+$${Number(articulo.costo || 0).toFixed(2)}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   REGISTRAR COMPRA
+   ===================================================== */
+
+async function registrarCompra(){
+
+const mensaje =
+document.getElementById("mensajeCompra");
+
+const codigo =
+campoCompraCodigo
+.value
+.trim();
+
+const nombre =
+campoCompraNombre
+.value
+.trim();
+
+const cantidad =
+Number(
+document
+.getElementById("compraCantidad")
+.value || 0
+);
+
+const costo =
+Number(
+document
+.getElementById("compraCosto")
+.value || 0
+);
+
+
+/*
+ Si el usuario escribió el código o nombre
+ pero no pulsó una sugerencia, intentamos encontrar
+ el artículo por coincidencia exacta.
+*/
+
+let articulo =
+articuloCompraSeleccionado;
+
+if(!articulo && codigo){
+
+articulo =
+articulos.find(function(a){
+
+return String(a.codigo || "")
+.toLowerCase() ===
+codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo && nombre){
+
+articulo =
+articulos.find(function(a){
+
+return String(a.nombre || "")
+.toLowerCase() ===
+nombre.toLowerCase();
+
+});
+
+}
+
+if(!articulo){
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+Primero selecciona un artículo válido.
+</div>
+`;
+
+return;
+
+}
+
+if(!cantidad || cantidad < 1){
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+Indica una cantidad válida.
+</div>
+`;
+
+return;
+
+}
+
+if(costo < 0){
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+El costo no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+const nuevoStock =
+Number(articulo.stock || 0) +
+cantidad;
+
+
+/*
+ La compra aumenta el stock y actualiza
+ el costo del artículo.
+*/
+
+const respuesta =
+await fetch(
+SUPABASE_URL +
+"/rest/v1/articulos?id=eq." +
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+stock:nuevoStock,
+costo:costo
+
+})
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto =
+await respuesta.text();
+
+console.error(
+"Error registrando compra:",
+respuesta.status,
+errorTexto
+);
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+No se pudo registrar la compra.
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML =
+`
+<div class="mensaje-exito">
+✅ Compra registrada correctamente.
+<br>
+Stock actualizado: ${nuevoStock}
+</div>
+`;
+
+articuloCompraSeleccionado = null;
+
+campoCompraCodigo.value="";
+campoCompraNombre.value="";
+
+document
+.getElementById("compraCantidad")
+.value="";
+
+document
+.getElementById("compraCosto")
+.value="";
+
+document
+.getElementById("resultadoCompra")
+.innerHTML="";
+
+await cargarArticulos();
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML =
+`
+<div class="mensaje-error">
+Error de conexión con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   SEGURIDAD PARA TEXTO MOSTRADO EN HTML
+   ===================================================== */
+
+function escaparHTML(texto){
+
+return String(texto)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+/* =====================================================
+   INICIAR APLICACIÓN
+   ===================================================== */
+
+comprobarConexion();
+
+</script>
+
+</body>
+</html>
