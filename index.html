@@ -543,4 +543,1260 @@ const headersSupabase = {
 
 let articulos=[];
 let articuloEditando=null;
-let articuloCompraSeleccionado
+let articuloCompraSeleccionado=null;
+
+
+/* =====================================================
+   NAVEGACIÓN
+   ===================================================== */
+
+function mostrarPantalla(id){
+
+document.querySelectorAll(".pantalla")
+.forEach(function(p){
+p.classList.remove("activa");
+});
+
+const pantalla=document.getElementById(id);
+
+if(pantalla){
+pantalla.classList.add("activa");
+}
+
+if(id==="inventario"){
+cargarArticulos();
+}
+
+if(id==="compras"){
+cargarArticulos();
+}
+
+}
+
+
+/* =====================================================
+   CONEXIÓN
+   ===================================================== */
+
+async function comprobarConexion(){
+
+const conexion=document.getElementById("conexion");
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=id&limit=1",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(respuesta.ok){
+
+conexion.innerHTML=
+"✅ Conectado correctamente con Supabase.";
+
+}else{
+
+const errorTexto=await respuesta.text();
+
+console.error(
+"Error Supabase:",
+respuesta.status,
+errorTexto
+);
+
+conexion.innerHTML=
+"❌ Error de conexión con Supabase: "+
+respuesta.status;
+
+}
+
+}catch(error){
+
+console.error(
+"Error de conexión:",
+error
+);
+
+conexion.innerHTML=
+"❌ No se pudo conectar con Supabase.";
+
+}
+
+}
+
+
+/* =====================================================
+   ARTÍCULOS
+   ===================================================== */
+
+async function cargarArticulos(){
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+"Error cargando artículos:",
+respuesta.status,
+await respuesta.text()
+);
+
+return;
+
+}
+
+articulos=await respuesta.json();
+
+mostrarArticulos(articulos);
+
+}catch(error){
+
+console.error(error);
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR INVENTARIO
+   ===================================================== */
+
+function mostrarArticulos(lista){
+
+const contenedor=
+document.getElementById("listaArticulos");
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay artículos registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(a){
+
+return `
+<div class="articulo">
+
+<strong>
+${escaparHTML(a.nombre||"")}
+</strong>
+
+<div class="dato">
+Código: ${escaparHTML(a.codigo||"")}
+</div>
+
+<div class="dato">
+Costo: $${Number(a.costo||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Precio público: $${Number(a.precio_publico||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Stock: <strong>${Number(a.stock||0)}</strong>
+</div>
+
+<div class="dato">
+Stock mínimo: ${Number(a.stock_minimo||0)}
+</div>
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarArticulo('${a.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="eliminarArticulo('${a.id}')"
+>
+🗑️ Eliminar
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+/* =====================================================
+   FILTRO
+   ===================================================== */
+
+function filtrarArticulos(){
+
+const texto=
+document.getElementById("buscarArticulo")
+.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+mostrarArticulos(articulos);
+
+return;
+
+}
+
+const filtrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto)
+||
+String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarArticulos(filtrados);
+
+}
+
+
+/* =====================================================
+   FORMULARIO ARTÍCULO
+   ===================================================== */
+
+function mostrarFormularioArticulo(){
+
+articuloEditando=null;
+
+document
+.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormulario")
+.innerHTML="Nuevo artículo";
+
+document
+.getElementById("botonGuardarArticulo")
+.innerHTML="💾 Guardar artículo";
+
+document.getElementById("codigoArticulo").value="";
+document.getElementById("nombreArticulo").value="";
+document.getElementById("costoArticulo").value="";
+document.getElementById("precioArticulo").value="";
+document.getElementById("stockArticulo").value="";
+document.getElementById("stockMinimoArticulo").value="";
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+/* =====================================================
+   EDITAR
+   ===================================================== */
+
+function editarArticulo(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(!articulo)return;
+
+articuloEditando=articulo;
+
+document
+.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormulario")
+.innerHTML="Editar artículo";
+
+document
+.getElementById("botonGuardarArticulo")
+.innerHTML="💾 Guardar cambios";
+
+document.getElementById("codigoArticulo").value=
+articulo.codigo||"";
+
+document.getElementById("nombreArticulo").value=
+articulo.nombre||"";
+
+document.getElementById("costoArticulo").value=
+articulo.costo??"";
+
+document.getElementById("precioArticulo").value=
+articulo.precio_publico??"";
+
+document.getElementById("stockArticulo").value=
+articulo.stock??"";
+
+document.getElementById("stockMinimoArticulo").value=
+articulo.stock_minimo??"";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   GUARDAR ARTÍCULO
+   ===================================================== */
+
+async function guardarArticulo(){
+
+const codigo=
+document.getElementById("codigoArticulo").value.trim();
+
+const nombre=
+document.getElementById("nombreArticulo").value.trim();
+
+const costo=
+Number(
+document.getElementById("costoArticulo").value||0
+);
+
+const precio=
+Number(
+document.getElementById("precioArticulo").value||0
+);
+
+const stock=
+Number(
+document.getElementById("stockArticulo").value||0
+);
+
+const stockMinimo=
+Number(
+document.getElementById("stockMinimoArticulo").value||0
+);
+
+const mensaje=
+document.getElementById("mensajeArticulo");
+
+if(!codigo||!nombre){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+El código y el nombre son obligatorios.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+let respuesta;
+
+if(articuloEditando){
+
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloEditando.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+codigo:codigo,
+nombre:nombre,
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo
+})
+}
+);
+
+}else{
+
+respuesta=await fetch(
+SUPABASE_URL+"/rest/v1/articulos",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+codigo:codigo,
+nombre:nombre,
+categoria_id:
+"771aa9b4-ff75-4211-854c-e2944a327071",
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo,
+activo:true
+})
+}
+);
+
+}
+
+if(!respuesta.ok){
+
+console.error(
+await respuesta.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+No se pudo guardar el artículo.
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+✅ Artículo guardado correctamente.
+</div>
+`;
+
+articuloEditando=null;
+
+await cargarArticulos();
+
+setTimeout(cancelarEdicion,800);
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+Error de conexión con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   CANCELAR
+   ===================================================== */
+
+function cancelarEdicion(){
+
+articuloEditando=null;
+
+document
+.getElementById("formArticulo")
+.classList.add("oculto");
+
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+/* =====================================================
+   ELIMINAR
+   ===================================================== */
+
+async function eliminarArticulo(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(!articulo)return;
+
+if(!confirm(
+"¿Seguro que quieres eliminar el artículo \""+
+articulo.nombre+
+"\"?"
+))return;
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(await respuesta.text());
+
+alert("No se pudo eliminar el artículo.");
+
+return;
+
+}
+
+await cargarArticulos();
+
+}catch(error){
+
+console.error(error);
+
+alert("Error de conexión con Supabase.");
+
+}
+
+}
+
+
+/* =====================================================
+   COMPRAS
+   ===================================================== */
+
+const campoCompraCodigo=
+document.getElementById("compraCodigo");
+
+const campoCompraNombre=
+document.getElementById("compraNombre");
+
+
+/*
+ -------------------------------------------------------
+ CÓDIGO
+ -------------------------------------------------------
+ */
+
+campoCompraCodigo.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("estadoCodigo").innerHTML="";
+document.getElementById("estadoNombre").innerHTML="";
+document.getElementById("resultadoCompra").innerHTML="";
+
+if(!texto){
+
+return;
+
+}
+
+
+/* Código exacto */
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloCompra(exacto);
+
+return;
+
+}
+
+
+/* Coincidencias */
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length===1){
+
+mostrarOpcionesCompra(encontrados);
+
+}else if(encontrados.length>1){
+
+mostrarOpcionesCompra(encontrados);
+
+}else{
+
+document.getElementById("estadoCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese código.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/*
+ -------------------------------------------------------
+ NOMBRE
+ -------------------------------------------------------
+ */
+
+campoCompraNombre.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("estadoCodigo").innerHTML="";
+document.getElementById("estadoNombre").innerHTML="";
+document.getElementById("resultadoCompra").innerHTML="";
+
+if(!texto){
+
+return;
+
+}
+
+
+/* Nombre exacto */
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloCompra(exacto);
+
+return;
+
+}
+
+
+/* Coincidencias */
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}else{
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese artículo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   OPCIONES
+   ===================================================== */
+
+function mostrarOpcionesCompra(lista){
+
+const contenedor=
+document.getElementById("resultadoCompra");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el artículo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloCompraPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Código: ${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock actual: ${Number(a.stock||0)}
+
+<br>
+
+Costo: $${Number(a.costo||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   SELECCIONAR
+   ===================================================== */
+
+function seleccionarArticuloCompraPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+
+seleccionarArticuloCompra(articulo);
+
+}
+
+}
+
+
+/* =====================================================
+   ARTÍCULO SELECCIONADO
+   ===================================================== */
+
+function seleccionarArticuloCompra(articulo){
+
+articuloCompraSeleccionado=articulo;
+
+campoCompraCodigo.value=
+articulo.codigo||"";
+
+campoCompraNombre.value=
+articulo.nombre||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo??"";
+
+document.getElementById("estadoCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Código encontrado
+</div>
+`;
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Artículo encontrado
+</div>
+`;
+
+document.getElementById("resultadoCompra").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Artículo seleccionado</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock actual:
+${Number(articulo.stock||0)}
+
+<br>
+
+Costo actual:
+$${Number(articulo.costo||0).toFixed(2)}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   REGISTRAR COMPRA
+   AHORA GUARDA HISTORIAL + DETALLE + STOCK
+   ===================================================== */
+
+async function registrarCompra(){
+
+const mensaje=
+document.getElementById("mensajeCompra");
+
+let articulo=
+articuloCompraSeleccionado;
+
+const codigo=
+campoCompraCodigo.value.trim();
+
+const nombre=
+campoCompraNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("compraCantidad").value||0
+);
+
+const costo=
+Number(
+document.getElementById("compraCosto").value||0
+);
+
+
+/* Buscar automáticamente por código */
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+
+/* Buscar automáticamente por nombre */
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No encontramos ese artículo.
+
+Escribe el código o nombre exactamente como aparece en Inventario.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Indica la cantidad recibida.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(costo<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ El costo no puede ser negativo.
+
+</div>
+`;
+
+return;
+
+}
+
+
+try{
+
+const nuevoStock=
+Number(articulo.stock||0)+cantidad;
+
+const subtotal=
+cantidad*costo;
+
+
+/* =====================================================
+   1. GUARDAR CABECERA DE LA COMPRA
+   ===================================================== */
+
+const respuestaCompra=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compras",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+id_proveedor:null,
+
+fecha:new Date().toISOString(),
+
+total:subtotal,
+
+estado:"completada",
+
+notas:"Compra registrada desde la aplicación"
+
+})
+
+}
+);
+
+
+if(!respuestaCompra.ok){
+
+console.error(
+await respuestaCompra.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la compra.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const comprasGuardadas=
+await respuestaCompra.json();
+
+const compraGuardada=
+comprasGuardadas[0];
+
+
+if(!compraGuardada||
+!compraGuardada.id){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra no devolvió un identificador válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   2. GUARDAR DETALLE
+   ===================================================== */
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compra_detalles",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id_compra:compraGuardada.id,
+
+id_articulo:articulo.id,
+
+cantidad:cantidad,
+
+costo:costo,
+
+subtotal:subtotal
+
+})
+
+}
+);
+
+
+if(!respuestaDetalle.ok){
+
+console.error(
+await respuestaDetalle.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra se creó, pero no se pudo guardar el detalle.
+
+No se modificó el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   3. ACTUALIZAR STOCK Y COSTO
+   ===================================================== */
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:nuevoStock,
+
+costo:costo
+
+})
+
+}
+
+);
+
+
+if(!respuestaArticulo.ok){
+
+console.error(
+await respuestaArticulo.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra quedó guardada,
+pero no se pudo actualizar el stock.
+
+Revisa Inventario antes de volver a registrar esta compra.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   ÉXITO
+   ===================================================== */
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Compra registrada correctamente
+</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad recibida:
+${cantidad}
+
+<br>
+
+Nuevo stock:
+${nuevoStock}
+
+<br>
+
+Costo:
+$${costo.toFixed(2)}
+
+<br>
+
+Total de compra:
+$${subtotal.toFixed(2)}
+
+<br><br>
+
+📋 La compra quedó guardada en el historial.
+
+</div>
+`;
+
+
+articuloCompraSeleccionado=null;
+
+campoCompraCodigo.value="";
+
+campoCompraNombre.value="";
+
+document.getElementById("compraCantidad").value="";
+
+document.getElementById("compraCosto").value="";
+
+document.getElementById("estadoCodigo").innerHTML="";
+
+document.getElementById("estadoNombre").innerHTML="";
+
+document.getElementById("resultadoCompra").innerHTML="";
+
+
+await cargarArticulos();
+
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   ESCAPAR HTML
+   ===================================================== */
+
+function escaparHTML(texto){
+
+return String(texto)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+/* =====================================================
+   INICIAR
+   ===================================================== */
+
+comprobarConexion();
+
+</script>
+
+</body>
+</html>
