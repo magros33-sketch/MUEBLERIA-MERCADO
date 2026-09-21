@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mueblería Mercado</title>
 
 <style>
@@ -17,32 +17,60 @@ body{
 
 header{
   background:#123b2a;
-  color:#fff;
+  color:white;
   padding:18px;
   text-align:center;
 }
 
 header h1{
   margin:0;
-  font-size:26px;
+  font-size:23px;
 }
 
 header p{
-  margin:6px 0 0;
+  margin:5px 0 0;
+  font-size:14px;
 }
 
 #conexion{
   margin:12px;
   padding:10px;
-  background:#fff;
   border-radius:8px;
+  background:#fff;
   text-align:center;
+  font-size:14px;
 }
 
-.contenedor{
+main{
+  padding:14px;
   max-width:700px;
   margin:auto;
-  padding:15px;
+}
+
+button{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:14px;
+  margin:6px 0;
+  font-size:16px;
+  cursor:pointer;
+  background:#123b2a;
+  color:white;
+}
+
+button.secundario{
+  background:#777;
+}
+
+button.editar{
+  background:#245c44;
+  font-size:14px;
+  padding:10px;
+}
+
+.menu button{
+  margin-bottom:9px;
 }
 
 .pantalla{
@@ -53,86 +81,58 @@ header p{
   display:block;
 }
 
-.menu{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-.boton{
-  border:0;
-  border-radius:10px;
-  padding:17px 10px;
-  font-size:16px;
-  font-weight:bold;
-  background:#123b2a;
-  color:#fff;
-  cursor:pointer;
-}
-
-.boton:active{
-  transform:scale(.98);
-}
-
 .tarjeta{
-  background:#fff;
+  background:white;
   border-radius:12px;
   padding:15px;
-  margin-bottom:15px;
+  margin:10px 0;
   box-shadow:0 2px 7px rgba(0,0,0,.08);
 }
 
 input{
   width:100%;
-  padding:12px;
-  margin:5px 0 12px;
+  padding:13px;
+  margin:6px 0 10px;
   border:1px solid #ccc;
   border-radius:8px;
   font-size:16px;
 }
 
-.boton-verde{
-  background:#287a4d;
+label{
+  display:block;
+  font-weight:bold;
+  margin-top:8px;
 }
 
-.boton-gris{
-  background:#777;
+.mensaje-exito{
+  background:#dff5e5;
+  color:#17652e;
+  padding:12px;
+  border-radius:8px;
+  margin:10px 0;
 }
 
-.boton-azul{
-  background:#286090;
+.mensaje-error{
+  background:#ffe2e2;
+  color:#a00000;
+  padding:12px;
+  border-radius:8px;
+  margin:10px 0;
 }
 
-.articulo{
-  background:#fff;
-  border-radius:10px;
-  padding:14px;
-  margin-bottom:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,.06);
-}
-
-.articulo strong{
-  font-size:18px;
+.info-articulo{
+  background:#eef5f1;
+  border-radius:8px;
+  padding:12px;
+  margin:8px 0;
 }
 
 .oculto{
   display:none;
 }
 
-.volver{
-  margin-bottom:15px;
-}
-
-.mensaje-exito{
-  background:#e8f6ed;
-  border:1px solid #9bd0ad;
-  color:#185c32;
-}
-
-@media(max-width:500px){
-  .menu{
-    grid-template-columns:1fr;
-  }
+h2{
+  margin-top:5px;
 }
 </style>
 </head>
@@ -140,369 +140,281 @@ input{
 <body>
 
 <header>
-<h1>🪑 Mueblería Mercado</h1>
-<p>Para tu hogar</p>
+  <h1>🪑 Mueblería Mercado</h1>
+  <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">
-Conectando con la base de datos...
-</div>
+<div id="conexion">Conectando con la base de datos...</div>
 
-<main class="contenedor">
+<main>
 
+<!-- ================= INICIO ================= -->
 
-<!-- ==================== MENÚ ==================== -->
+<section id="inicio" class="pantalla activa">
 
-<section id="menu" class="pantalla activa">
+  <div class="menu">
 
-<div class="tarjeta">
-<h2>Inicio</h2>
-<p>Selecciona el módulo que deseas utilizar.</p>
-</div>
+    <button onclick="mostrarPantalla('inventario')">
+      📦 Inventario
+    </button>
 
-<div class="menu">
+    <button onclick="mostrarPantalla('ventas')">
+      💰 Ventas
+    </button>
 
-<button class="boton" onclick="mostrar('inicio')">
-🏠 Inicio
-</button>
+    <button onclick="mostrarPantalla('compras')">
+      🛒 Compras
+    </button>
 
-<button class="boton" onclick="mostrar('inventario')">
-📦 Inventario
-</button>
+    <button onclick="mostrarPantalla('clientes')">
+      👥 Clientes
+    </button>
 
-<button class="boton" onclick="mostrar('ventas')">
-💰 Ventas
-</button>
+    <button onclick="mostrarPantalla('proveedores')">
+      🚚 Proveedores
+    </button>
 
-<button class="boton" onclick="mostrar('compras')">
-🛒 Compras
-</button>
+    <button onclick="mostrarPantalla('gastos')">
+      💸 Gastos
+    </button>
 
-<button class="boton" onclick="mostrar('clientes')">
-👥 Clientes
-</button>
+    <button onclick="mostrarPantalla('reportes')">
+      📊 Reportes
+    </button>
 
-<button class="boton" onclick="mostrar('proveedores')">
-🚚 Proveedores
-</button>
+    <button onclick="mostrarPantalla('administracion')">
+      ⚙️ Administración
+    </button>
 
-<button class="boton" onclick="mostrar('gastos')">
-💸 Gastos
-</button>
-
-<button class="boton" onclick="mostrar('reportes')">
-📊 Reportes
-</button>
-
-<button class="boton" onclick="mostrar('administracion')">
-⚙️ Administración
-</button>
-
-</div>
-</section>
-
-
-<!-- ==================== INICIO ==================== -->
-
-<section id="inicio" class="pantalla">
-
-<div class="tarjeta">
-
-<h2>🏠 Inicio</h2>
-
-<button
-class="boton boton-gris volver"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Bienvenido a Mueblería Mercado.</p>
-
-</div>
+  </div>
 
 </section>
 
 
-<!-- ==================== INVENTARIO ==================== -->
+<!-- ================= INVENTARIO ================= -->
 
 <section id="inventario" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>📦 Inventario</h2>
+  <h2>📦 Inventario</h2>
 
-<button
-class="boton boton-gris volver"
-onclick="mostrar('menu')">
-← Volver
-</button>
+  <button onclick="mostrarFormularioArticulo()">
+    ➕ Nuevo artículo
+  </button>
 
-</div>
+  <input
+    id="buscarArticulo"
+    type="text"
+    placeholder="Buscar por código o nombre"
+    oninput="filtrarArticulos()"
+  >
 
+  <div id="formArticulo" class="tarjeta oculto">
 
-<div class="tarjeta">
+    <h3 id="tituloFormulario">Nuevo artículo</h3>
 
-<button
-class="boton boton-verde"
-onclick="nuevoArticulo()">
-➕ Nuevo artículo
-</button>
+    <label>Código</label>
+    <input id="codigoArticulo" type="text">
 
-<input
-id="buscar"
-type="text"
-placeholder="Buscar por código o nombre"
-oninput="buscarArticulos()">
+    <label>Nombre</label>
+    <input id="nombreArticulo" type="text">
 
-</div>
+    <label>Costo</label>
+    <input id="costoArticulo" type="number" step="0.01">
 
+    <label>Precio al público</label>
+    <input id="precioArticulo" type="number" step="0.01">
 
-<div
-id="formulario"
-class="tarjeta oculto">
+    <label>Stock</label>
+    <input id="stockArticulo" type="number">
 
-<h3 id="tituloFormulario">
-Nuevo artículo
-</h3>
+    <label>Stock mínimo</label>
+    <input id="stockMinimoArticulo" type="number">
 
-<input
-id="codigo"
-type="text"
-placeholder="Código">
+    <button id="botonGuardarArticulo" onclick="guardarArticulo()">
+      💾 Guardar artículo
+    </button>
 
-<input
-id="nombre"
-type="text"
-placeholder="Nombre del artículo">
+    <button class="secundario" onclick="cancelarEdicion()">
+      Cancelar
+    </button>
 
-<input
-id="costo"
-type="number"
-step="0.01"
-placeholder="Costo">
+    <div id="mensajeArticulo"></div>
 
-<input
-id="precio"
-type="number"
-step="0.01"
-placeholder="Precio al público">
+  </div>
 
-<input
-id="stock"
-type="number"
-placeholder="Stock">
-
-<input
-id="minimo"
-type="number"
-placeholder="Stock mínimo">
-
-<button
-id="botonGuardar"
-class="boton boton-verde"
-onclick="guardarArticulo()">
-💾 Guardar artículo
-</button>
-
-<button
-id="botonCancelar"
-class="boton boton-gris oculto"
-onclick="cancelarEdicion()">
-Cancelar
-</button>
-
-</div>
-
-
-<div id="lista">
-Cargando inventario...
-</div>
+  <div id="listaArticulos"></div>
 
 </section>
 
 
-<!-- ==================== COMPRAS ==================== -->
+<!-- ================= COMPRAS ================= -->
 
 <section id="compras" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>🛒 Compras</h2>
+  <h2>🛒 Compras</h2>
 
-<button
-class="boton boton-gris volver"
-onclick="mostrar('menu')">
-← Volver
-</button>
+  <div class="tarjeta">
 
-</div>
+    <h3>Registrar compra</h3>
 
+    <label>Código del artículo</label>
 
-<div class="tarjeta">
+    <input
+      id="compraCodigo"
+      type="text"
+      placeholder="Escribe el código"
+      autocomplete="off"
+      oninput="buscarArticuloCompraPorCodigo()"
+    >
 
-<h3>Registrar compra</h3>
+    <label>Nombre del artículo</label>
 
-<p>
-La compra aumenta automáticamente el stock del artículo.
-</p>
+    <input
+      id="compraNombre"
+      type="text"
+      placeholder="O escribe el nombre"
+      autocomplete="off"
+      oninput="buscarArticuloCompraPorNombre()"
+    >
 
-<input
-id="compraCodigo"
-type="text"
-placeholder="Código del artículo">
+    <div id="resultadoCompra"></div>
 
-<input
-id="compraCantidad"
-type="number"
-min="1"
-placeholder="Cantidad recibida">
+    <label>Cantidad recibida</label>
 
-<input
-id="compraCosto"
-type="number"
-step="0.01"
-min="0"
-placeholder="Costo de compra">
+    <input
+      id="compraCantidad"
+      type="number"
+      min="1"
+      placeholder="Cantidad"
+    >
 
-<button
-class="boton boton-verde"
-onclick="registrarCompra()">
-💾 Registrar compra
-</button>
+    <label>Costo de compra</label>
 
-</div>
+    <input
+      id="compraCosto"
+      type="number"
+      min="0"
+      step="0.01"
+      placeholder="Costo"
+    >
 
+    <button onclick="registrarCompra()">
+      💾 Registrar compra
+    </button>
 
-<div
-id="mensajeCompra"
-class="tarjeta mensaje-exito oculto">
-</div>
+    <div id="mensajeCompra"></div>
+
+  </div>
 
 </section>
 
 
-<!-- ==================== VENTAS ==================== -->
+<!-- ================= VENTAS ================= -->
 
 <section id="ventas" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>💰 Ventas</h2>
+  <h2>💰 Ventas</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de ventas.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: registro de ventas y apartados.
+  </div>
 
 </section>
 
 
-<!-- ==================== CLIENTES ==================== -->
+<!-- ================= CLIENTES ================= -->
 
 <section id="clientes" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>👥 Clientes</h2>
+  <h2>👥 Clientes</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de clientes.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: clientes.
+  </div>
 
 </section>
 
 
-<!-- ==================== PROVEEDORES ==================== -->
+<!-- ================= PROVEEDORES ================= -->
 
 <section id="proveedores" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>🚚 Proveedores</h2>
+  <h2>🚚 Proveedores</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de proveedores.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: proveedores.
+  </div>
 
 </section>
 
 
-<!-- ==================== GASTOS ==================== -->
+<!-- ================= GASTOS ================= -->
 
 <section id="gastos" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>💸 Gastos</h2>
+  <h2>💸 Gastos</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de gastos.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: gastos.
+  </div>
 
 </section>
 
 
-<!-- ==================== REPORTES ==================== -->
+<!-- ================= REPORTES ================= -->
 
 <section id="reportes" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>📊 Reportes</h2>
+  <h2>📊 Reportes</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de reportes.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: reportes de ventas, artículos más vendidos y menos vendidos.
+  </div>
 
 </section>
 
 
-<!-- ==================== ADMINISTRACIÓN ==================== -->
+<!-- ================= ADMINISTRACIÓN ================= -->
 
 <section id="administracion" class="pantalla">
 
-<div class="tarjeta">
+  <button class="secundario" onclick="mostrarPantalla('inicio')">
+    ← Volver
+  </button>
 
-<h2>⚙️ Administración</h2>
+  <h2>⚙️ Administración</h2>
 
-<button
-class="boton boton-gris"
-onclick="mostrar('menu')">
-← Volver
-</button>
-
-<p>Módulo de administración.</p>
-
-</div>
+  <div class="tarjeta">
+    Próximamente: administración y ganancias.
+  </div>
 
 </section>
 
@@ -511,7 +423,9 @@ onclick="mostrar('menu')">
 
 <script>
 
-/* ==================== SUPABASE ==================== */
+/* =====================================================
+   SUPABASE
+===================================================== */
 
 const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
@@ -520,836 +434,810 @@ const SUPABASE_KEY =
 "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
 
-/* ==================== VARIABLES ==================== */
-
-let articulos=[];
-
-let articuloEditando=null;
-
-
-/* ==================== CONEXIÓN ==================== */
-
-async function comprobarConexion(){
-
-const mensaje=
-document.getElementById("conexion");
-
-try{
-
-const respuesta=await fetch(
-SUPABASE_URL+
-"/rest/v1/categorias?select=id&limit=1",
-{
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY
-}
-}
-);
-
-if(respuesta.ok){
-
-mensaje.textContent=
-"✅ Conectado correctamente con Supabase.";
-
-}else{
-
-mensaje.textContent=
-"⚠️ Supabase responde, pero falta configurar permisos.";
-
-}
-
-}catch(error){
-
-console.log(error);
-
-mensaje.textContent=
-"⚠️ Aplicación funcionando. Revisar conexión.";
-
-}
-
-}
-
-
-/* ==================== NAVEGACIÓN ==================== */
-
-function mostrar(pantalla){
-
-document
-.querySelectorAll(".pantalla")
-.forEach(function(p){
-
-p.classList.remove("activa");
-
-});
-
-
-const destino=
-document.getElementById(pantalla);
-
-
-if(!destino){
-
-alert(
-"No se encontró el módulo: "+
-pantalla
-);
-
-return;
-
-}
-
-
-destino.classList.add("activa");
-
-
-if(pantalla==="inventario"){
-
-cargarArticulos();
-
-}
-
-
-window.scrollTo(0,0);
-
-}
-
-
-/* ==================== CARGAR INVENTARIO ==================== */
-
-async function cargarArticulos(){
-
-const lista=
-document.getElementById("lista");
-
-lista.innerHTML=
-"Cargando inventario...";
-
-
-try{
-
-const respuesta=await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
-{
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY
-}
-}
-);
-
-
-if(!respuesta.ok){
-
-lista.innerHTML=
-"⚠️ No se pudieron cargar los artículos.";
-
-return;
-
-}
-
-
-articulos=
-await respuesta.json();
-
-
-mostrarArticulos(articulos);
-
-
-}catch(error){
-
-console.log(error);
-
-lista.innerHTML=
-"⚠️ Error al cargar inventario.";
-
-}
-
-}
-
-
-/* ==================== MOSTRAR ARTÍCULOS ==================== */
-
-function mostrarArticulos(listaArticulos){
-
-const lista=
-document.getElementById("lista");
-
-
-if(listaArticulos.length===0){
-
-lista.innerHTML=
-'<div class="tarjeta">'+
-'No hay artículos registrados.'+
-'</div>';
-
-return;
-
-}
-
-
-lista.innerHTML="";
-
-
-listaArticulos.forEach(function(a){
-
-const div=
-document.createElement("div");
-
-div.className="articulo";
-
-
-div.innerHTML=
-
-"<strong>"+
-(a.nombre||"")+
-"</strong>"+
-
-"<br>Código: "+
-(a.codigo||"")+
-
-"<br>Costo: $"+
-Number(a.costo||0).toFixed(2)+
-
-"<br>Precio público: $"+
-Number(a.precio_publico||0).toFixed(2)+
-
-"<br>Stock: "+
-Number(a.stock||0)+
-
-"<br>Stock mínimo: "+
-Number(a.stock_minimo||0)+
-
-'<br><br>'+
-'<button class="boton boton-azul" '+
-'onclick="editarArticulo(\''+
-a.id+
-'\')">'+
-'✏️ Editar'+
-'</button>';
-
-
-lista.appendChild(div);
-
-});
-
-}
-
-
-/* ==================== BUSCAR ==================== */
-
-function buscarArticulos(){
-
-const texto=
-document
-.getElementById("buscar")
-.value
-.toLowerCase()
-.trim();
-
-
-const resultados=
-articulos.filter(function(a){
-
-return String(a.codigo||"")
-.toLowerCase()
-.includes(texto)
-
-||
-
-String(a.nombre||"")
-.toLowerCase()
-.includes(texto);
-
-});
-
-
-mostrarArticulos(resultados);
-
-}
-
-
-/* ==================== NUEVO ARTÍCULO ==================== */
-
-function nuevoArticulo(){
-
-articuloEditando=null;
-
-
-document
-.getElementById("tituloFormulario")
-.textContent=
-"Nuevo artículo";
-
-
-document
-.getElementById("botonGuardar")
-.textContent=
-"💾 Guardar artículo";
-
-
-document
-.getElementById("botonCancelar")
-.classList.add("oculto");
-
-
-document
-.getElementById("formulario")
-.classList.remove("oculto");
-
-
-document.getElementById("codigo").value="";
-document.getElementById("nombre").value="";
-document.getElementById("costo").value="";
-document.getElementById("precio").value="";
-document.getElementById("stock").value="";
-document.getElementById("minimo").value="";
-
-}
-
-
-/* ==================== EDITAR ARTÍCULO ==================== */
-
-function editarArticulo(id){
-
-const articulo=
-articulos.find(function(a){
-
-return a.id===id;
-
-});
-
-
-if(!articulo){
-
-alert("No se encontró el artículo.");
-
-return;
-
-}
-
-
-articuloEditando=id;
-
-
-document
-.getElementById("tituloFormulario")
-.textContent=
-"Editar artículo";
-
-
-document
-.getElementById("botonGuardar")
-.textContent=
-"💾 Guardar cambios";
-
-
-document
-.getElementById("botonCancelar")
-.classList.remove("oculto");
-
-
-document.getElementById("codigo").value=
-articulo.codigo||"";
-
-
-document.getElementById("nombre").value=
-articulo.nombre||"";
-
-
-document.getElementById("costo").value=
-articulo.costo||0;
-
-
-document.getElementById("precio").value=
-articulo.precio_publico||0;
-
-
-document.getElementById("stock").value=
-articulo.stock||0;
-
-
-document.getElementById("minimo").value=
-articulo.stock_minimo||0;
-
-
-document
-.getElementById("formulario")
-.classList.remove("oculto");
-
-
-window.scrollTo(0,0);
-
-}
-
-
-/* ==================== GUARDAR ARTÍCULO ==================== */
-
-async function guardarArticulo(){
-
-const codigo=
-document
-.getElementById("codigo")
-.value
-.trim();
-
-
-const nombre=
-document
-.getElementById("nombre")
-.value
-.trim();
-
-
-const costo=
-Number(
-document.getElementById("costo").value||0
-);
-
-
-const precio=
-Number(
-document.getElementById("precio").value||0
-);
-
-
-const stock=
-Number(
-document.getElementById("stock").value||0
-);
-
-
-const minimo=
-Number(
-document.getElementById("minimo").value||0
-);
-
-
-if(!codigo){
-
-alert("Escribe el código.");
-
-return;
-
-}
-
-
-if(!nombre){
-
-alert("Escribe el nombre.");
-
-return;
-
-}
-
-
-const datos={
-
-codigo:codigo,
-
-nombre:nombre,
-
-costo:costo,
-
-precio_publico:precio,
-
-stock:stock,
-
-stock_minimo:minimo
-
+const headersSupabase = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": "Bearer " + SUPABASE_KEY,
+  "Content-Type": "application/json"
 };
 
 
-try{
+/* =====================================================
+   VARIABLES
+===================================================== */
 
-let respuesta;
-
-
-if(articuloEditando){
-
-respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-articuloEditando,
-{
-method:"PATCH",
-
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY,
-"Content-Type":
-"application/json",
-"Prefer":
-"return=representation"
-},
-
-body:
-JSON.stringify(datos)
-
-}
-);
+let articulos = [];
+let articuloEditando = null;
+let articuloCompraSeleccionado = null;
 
 
-}else{
+/* =====================================================
+   NAVEGACIÓN
+===================================================== */
 
-datos.activo=true;
+function mostrarPantalla(id){
 
+  document.querySelectorAll(".pantalla")
+    .forEach(p => p.classList.remove("activa"));
 
-respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos",
-{
-method:"POST",
+  document.getElementById(id)
+    .classList.add("activa");
 
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY,
-"Content-Type":
-"application/json",
-"Prefer":
-"return=representation"
-},
-
-body:
-JSON.stringify(datos)
-
-}
-);
+  if(id === "inventario"){
+    cargarArticulos();
+  }
 
 }
 
 
-if(!respuesta.ok){
+/* =====================================================
+   CONEXIÓN
+===================================================== */
 
-const error=
-await respuesta.text();
+async function comprobarConexion(){
 
-console.log(error);
+  try{
 
-alert(
-articuloEditando
-?
-"No se pudieron guardar los cambios."
-:
-"No se pudo guardar el artículo."
-);
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/categorias?select=id&limit=1",
+      {
+        headers:headersSupabase
+      }
+    );
 
-return;
+    if(respuesta.ok){
 
-}
+      document.getElementById("conexion").innerHTML =
+        "✅ Conectado correctamente con Supabase.";
 
+    }else{
 
-alert(
-articuloEditando
-?
-"✅ Cambios guardados."
-:
-"✅ Artículo guardado."
-);
+      document.getElementById("conexion").innerHTML =
+        "❌ No se pudo conectar con Supabase.";
 
+    }
 
-cancelarEdicion();
+  }catch(error){
 
+    document.getElementById("conexion").innerHTML =
+      "❌ Error de conexión.";
 
-cargarArticulos();
-
-
-}catch(error){
-
-console.log(error);
-
-alert("❌ Error de conexión.");
-
-}
+  }
 
 }
 
 
-/* ==================== CANCELAR EDICIÓN ==================== */
+/* =====================================================
+   INVENTARIO
+===================================================== */
+
+async function cargarArticulos(){
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+      {
+        headers:headersSupabase
+      }
+    );
+
+    if(!respuesta.ok){
+      throw new Error("No se pudieron cargar los artículos.");
+    }
+
+    articulos = await respuesta.json();
+
+    mostrarArticulos(articulos);
+
+  }catch(error){
+
+    document.getElementById("listaArticulos").innerHTML =
+      '<div class="mensaje-error">' +
+      error.message +
+      '</div>';
+
+  }
+
+}
+
+
+function mostrarArticulos(lista){
+
+  const contenedor =
+    document.getElementById("listaArticulos");
+
+  contenedor.innerHTML = "";
+
+  if(lista.length === 0){
+
+    contenedor.innerHTML =
+      '<div class="tarjeta">No hay artículos.</div>';
+
+    return;
+  }
+
+
+  lista.forEach(articulo => {
+
+    const tarjeta =
+      document.createElement("div");
+
+    tarjeta.className = "tarjeta";
+
+    tarjeta.innerHTML = `
+
+      <strong>${escaparHTML(articulo.nombre)}</strong>
+
+      <br>
+      Código:
+      ${escaparHTML(articulo.codigo || "")}
+
+      <br>
+      Costo:
+      $${Number(articulo.costo || 0).toFixed(2)}
+
+      <br>
+      Precio público:
+      $${Number(articulo.precio_publico || 0).toFixed(2)}
+
+      <br>
+      Stock:
+      ${articulo.stock || 0}
+
+      <br>
+      Stock mínimo:
+      ${articulo.stock_minimo || 0}
+
+      <button
+        class="editar"
+        onclick="editarArticulo('${articulo.id}')">
+        ✏️ Editar
+      </button>
+    `;
+
+    contenedor.appendChild(tarjeta);
+
+  });
+
+}
+
+
+function filtrarArticulos(){
+
+  const texto =
+    document.getElementById("buscarArticulo")
+    .value
+    .toLowerCase()
+    .trim();
+
+  const filtrados =
+    articulos.filter(a =>
+      String(a.codigo || "")
+        .toLowerCase()
+        .includes(texto)
+      ||
+      String(a.nombre || "")
+        .toLowerCase()
+        .includes(texto)
+    );
+
+  mostrarArticulos(filtrados);
+
+}
+
+
+function mostrarFormularioArticulo(){
+
+  articuloEditando = null;
+
+  document.getElementById("tituloFormulario").textContent =
+    "Nuevo artículo";
+
+  document.getElementById("botonGuardarArticulo").textContent =
+    "💾 Guardar artículo";
+
+  document.getElementById("formArticulo")
+    .classList.remove("oculto");
+
+  limpiarFormularioArticulo();
+
+}
+
+
+function limpiarFormularioArticulo(){
+
+  document.getElementById("codigoArticulo").value = "";
+  document.getElementById("nombreArticulo").value = "";
+  document.getElementById("costoArticulo").value = "";
+  document.getElementById("precioArticulo").value = "";
+  document.getElementById("stockArticulo").value = "";
+  document.getElementById("stockMinimoArticulo").value = "";
+  document.getElementById("mensajeArticulo").innerHTML = "";
+
+}
+
 
 function cancelarEdicion(){
 
-articuloEditando=null;
+  articuloEditando = null;
 
+  document.getElementById("formArticulo")
+    .classList.add("oculto");
 
-document
-.getElementById("formulario")
-.classList.add("oculto");
-
-
-document
-.getElementById("tituloFormulario")
-.textContent=
-"Nuevo artículo";
-
-
-document
-.getElementById("botonGuardar")
-.textContent=
-"💾 Guardar artículo";
-
-
-document
-.getElementById("botonCancelar")
-.classList.add("oculto");
-
-
-document.getElementById("codigo").value="";
-document.getElementById("nombre").value="";
-document.getElementById("costo").value="";
-document.getElementById("precio").value="";
-document.getElementById("stock").value="";
-document.getElementById("minimo").value="";
+  limpiarFormularioArticulo();
 
 }
 
 
-/* ==================== COMPRAS ==================== */
+function editarArticulo(id){
+
+  const articulo =
+    articulos.find(a => a.id === id);
+
+  if(!articulo) return;
+
+  articuloEditando = articulo;
+
+  document.getElementById("tituloFormulario").textContent =
+    "Editar artículo";
+
+  document.getElementById("botonGuardarArticulo").textContent =
+    "💾 Guardar cambios";
+
+  document.getElementById("codigoArticulo").value =
+    articulo.codigo || "";
+
+  document.getElementById("nombreArticulo").value =
+    articulo.nombre || "";
+
+  document.getElementById("costoArticulo").value =
+    articulo.costo || 0;
+
+  document.getElementById("precioArticulo").value =
+    articulo.precio_publico || 0;
+
+  document.getElementById("stockArticulo").value =
+    articulo.stock || 0;
+
+  document.getElementById("stockMinimoArticulo").value =
+    articulo.stock_minimo || 0;
+
+  document.getElementById("formArticulo")
+    .classList.remove("oculto");
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+}
+
+
+async function guardarArticulo(){
+
+  const codigo =
+    document.getElementById("codigoArticulo").value.trim();
+
+  const nombre =
+    document.getElementById("nombreArticulo").value.trim();
+
+  const costo =
+    Number(document.getElementById("costoArticulo").value || 0);
+
+  const precio =
+    Number(document.getElementById("precioArticulo").value || 0);
+
+  const stock =
+    Number(document.getElementById("stockArticulo").value || 0);
+
+  const stockMinimo =
+    Number(document.getElementById("stockMinimoArticulo").value || 0);
+
+  const mensaje =
+    document.getElementById("mensajeArticulo");
+
+
+  if(!codigo || !nombre){
+
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      'Código y nombre son obligatorios.' +
+      '</div>';
+
+    return;
+  }
+
+
+  try{
+
+    const datos = {
+
+      codigo:codigo,
+      nombre:nombre,
+      costo:costo,
+      precio_publico:precio,
+      stock:stock,
+      stock_minimo:stockMinimo
+
+    };
+
+
+    let respuesta;
+
+
+    if(articuloEditando){
+
+      respuesta = await fetch(
+        SUPABASE_URL +
+        "/rest/v1/articulos?id=eq." +
+        encodeURIComponent(articuloEditando.id),
+        {
+          method:"PATCH",
+          headers:{
+            ...headersSupabase,
+            "Prefer":"return=minimal"
+          },
+          body:JSON.stringify(datos)
+        }
+      );
+
+    }else{
+
+      respuesta = await fetch(
+        SUPABASE_URL +
+        "/rest/v1/articulos",
+        {
+          method:"POST",
+          headers:{
+            ...headersSupabase,
+            "Prefer":"return=minimal"
+          },
+          body:JSON.stringify(datos)
+        }
+      );
+
+    }
+
+
+    if(!respuesta.ok){
+
+      const errorTexto =
+        await respuesta.text();
+
+      throw new Error(
+        errorTexto ||
+        "No se pudo guardar el artículo."
+      );
+
+    }
+
+
+    mensaje.innerHTML =
+      '<div class="mensaje-exito">' +
+      '✅ Artículo guardado correctamente.' +
+      '</div>';
+
+
+    await cargarArticulos();
+
+    setTimeout(() => {
+      cancelarEdicion();
+    },800);
+
+
+  }catch(error){
+
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      '❌ ' + escaparHTML(error.message) +
+      '</div>';
+
+  }
+
+}
+
+
+/* =====================================================
+   COMPRAS
+   BÚSQUEDA POR CÓDIGO O NOMBRE
+===================================================== */
+
+function buscarArticuloCompraPorCodigo(){
+
+  const codigo =
+    document.getElementById("compraCodigo")
+    .value
+    .trim()
+    .toLowerCase();
+
+
+  articuloCompraSeleccionado = null;
+
+  document.getElementById("compraNombre").value = "";
+  document.getElementById("resultadoCompra").innerHTML = "";
+
+
+  if(!codigo) return;
+
+
+  const encontrados =
+    articulos.filter(a =>
+      String(a.codigo || "")
+        .toLowerCase()
+        .includes(codigo)
+    );
+
+
+  if(encontrados.length === 1){
+
+    seleccionarArticuloCompra(encontrados[0]);
+
+  }else if(encontrados.length > 1){
+
+    mostrarOpcionesCompra(encontrados);
+
+  }
+
+}
+
+
+function buscarArticuloCompraPorNombre(){
+
+  const nombre =
+    document.getElementById("compraNombre")
+    .value
+    .trim()
+    .toLowerCase();
+
+
+  articuloCompraSeleccionado = null;
+
+  document.getElementById("compraCodigo").value = "";
+  document.getElementById("resultadoCompra").innerHTML = "";
+
+
+  if(!nombre) return;
+
+
+  const encontrados =
+    articulos.filter(a =>
+      String(a.nombre || "")
+        .toLowerCase()
+        .includes(nombre)
+    );
+
+
+  if(encontrados.length === 1){
+
+    seleccionarArticuloCompra(encontrados[0]);
+
+  }else if(encontrados.length > 1){
+
+    mostrarOpcionesCompra(encontrados);
+
+  }
+
+}
+
+
+function mostrarOpcionesCompra(lista){
+
+  const resultado =
+    document.getElementById("resultadoCompra");
+
+  resultado.innerHTML =
+    "<strong>Selecciona el artículo:</strong>";
+
+  lista.slice(0,8).forEach(articulo => {
+
+    const boton =
+      document.createElement("button");
+
+    boton.type = "button";
+
+    boton.style.background = "#e9f0ec";
+    boton.style.color = "#17221b";
+    boton.style.textAlign = "left";
+    boton.style.fontSize = "14px";
+
+    boton.innerHTML =
+      escaparHTML(articulo.codigo || "") +
+      " — " +
+      escaparHTML(articulo.nombre || "");
+
+    boton.onclick = function(){
+
+      seleccionarArticuloCompra(articulo);
+
+    };
+
+    resultado.appendChild(boton);
+
+  });
+
+}
+
+
+function seleccionarArticuloCompra(articulo){
+
+  articuloCompraSeleccionado = articulo;
+
+
+  document.getElementById("compraCodigo").value =
+    articulo.codigo || "";
+
+  document.getElementById("compraNombre").value =
+    articulo.nombre || "";
+
+  document.getElementById("compraCosto").value =
+    articulo.costo || 0;
+
+
+  document.getElementById("resultadoCompra").innerHTML = `
+
+    <div class="info-articulo">
+
+      <strong>
+        ${escaparHTML(articulo.nombre || "")}
+      </strong>
+
+      <br>
+
+      Código:
+      ${escaparHTML(articulo.codigo || "")}
+
+      <br>
+
+      Stock actual:
+      ${articulo.stock || 0}
+
+      <br>
+
+      Costo actual:
+      $${Number(articulo.costo || 0).toFixed(2)}
+
+    </div>
+
+  `;
+
+}
+
+
+/* =====================================================
+   REGISTRAR COMPRA
+===================================================== */
 
 async function registrarCompra(){
 
-const codigo=
-document
-.getElementById("compraCodigo")
-.value
-.trim();
+  const codigo =
+    document.getElementById("compraCodigo")
+    .value
+    .trim();
+
+  const cantidad =
+    Number(
+      document.getElementById("compraCantidad")
+      .value || 0
+    );
+
+  const costo =
+    Number(
+      document.getElementById("compraCosto")
+      .value || 0
+    );
+
+  const mensaje =
+    document.getElementById("mensajeCompra");
 
 
-const cantidad=
-Number(
-document
-.getElementById("compraCantidad")
-.value||0
-);
+  mensaje.innerHTML = "";
 
 
-const costo=
-Number(
-document
-.getElementById("compraCosto")
-.value||0
-);
+  if(!codigo){
+
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      'Escribe o selecciona un artículo.' +
+      '</div>';
+
+    return;
+  }
 
 
-const mensaje=
-document.getElementById("mensajeCompra");
+  if(cantidad <= 0){
+
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      'La cantidad debe ser mayor que 0.' +
+      '</div>';
+
+    return;
+  }
 
 
-if(!codigo){
+  if(costo < 0){
 
-alert(
-"Escribe el código del artículo."
-);
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      'El costo no puede ser negativo.' +
+      '</div>';
 
-return;
+    return;
+  }
+
+
+  try{
+
+    let articulo =
+      articuloCompraSeleccionado;
+
+
+    if(!articulo){
+
+      const respuestaBusqueda =
+        await fetch(
+          SUPABASE_URL +
+          "/rest/v1/articulos?codigo=eq." +
+          encodeURIComponent(codigo) +
+          "&select=*",
+          {
+            headers:headersSupabase
+          }
+        );
+
+
+      if(!respuestaBusqueda.ok){
+
+        throw new Error(
+          "No se pudo buscar el artículo."
+        );
+
+      }
+
+
+      const resultados =
+        await respuestaBusqueda.json();
+
+
+      if(resultados.length === 0){
+
+        throw new Error(
+          "No existe un artículo con ese código."
+        );
+
+      }
+
+
+      articulo = resultados[0];
+
+    }
+
+
+    const nuevoStock =
+      Number(articulo.stock || 0) +
+      cantidad;
+
+
+    const respuesta =
+      await fetch(
+
+        SUPABASE_URL +
+        "/rest/v1/articulos?id=eq." +
+        encodeURIComponent(articulo.id),
+
+        {
+          method:"PATCH",
+
+          headers:{
+            ...headersSupabase,
+            "Prefer":"return=minimal"
+          },
+
+          body:JSON.stringify({
+
+            stock:nuevoStock,
+            costo:costo
+
+          })
+        }
+
+      );
+
+
+    if(!respuesta.ok){
+
+      const texto =
+        await respuesta.text();
+
+      throw new Error(
+        texto ||
+        "No se pudo actualizar el inventario."
+      );
+
+    }
+
+
+    mensaje.innerHTML = `
+
+      <div class="mensaje-exito">
+
+        ✅ Compra registrada correctamente.
+
+        <br><br>
+
+        <strong>
+          ${escaparHTML(articulo.nombre || "")}
+        </strong>
+
+        <br>
+
+        Cantidad recibida:
+        ${cantidad}
+
+        <br>
+
+        Stock anterior:
+        ${Number(articulo.stock || 0)}
+
+        <br>
+
+        Nuevo stock:
+        ${nuevoStock}
+
+        <br>
+
+        Costo:
+        $${costo.toFixed(2)}
+
+      </div>
+
+    `;
+
+
+    document.getElementById("compraCantidad").value = "";
+
+    articuloCompraSeleccionado = null;
+
+    await cargarArticulos();
+
+
+  }catch(error){
+
+    mensaje.innerHTML =
+      '<div class="mensaje-error">' +
+      '❌ ' +
+      escaparHTML(error.message) +
+      '</div>';
+
+  }
 
 }
 
 
-if(cantidad<=0){
+/* =====================================================
+   SEGURIDAD HTML
+===================================================== */
 
-alert(
-"La cantidad debe ser mayor que 0."
-);
+function escaparHTML(valor){
 
-return;
-
-}
-
-
-if(costo<0){
-
-alert(
-"El costo no puede ser negativo."
-);
-
-return;
+  return String(valor ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 
 
-try{
-
-
-/* BUSCAR ARTÍCULO */
-
-const respuestaArticulo=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?codigo=eq."+
-encodeURIComponent(codigo)+
-"&select=*",
-{
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY
-}
-}
-);
-
-
-if(!respuestaArticulo.ok){
-
-alert(
-"No se pudo buscar el artículo."
-);
-
-return;
-
-}
-
-
-const encontrados=
-await respuestaArticulo.json();
-
-
-if(encontrados.length===0){
-
-alert(
-"No existe un artículo con ese código."
-);
-
-return;
-
-}
-
-
-const articulo=
-encontrados[0];
-
-
-/* CALCULAR NUEVO STOCK */
-
-const nuevoStock=
-Number(articulo.stock||0)+cantidad;
-
-
-/* ACTUALIZAR STOCK Y COSTO */
-
-const respuestaStock=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-articulo.id,
-{
-method:"PATCH",
-
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":
-"Bearer "+SUPABASE_KEY,
-"Content-Type":
-"application/json",
-"Prefer":
-"return=representation"
-},
-
-body:
-JSON.stringify({
-
-stock:nuevoStock,
-
-costo:costo
-
-})
-
-}
-);
-
-
-if(!respuestaStock.ok){
-
-const error=
-await respuestaStock.text();
-
-console.log(error);
-
-alert(
-"No se pudo actualizar el stock."
-);
-
-return;
-
-}
-
-
-/* MOSTRAR RESULTADO */
-
-mensaje.classList.remove("oculto");
-
-
-mensaje.innerHTML=
-
-"✅ Compra registrada correctamente."+
-
-"<br><br>"+
-
-"<strong>"+
-(articulo.nombre||"")+
-"</strong>"+
-
-"<br>Código: "+
-(articulo.codigo||"")+
-
-"<br>Cantidad recibida: "+
-cantidad+
-
-"<br>Stock anterior: "+
-Number(articulo.stock||0)+
-
-"<br>Nuevo stock: "+
-nuevoStock+
-
-"<br>Costo actualizado: $"+
-costo.toFixed(2);
-
-
-/* LIMPIAR */
-
-document
-.getElementById("compraCodigo")
-.value="";
-
-
-document
-.getElementById("compraCantidad")
-.value="";
-
-
-document
-.getElementById("compraCosto")
-.value="";
-
-
-/* ACTUALIZAR INVENTARIO */
-
-cargarArticulos();
-
-
-}catch(error){
-
-console.log(error);
-
-alert(
-"❌ Error de conexión."
-);
-
-}
-
-}
-
-
-/* ==================== ARRANQUE ==================== */
+/* =====================================================
+   INICIO
+===================================================== */
 
 comprobarConexion();
+cargarArticulos();
 
 </script>
 
