@@ -123,6 +123,12 @@ input{
   margin-bottom:15px;
 }
 
+.mensaje-exito{
+  background:#e8f6ed;
+  border:1px solid #9bd0ad;
+  color:#185c32;
+}
+
 @media(max-width:500px){
   .menu{
     grid-template-columns:1fr;
@@ -138,9 +144,14 @@ input{
 <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">Conectando con la base de datos...</div>
+<div id="conexion">
+Conectando con la base de datos...
+</div>
 
 <main class="contenedor">
+
+
+<!-- ==================== MENÚ ==================== -->
 
 <section id="menu" class="pantalla activa">
 
@@ -151,34 +162,68 @@ input{
 
 <div class="menu">
 
-<button class="boton" onclick="mostrar('inicio')">🏠 Inicio</button>
-<button class="boton" onclick="mostrar('inventario')">📦 Inventario</button>
-<button class="boton" onclick="mostrar('ventas')">💰 Ventas</button>
-<button class="boton" onclick="mostrar('compras')">🛒 Compras</button>
-<button class="boton" onclick="mostrar('clientes')">👥 Clientes</button>
-<button class="boton" onclick="mostrar('proveedores')">🚚 Proveedores</button>
-<button class="boton" onclick="mostrar('gastos')">💸 Gastos</button>
-<button class="boton" onclick="mostrar('reportes')">📊 Reportes</button>
-<button class="boton" onclick="mostrar('administracion')">⚙️ Administración</button>
+<button class="boton" onclick="mostrar('inicio')">
+🏠 Inicio
+</button>
+
+<button class="boton" onclick="mostrar('inventario')">
+📦 Inventario
+</button>
+
+<button class="boton" onclick="mostrar('ventas')">
+💰 Ventas
+</button>
+
+<button class="boton" onclick="mostrar('compras')">
+🛒 Compras
+</button>
+
+<button class="boton" onclick="mostrar('clientes')">
+👥 Clientes
+</button>
+
+<button class="boton" onclick="mostrar('proveedores')">
+🚚 Proveedores
+</button>
+
+<button class="boton" onclick="mostrar('gastos')">
+💸 Gastos
+</button>
+
+<button class="boton" onclick="mostrar('reportes')">
+📊 Reportes
+</button>
+
+<button class="boton" onclick="mostrar('administracion')">
+⚙️ Administración
+</button>
 
 </div>
 </section>
 
+
+<!-- ==================== INICIO ==================== -->
 
 <section id="inicio" class="pantalla">
 
 <div class="tarjeta">
+
 <h2>🏠 Inicio</h2>
 
-<button class="boton boton-gris volver" onclick="mostrar('menu')">
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
 ← Volver
 </button>
 
 <p>Bienvenido a Mueblería Mercado.</p>
+
 </div>
 
 </section>
 
+
+<!-- ==================== INVENTARIO ==================== -->
 
 <section id="inventario" class="pantalla">
 
@@ -186,15 +231,20 @@ input{
 
 <h2>📦 Inventario</h2>
 
-<button class="boton boton-gris volver" onclick="mostrar('menu')">
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
 ← Volver
 </button>
 
 </div>
 
+
 <div class="tarjeta">
 
-<button class="boton boton-verde" onclick="nuevoArticulo()">
+<button
+class="boton boton-verde"
+onclick="nuevoArticulo()">
 ➕ Nuevo artículo
 </button>
 
@@ -207,16 +257,45 @@ oninput="buscarArticulos()">
 </div>
 
 
-<div id="formulario" class="tarjeta oculto">
+<div
+id="formulario"
+class="tarjeta oculto">
 
-<h3 id="tituloFormulario">Nuevo artículo</h3>
+<h3 id="tituloFormulario">
+Nuevo artículo
+</h3>
 
-<input id="codigo" type="text" placeholder="Código">
-<input id="nombre" type="text" placeholder="Nombre del artículo">
-<input id="costo" type="number" step="0.01" placeholder="Costo">
-<input id="precio" type="number" step="0.01" placeholder="Precio al público">
-<input id="stock" type="number" placeholder="Stock">
-<input id="minimo" type="number" placeholder="Stock mínimo">
+<input
+id="codigo"
+type="text"
+placeholder="Código">
+
+<input
+id="nombre"
+type="text"
+placeholder="Nombre del artículo">
+
+<input
+id="costo"
+type="number"
+step="0.01"
+placeholder="Costo">
+
+<input
+id="precio"
+type="number"
+step="0.01"
+placeholder="Precio al público">
+
+<input
+id="stock"
+type="number"
+placeholder="Stock">
+
+<input
+id="minimo"
+type="number"
+placeholder="Stock mínimo">
 
 <button
 id="botonGuardar"
@@ -242,66 +321,189 @@ Cargando inventario...
 </section>
 
 
-<section id="ventas" class="pantalla">
-<div class="tarjeta">
-<h2>💰 Ventas</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
-<p>Módulo de ventas.</p>
-</div>
-</section>
-
+<!-- ==================== COMPRAS ==================== -->
 
 <section id="compras" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>🛒 Compras</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
-<p>Módulo de compras.</p>
+
+<button
+class="boton boton-gris volver"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 </div>
+
+
+<div class="tarjeta">
+
+<h3>Registrar compra</h3>
+
+<p>
+La compra aumenta automáticamente el stock del artículo.
+</p>
+
+<input
+id="compraCodigo"
+type="text"
+placeholder="Código del artículo">
+
+<input
+id="compraCantidad"
+type="number"
+min="1"
+placeholder="Cantidad recibida">
+
+<input
+id="compraCosto"
+type="number"
+step="0.01"
+min="0"
+placeholder="Costo de compra">
+
+<button
+class="boton boton-verde"
+onclick="registrarCompra()">
+💾 Registrar compra
+</button>
+
+</div>
+
+
+<div
+id="mensajeCompra"
+class="tarjeta mensaje-exito oculto">
+</div>
+
 </section>
 
+
+<!-- ==================== VENTAS ==================== -->
+
+<section id="ventas" class="pantalla">
+
+<div class="tarjeta">
+
+<h2>💰 Ventas</h2>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
+<p>Módulo de ventas.</p>
+
+</div>
+
+</section>
+
+
+<!-- ==================== CLIENTES ==================== -->
 
 <section id="clientes" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>👥 Clientes</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 <p>Módulo de clientes.</p>
+
 </div>
+
 </section>
 
+
+<!-- ==================== PROVEEDORES ==================== -->
 
 <section id="proveedores" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>🚚 Proveedores</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 <p>Módulo de proveedores.</p>
+
 </div>
+
 </section>
 
+
+<!-- ==================== GASTOS ==================== -->
 
 <section id="gastos" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>💸 Gastos</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 <p>Módulo de gastos.</p>
+
 </div>
+
 </section>
 
+
+<!-- ==================== REPORTES ==================== -->
 
 <section id="reportes" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>📊 Reportes</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 <p>Módulo de reportes.</p>
+
 </div>
+
 </section>
 
 
+<!-- ==================== ADMINISTRACIÓN ==================== -->
+
 <section id="administracion" class="pantalla">
+
 <div class="tarjeta">
+
 <h2>⚙️ Administración</h2>
-<button class="boton boton-gris" onclick="mostrar('menu')">← Volver</button>
+
+<button
+class="boton boton-gris"
+onclick="mostrar('menu')">
+← Volver
+</button>
+
 <p>Módulo de administración.</p>
+
 </div>
+
 </section>
 
 </main>
@@ -309,21 +511,28 @@ Cargando inventario...
 
 <script>
 
+/* ==================== SUPABASE ==================== */
+
 const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
 const SUPABASE_KEY =
 "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
 
+
+/* ==================== VARIABLES ==================== */
+
 let articulos=[];
+
 let articuloEditando=null;
 
 
-/* CONEXIÓN */
+/* ==================== CONEXIÓN ==================== */
 
 async function comprobarConexion(){
 
-const mensaje=document.getElementById("conexion");
+const mensaje=
+document.getElementById("conexion");
 
 try{
 
@@ -333,7 +542,8 @@ SUPABASE_URL+
 {
 headers:{
 "apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY
+"Authorization":
+"Bearer "+SUPABASE_KEY
 }
 }
 );
@@ -362,42 +572,60 @@ mensaje.textContent=
 }
 
 
-/* NAVEGACIÓN */
+/* ==================== NAVEGACIÓN ==================== */
 
 function mostrar(pantalla){
 
-document.querySelectorAll(".pantalla")
+document
+.querySelectorAll(".pantalla")
 .forEach(function(p){
+
 p.classList.remove("activa");
+
 });
 
-const destino=document.getElementById(pantalla);
+
+const destino=
+document.getElementById(pantalla);
+
 
 if(!destino){
 
-alert("No se encontró el módulo: "+pantalla);
+alert(
+"No se encontró el módulo: "+
+pantalla
+);
+
 return;
 
 }
 
+
 destino.classList.add("activa");
 
+
 if(pantalla==="inventario"){
+
 cargarArticulos();
+
 }
+
 
 window.scrollTo(0,0);
 
 }
 
 
-/* CARGAR INVENTARIO */
+/* ==================== CARGAR INVENTARIO ==================== */
 
 async function cargarArticulos(){
 
-const lista=document.getElementById("lista");
+const lista=
+document.getElementById("lista");
 
-lista.innerHTML="Cargando inventario...";
+lista.innerHTML=
+"Cargando inventario...";
+
 
 try{
 
@@ -407,10 +635,12 @@ SUPABASE_URL+
 {
 headers:{
 "apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY
+"Authorization":
+"Bearer "+SUPABASE_KEY
 }
 }
 );
+
 
 if(!respuesta.ok){
 
@@ -421,9 +651,13 @@ return;
 
 }
 
-articulos=await respuesta.json();
+
+articulos=
+await respuesta.json();
+
 
 mostrarArticulos(articulos);
+
 
 }catch(error){
 
@@ -437,40 +671,66 @@ lista.innerHTML=
 }
 
 
-/* MOSTRAR ARTÍCULOS */
+/* ==================== MOSTRAR ARTÍCULOS ==================== */
 
 function mostrarArticulos(listaArticulos){
 
-const lista=document.getElementById("lista");
+const lista=
+document.getElementById("lista");
+
 
 if(listaArticulos.length===0){
 
 lista.innerHTML=
-'<div class="tarjeta">No hay artículos registrados.</div>';
+'<div class="tarjeta">'+
+'No hay artículos registrados.'+
+'</div>';
 
 return;
 
 }
 
+
 lista.innerHTML="";
+
 
 listaArticulos.forEach(function(a){
 
-const div=document.createElement("div");
+const div=
+document.createElement("div");
 
 div.className="articulo";
 
+
 div.innerHTML=
-"<strong>"+(a.nombre||"")+"</strong>"+
-"<br>Código: "+(a.codigo||"")+
-"<br>Costo: $"+Number(a.costo||0).toFixed(2)+
+
+"<strong>"+
+(a.nombre||"")+
+"</strong>"+
+
+"<br>Código: "+
+(a.codigo||"")+
+
+"<br>Costo: $"+
+Number(a.costo||0).toFixed(2)+
+
 "<br>Precio público: $"+
 Number(a.precio_publico||0).toFixed(2)+
-"<br>Stock: "+Number(a.stock||0)+
-"<br>Stock mínimo: "+Number(a.stock_minimo||0)+
-'<br><br><button class="boton boton-azul" onclick="editarArticulo(\''+
+
+"<br>Stock: "+
+Number(a.stock||0)+
+
+"<br>Stock mínimo: "+
+Number(a.stock_minimo||0)+
+
+'<br><br>'+
+'<button class="boton boton-azul" '+
+'onclick="editarArticulo(\''+
 a.id+
-'\')">✏️ Editar</button>';
+'\')">'+
+'✏️ Editar'+
+'</button>';
+
 
 lista.appendChild(div);
 
@@ -479,17 +739,20 @@ lista.appendChild(div);
 }
 
 
-/* BUSCAR */
+/* ==================== BUSCAR ==================== */
 
 function buscarArticulos(){
 
-const texto=document
+const texto=
+document
 .getElementById("buscar")
 .value
 .toLowerCase()
 .trim();
 
-const resultados=articulos.filter(function(a){
+
+const resultados=
+articulos.filter(function(a){
 
 return String(a.codigo||"")
 .toLowerCase()
@@ -503,29 +766,40 @@ String(a.nombre||"")
 
 });
 
+
 mostrarArticulos(resultados);
 
 }
 
 
-/* NUEVO ARTÍCULO */
+/* ==================== NUEVO ARTÍCULO ==================== */
 
 function nuevoArticulo(){
 
 articuloEditando=null;
 
-document.getElementById("tituloFormulario").textContent=
+
+document
+.getElementById("tituloFormulario")
+.textContent=
 "Nuevo artículo";
 
-document.getElementById("botonGuardar").textContent=
+
+document
+.getElementById("botonGuardar")
+.textContent=
 "💾 Guardar artículo";
 
-document.getElementById("botonCancelar")
+
+document
+.getElementById("botonCancelar")
 .classList.add("oculto");
+
 
 document
 .getElementById("formulario")
 .classList.remove("oculto");
+
 
 document.getElementById("codigo").value="";
 document.getElementById("nombre").value="";
@@ -537,86 +811,119 @@ document.getElementById("minimo").value="";
 }
 
 
-/* EDITAR ARTÍCULO */
+/* ==================== EDITAR ARTÍCULO ==================== */
 
 function editarArticulo(id){
 
-const articulo=articulos.find(function(a){
+const articulo=
+articulos.find(function(a){
+
 return a.id===id;
+
 });
+
 
 if(!articulo){
 
 alert("No se encontró el artículo.");
+
 return;
 
 }
 
+
 articuloEditando=id;
 
-document.getElementById("tituloFormulario").textContent=
+
+document
+.getElementById("tituloFormulario")
+.textContent=
 "Editar artículo";
 
-document.getElementById("botonGuardar").textContent=
+
+document
+.getElementById("botonGuardar")
+.textContent=
 "💾 Guardar cambios";
 
-document.getElementById("botonCancelar")
+
+document
+.getElementById("botonCancelar")
 .classList.remove("oculto");
+
 
 document.getElementById("codigo").value=
 articulo.codigo||"";
 
+
 document.getElementById("nombre").value=
 articulo.nombre||"";
+
 
 document.getElementById("costo").value=
 articulo.costo||0;
 
+
 document.getElementById("precio").value=
 articulo.precio_publico||0;
+
 
 document.getElementById("stock").value=
 articulo.stock||0;
 
+
 document.getElementById("minimo").value=
 articulo.stock_minimo||0;
+
 
 document
 .getElementById("formulario")
 .classList.remove("oculto");
+
 
 window.scrollTo(0,0);
 
 }
 
 
-/* GUARDAR */
+/* ==================== GUARDAR ARTÍCULO ==================== */
 
 async function guardarArticulo(){
 
-const codigo=document
+const codigo=
+document
 .getElementById("codigo")
 .value
 .trim();
 
-const nombre=document
+
+const nombre=
+document
 .getElementById("nombre")
 .value
 .trim();
 
-const costo=Number(
+
+const costo=
+Number(
 document.getElementById("costo").value||0
 );
 
-const precio=Number(
+
+const precio=
+Number(
 document.getElementById("precio").value||0
 );
 
-const stock=Number(
+
+const stock=
+Number(
 document.getElementById("stock").value||0
 );
 
-const minimo=Number(
+
+const minimo=
+Number(
 document.getElementById("minimo").value||0
 );
 
@@ -624,13 +931,16 @@ document.getElementById("minimo").value||0
 if(!codigo){
 
 alert("Escribe el código.");
+
 return;
 
 }
 
+
 if(!nombre){
 
 alert("Escribe el nombre.");
+
 return;
 
 }
@@ -639,10 +949,15 @@ return;
 const datos={
 
 codigo:codigo,
+
 nombre:nombre,
+
 costo:costo,
+
 precio_publico:precio,
+
 stock:stock,
+
 stock_minimo:minimo
 
 };
@@ -652,31 +967,41 @@ try{
 
 let respuesta;
 
+
 if(articuloEditando){
 
-respuesta=await fetch(
+respuesta=
+await fetch(
 SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+articuloEditando,
+"/rest/v1/articulos?id=eq."+
+articuloEditando,
 {
 method:"PATCH",
 
 headers:{
 "apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY,
-"Content-Type":"application/json",
-"Prefer":"return=representation"
+"Authorization":
+"Bearer "+SUPABASE_KEY,
+"Content-Type":
+"application/json",
+"Prefer":
+"return=representation"
 },
 
-body:JSON.stringify(datos)
+body:
+JSON.stringify(datos)
 
 }
 );
+
 
 }else{
 
 datos.activo=true;
 
-respuesta=await fetch(
+
+respuesta=
+await fetch(
 SUPABASE_URL+
 "/rest/v1/articulos",
 {
@@ -684,12 +1009,16 @@ method:"POST",
 
 headers:{
 "apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY,
-"Content-Type":"application/json",
-"Prefer":"return=representation"
+"Authorization":
+"Bearer "+SUPABASE_KEY,
+"Content-Type":
+"application/json",
+"Prefer":
+"return=representation"
 },
 
-body:JSON.stringify(datos)
+body:
+JSON.stringify(datos)
 
 }
 );
@@ -699,14 +1028,17 @@ body:JSON.stringify(datos)
 
 if(!respuesta.ok){
 
-const error=await respuesta.text();
+const error=
+await respuesta.text();
 
 console.log(error);
 
 alert(
 articuloEditando
-?"No se pudieron guardar los cambios."
-:"No se pudo guardar el artículo."
+?
+"No se pudieron guardar los cambios."
+:
+"No se pudo guardar el artículo."
 );
 
 return;
@@ -716,12 +1048,15 @@ return;
 
 alert(
 articuloEditando
-?"✅ Cambios guardados."
-:"✅ Artículo guardado."
+?
+"✅ Cambios guardados."
+:
+"✅ Artículo guardado."
 );
 
 
 cancelarEdicion();
+
 
 cargarArticulos();
 
@@ -737,23 +1072,34 @@ alert("❌ Error de conexión.");
 }
 
 
-/* CANCELAR EDICIÓN */
+/* ==================== CANCELAR EDICIÓN ==================== */
 
 function cancelarEdicion(){
 
 articuloEditando=null;
 
-document.getElementById("formulario")
+
+document
+.getElementById("formulario")
 .classList.add("oculto");
 
-document.getElementById("tituloFormulario").textContent=
+
+document
+.getElementById("tituloFormulario")
+.textContent=
 "Nuevo artículo";
 
-document.getElementById("botonGuardar").textContent=
+
+document
+.getElementById("botonGuardar")
+.textContent=
 "💾 Guardar artículo";
 
-document.getElementById("botonCancelar")
+
+document
+.getElementById("botonCancelar")
 .classList.add("oculto");
+
 
 document.getElementById("codigo").value="";
 document.getElementById("nombre").value="";
@@ -765,7 +1111,243 @@ document.getElementById("minimo").value="";
 }
 
 
-/* ARRANQUE */
+/* ==================== COMPRAS ==================== */
+
+async function registrarCompra(){
+
+const codigo=
+document
+.getElementById("compraCodigo")
+.value
+.trim();
+
+
+const cantidad=
+Number(
+document
+.getElementById("compraCantidad")
+.value||0
+);
+
+
+const costo=
+Number(
+document
+.getElementById("compraCosto")
+.value||0
+);
+
+
+const mensaje=
+document.getElementById("mensajeCompra");
+
+
+if(!codigo){
+
+alert(
+"Escribe el código del artículo."
+);
+
+return;
+
+}
+
+
+if(cantidad<=0){
+
+alert(
+"La cantidad debe ser mayor que 0."
+);
+
+return;
+
+}
+
+
+if(costo<0){
+
+alert(
+"El costo no puede ser negativo."
+);
+
+return;
+
+}
+
+
+try{
+
+
+/* BUSCAR ARTÍCULO */
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?codigo=eq."+
+encodeURIComponent(codigo)+
+"&select=*",
+{
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":
+"Bearer "+SUPABASE_KEY
+}
+}
+);
+
+
+if(!respuestaArticulo.ok){
+
+alert(
+"No se pudo buscar el artículo."
+);
+
+return;
+
+}
+
+
+const encontrados=
+await respuestaArticulo.json();
+
+
+if(encontrados.length===0){
+
+alert(
+"No existe un artículo con ese código."
+);
+
+return;
+
+}
+
+
+const articulo=
+encontrados[0];
+
+
+/* CALCULAR NUEVO STOCK */
+
+const nuevoStock=
+Number(articulo.stock||0)+cantidad;
+
+
+/* ACTUALIZAR STOCK Y COSTO */
+
+const respuestaStock=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+articulo.id,
+{
+method:"PATCH",
+
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":
+"Bearer "+SUPABASE_KEY,
+"Content-Type":
+"application/json",
+"Prefer":
+"return=representation"
+},
+
+body:
+JSON.stringify({
+
+stock:nuevoStock,
+
+costo:costo
+
+})
+
+}
+);
+
+
+if(!respuestaStock.ok){
+
+const error=
+await respuestaStock.text();
+
+console.log(error);
+
+alert(
+"No se pudo actualizar el stock."
+);
+
+return;
+
+}
+
+
+/* MOSTRAR RESULTADO */
+
+mensaje.classList.remove("oculto");
+
+
+mensaje.innerHTML=
+
+"✅ Compra registrada correctamente."+
+
+"<br><br>"+
+
+"<strong>"+
+(articulo.nombre||"")+
+"</strong>"+
+
+"<br>Código: "+
+(articulo.codigo||"")+
+
+"<br>Cantidad recibida: "+
+cantidad+
+
+"<br>Stock anterior: "+
+Number(articulo.stock||0)+
+
+"<br>Nuevo stock: "+
+nuevoStock+
+
+"<br>Costo actualizado: $"+
+costo.toFixed(2);
+
+
+/* LIMPIAR */
+
+document
+.getElementById("compraCodigo")
+.value="";
+
+
+document
+.getElementById("compraCantidad")
+.value="";
+
+
+document
+.getElementById("compraCosto")
+.value="";
+
+
+/* ACTUALIZAR INVENTARIO */
+
+cargarArticulos();
+
+
+}catch(error){
+
+console.log(error);
+
+alert(
+"❌ Error de conexión."
+);
+
+}
+
+}
+
+
+/* ==================== ARRANQUE ==================== */
 
 comprobarConexion();
 
