@@ -4,13 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mueblería Mercado</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
   <h1>🪑 Mueblería Mercado</h1>
   <h2>Para tu hogar</h2>
 
   <p>Aplicación funcionando correctamente.</p>
+
+  <p id="conexion">Conectando con la base de datos...</p>
+
+  <script>
+    const SUPABASE_URL = "https://ggaqknpwlohpbyxeyque.supabase.co";
+
+    const SUPABASE_KEY = "sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+    const supabase = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function comprobarConexion() {
+      const { data, error } = await supabase
+        .from("categorias")
+        .select("id")
+        .limit(1);
+
+      const mensaje = document.getElementById("conexion");
+
+      if (error) {
+        mensaje.textContent = "⚠️ Conexión realizada, falta configurar permisos.";
+        console.log(error);
+      } else {
+        mensaje.textContent = "✅ Conectado correctamente con Supabase.";
+      }
+    }
+
+    comprobarConexion();
+  </script>
 
 </body>
 </html>
