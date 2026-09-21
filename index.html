@@ -3,19 +3,167 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Mueblería Mercado</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f1eb;
+      color: #222;
+    }
+
+    header {
+      background: #5a351f;
+      color: white;
+      text-align: center;
+      padding: 22px 15px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 16px;
+    }
+
+    main {
+      padding: 20px 15px 30px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .estado {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      font-size: 14px;
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .boton {
+      background: white;
+      border: none;
+      border-radius: 16px;
+      padding: 22px 10px;
+      min-height: 115px;
+      font-size: 17px;
+      font-weight: bold;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+      cursor: pointer;
+    }
+
+    .boton span {
+      display: block;
+      font-size: 34px;
+      margin-bottom: 9px;
+    }
+
+    .boton:active {
+      transform: scale(0.97);
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #777;
+      font-size: 13px;
+    }
+
+    @media (min-width: 600px) {
+      .menu {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-  <h1>🪑 Mueblería Mercado</h1>
-  <h2>Para tu hogar</h2>
+  <header>
+    <h1>🪑 Mueblería Mercado</h1>
+    <p>Para tu hogar</p>
+  </header>
 
-  <p>Aplicación funcionando correctamente.</p>
+  <main>
 
-  <p id="conexion">Conectando con la base de datos...</p>
+    <div class="estado" id="conexion">
+      Conectando con la base de datos...
+    </div>
+
+    <div class="menu">
+
+      <button class="boton" onclick="abrirModulo('inicio')">
+        <span>🏠</span>
+        Inicio
+      </button>
+
+      <button class="boton" onclick="abrirModulo('inventario')">
+        <span>📦</span>
+        Inventario
+      </button>
+
+      <button class="boton" onclick="abrirModulo('ventas')">
+        <span>💰</span>
+        Ventas
+      </button>
+
+      <button class="boton" onclick="abrirModulo('compras')">
+        <span>🛒</span>
+        Compras
+      </button>
+
+      <button class="boton" onclick="abrirModulo('clientes')">
+        <span>👥</span>
+        Clientes
+      </button>
+
+      <button class="boton" onclick="abrirModulo('proveedores')">
+        <span>🚚</span>
+        Proveedores
+      </button>
+
+      <button class="boton" onclick="abrirModulo('gastos')">
+        <span>💸</span>
+        Gastos
+      </button>
+
+      <button class="boton" onclick="abrirModulo('reportes')">
+        <span>📊</span>
+        Reportes
+      </button>
+
+      <button class="boton" onclick="abrirModulo('administracion')">
+        <span>⚙️</span>
+        Administración
+      </button>
+
+    </div>
+
+  </main>
+
+  <footer>
+    Mueblería Mercado · Para tu hogar
+  </footer>
 
   <script>
+
     const SUPABASE_URL =
       "https://ggaqknpwlohpbyxeyque.supabase.co";
 
@@ -39,33 +187,33 @@
         );
 
         if (respuesta.ok) {
-
           mensaje.textContent =
             "✅ Conectado correctamente con Supabase.";
-
         } else {
-
-          const error = await respuesta.text();
-
-          console.log("Respuesta Supabase:", error);
-
           mensaje.textContent =
             "⚠️ Supabase responde, pero falta configurar permisos.";
-
         }
 
       } catch (error) {
 
-        console.log("Error:", error);
+        console.log(error);
 
         mensaje.textContent =
           "❌ Error de conexión con Supabase.";
-
       }
     }
 
-    comprobarConexion();
-  </script>
+    function abrirModulo(modulo) {
 
-</body>
-</html>
+      alert(
+        "Módulo " +
+        modulo.charAt(0).toUpperCase() +
+        modulo.slice(1) +
+        " — lo construiremos a continuación."
+      );
+
+    }
+
+    comprobarConexion();
+
+ 
