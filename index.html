@@ -251,12 +251,6 @@ Comprobando conexión con la base de datos...
 💰 Ventas
 </button>
 
-<!-- AGREGADO: APARTADOS -->
-
-<button onclick="mostrarPantalla('apartados')">
-📝 Apartados
-</button>
-
 <button onclick="mostrarPantalla('compras')">
 🛒 Compras
 </button>
@@ -574,93 +568,6 @@ Cargando historial...
 </section>
 
 
-<!-- ================= APARTADOS ================= -->
-<!-- AGREGADO: NUEVO MODULO INDEPENDIENTE -->
-
-<section id="apartados" class="pantalla">
-
-<button class="secundario" onclick="mostrarPantalla('inicio')">
-← Volver
-</button>
-
-<h2>📝 Apartados</h2>
-
-<div class="tarjeta">
-
-<h3>➕ Nuevo apartado</h3>
-
-<div class="ayuda">
-Registra aquí los artículos que un cliente deja apartados.
-</div>
-
-<button type="button">
-👤 Seleccionar cliente
-</button>
-
-<button type="button">
-🪑 Seleccionar artículo
-</button>
-
-<div class="info-articulo">
-
-<strong>Nuevo apartado</strong>
-
-<br><br>
-
-Cliente:
-Pendiente de seleccionar
-
-<br>
-
-Artículo:
-Pendiente de seleccionar
-
-<br>
-
-Cantidad:
-0
-
-<br>
-
-Precio:
-$0.00
-
-<br>
-
-Anticipo:
-$0.00
-
-<br>
-
-Saldo:
-$0.00
-
-</div>
-
-<button type="button">
-💾 Crear apartado
-</button>
-
-</div>
-
-
-<div class="tarjeta">
-
-<h3>📋 Apartados pendientes</h3>
-
-<button type="button">
-🔄 Actualizar apartados
-</button>
-
-<div id="listaApartados">
-Todavía no hay apartados para mostrar.
-</div>
-
-</div>
-
-</section>
-
-
 <section id="clientes" class="pantalla">
 
 <button class="secundario" onclick="mostrarPantalla('inicio')">
@@ -867,3 +774,3721 @@ pantalla.classList.add("activa");
 
 if(id==="inventario"){
 cargarArticulos();
+}
+
+if(id==="compras"){
+cargarArticulos();
+cargarHistorialCompras();
+}
+
+if(id==="ventas"){
+cargarArticulos();
+cargarClientes();
+
+setTimeout(function(){
+cargarHistorialVentas();
+},100);
+}
+
+if(id==="clientes"){
+cargarClientes();
+}
+
+
+/* AGREGADO: cargar reportes al abrir Reportes */
+
+if(id==="reportes"){
+cargarReporteVentasDiarias();
+cargarReporteArticulosVendidos();
+}
+
+}
+
+
+/* ================= CONEXION ================= */
+
+async function comprobarConexion(){
+
+const conexion=document.getElementById("conexion");
+
+if(!conexion)return;
+
+conexion.innerHTML=
+"🔄 Comprobando conexión con Supabase...";
+
+try{
+
+const controlador=new AbortController();
+
+const temporizador=setTimeout(function(){
+
+controlador.abort();
+
+},5000);
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=id&limit=1",
+{
+method:"GET",
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY
+},
+cache:"no-store",
+signal:controlador.signal
+}
+);
+
+clearTimeout(temporizador);
+
+if(respuesta.ok){
+
+conexion.innerHTML=
+"✅ Conectado correctamente con Supabase.";
+
+return;
+
+}
+
+const errorTexto=await respuesta.text();
+
+console.error(
+"Error Supabase:",
+respuesta.status,
+errorTexto
+);
+
+conexion.innerHTML=
+"❌ Error de conexión con Supabase: "+
+respuesta.status+
+"<br><small>"+
+escaparHTML(errorTexto)+
+"</small>";
+
+}catch(error){
+
+console.error(
+"Error de conexión con Supabase:",
+error
+);
+
+if(error.name==="AbortError"){
+
+conexion.innerHTML=
+"❌ Supabase no respondió en 5 segundos.";
+
+}else{
+
+conexion.innerHTML=
+"❌ No se pudo conectar con Supabase."+
+"<br><small>"+
+escaparHTML(
+error.message||String(error)
+)+
+"</small>";
+
+}
+
+}
+
+}
+
+
+/* ================= ARTICULOS ================= */
+
+async function cargarArticulos(){
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+"Error cargando articulos:",
+respuesta.status,
+await respuesta.text()
+);
+
+return;
+
+}
+
+articulos=await respuesta.json();
+
+mostrarArticulos(articulos);
+
+}catch(error){
+
+console.error(error);
+
+}
+
+}
+
+
+function mostrarArticulos(lista){
+
+const contenedor=
+document.getElementById("listaArticulos");
+
+if(!contenedor)return;
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay articulos registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(a){
+
+return `
+<div class="articulo">
+
+<strong>
+${escaparHTML(a.nombre||"")}
+</strong>
+
+<div class="dato">
+Codigo: ${escaparHTML(a.codigo||"")}
+</div>
+
+<div class="dato">
+Costo: $${Number(a.costo||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Precio publico: $${Number(a.precio_publico||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Stock: <strong>${Number(a.stock||0)}</strong>
+</div>
+
+<div class="dato">
+Stock minimo: ${Number(a.stock_minimo||0)}
+</div>
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarArticulo('${a.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="eliminarArticulo('${a.id}')"
+>
+🗑️ Eliminar
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+function filtrarArticulos(){
+
+const campo=
+document.getElementById("buscarArticulo");
+
+if(!campo)return;
+
+const texto=
+campo.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+mostrarArticulos(articulos);
+return;
+
+}
+
+const filtrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto)
+||
+String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarArticulos(filtrados);
+
+}
+
+
+function mostrarFormularioArticulo(){
+
+articuloEditando=null;
+
+document.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document.getElementById("tituloFormulario")
+.innerHTML="Nuevo articulo";
+
+document.getElementById("botonGuardarArticulo")
+.innerHTML="💾 Guardar articulo";
+
+document.getElementById("codigoArticulo").value="";
+document.getElementById("nombreArticulo").value="";
+document.getElementById("costoArticulo").value="";
+document.getElementById("precioArticulo").value="";
+document.getElementById("stockArticulo").value="";
+document.getElementById("stockMinimoArticulo").value="";
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+function editarArticulo(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(!articulo)return;
+
+articuloEditando=articulo;
+
+document.getElementById("formArticulo")
+.classList.remove("oculto");
+
+document.getElementById("tituloFormulario")
+.innerHTML="Editar articulo";
+
+document.getElementById("botonGuardarArticulo")
+.innerHTML="💾 Guardar cambios";
+
+document.getElementById("codigoArticulo").value=
+articulo.codigo||"";
+
+document.getElementById("nombreArticulo").value=
+articulo.nombre||"";
+
+document.getElementById("costoArticulo").value=
+articulo.costo??"";
+
+document.getElementById("precioArticulo").value=
+articulo.precio_publico??"";
+
+document.getElementById("stockArticulo").value=
+articulo.stock??"";
+
+document.getElementById("stockMinimoArticulo").value=
+articulo.stock_minimo??"";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+async function guardarArticulo(){
+
+const codigo=
+document.getElementById("codigoArticulo").value.trim();
+
+const nombre=
+document.getElementById("nombreArticulo").value.trim();
+
+const costo=
+Number(document.getElementById("costoArticulo").value||0);
+
+const precio=
+Number(document.getElementById("precioArticulo").value||0);
+
+const stock=
+Number(document.getElementById("stockArticulo").value||0);
+
+const stockMinimo=
+Number(document.getElementById("stockMinimoArticulo").value||0);
+
+const mensaje=
+document.getElementById("mensajeArticulo");
+
+if(!codigo||!nombre){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+El codigo y el nombre son obligatorios.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+let respuesta;
+
+if(articuloEditando){
+
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloEditando.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+codigo:codigo,
+nombre:nombre,
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo
+})
+}
+);
+
+}else{
+
+respuesta=await fetch(
+SUPABASE_URL+"/rest/v1/articulos",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+codigo:codigo,
+nombre:nombre,
+categoria_id:
+"771aa9b4-ff75-4211-854c-e2944a327071",
+costo:costo,
+precio_publico:precio,
+stock:stock,
+stock_minimo:stockMinimo,
+activo:true
+})
+}
+);
+
+}
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+No se pudo guardar el articulo.
+<br><br>
+${escaparHTML(errorTexto)}
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+✅ Articulo guardado correctamente.
+</div>
+`;
+
+articuloEditando=null;
+
+await cargarArticulos();
+
+setTimeout(cancelarEdicion,800);
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+function cancelarEdicion(){
+
+articuloEditando=null;
+
+document.getElementById("formArticulo")
+.classList.add("oculto");
+
+document.getElementById("mensajeArticulo").innerHTML="";
+
+}
+
+
+async function eliminarArticulo(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(!articulo)return;
+
+if(!confirm(
+"¿Seguro que quieres eliminar el articulo \""+
+articulo.nombre+
+"\"?"
+))return;
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(await respuesta.text());
+
+alert("No se pudo eliminar el articulo.");
+
+return;
+
+}
+
+await cargarArticulos();
+
+}catch(error){
+
+console.error(error);
+
+alert("Error de conexion con Supabase.");
+
+}
+
+}
+
+
+/* ================= COMPRAS ================= */
+
+const campoCompraCodigo=
+document.getElementById("compraCodigo");
+
+const campoCompraNombre=
+document.getElementById("compraNombre");
+
+
+campoCompraCodigo.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("estadoCodigo").innerHTML="";
+document.getElementById("estadoNombre").innerHTML="";
+document.getElementById("resultadoCompra").innerHTML="";
+
+if(!texto)return;
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloCompra(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}else{
+
+document.getElementById("estadoCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese codigo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+campoCompraNombre.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloCompraSeleccionado=null;
+
+document.getElementById("estadoCodigo").innerHTML="";
+document.getElementById("estadoNombre").innerHTML="";
+document.getElementById("resultadoCompra").innerHTML="";
+
+if(!texto)return;
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloCompra(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}else{
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese articulo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesCompra(lista){
+
+const contenedor=
+document.getElementById("resultadoCompra");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el articulo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloCompraPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Codigo: ${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock actual: ${Number(a.stock||0)}
+
+<br>
+
+Costo: $${Number(a.costo||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloCompraPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+seleccionarArticuloCompra(articulo);
+}
+
+}
+
+
+function seleccionarArticuloCompra(articulo){
+
+articuloCompraSeleccionado=articulo;
+
+campoCompraCodigo.value=articulo.codigo||"";
+campoCompraNombre.value=articulo.nombre||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo??"";
+
+document.getElementById("estadoCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Codigo encontrado
+</div>
+`;
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Articulo encontrado
+</div>
+`;
+
+document.getElementById("resultadoCompra").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Articulo seleccionado</strong>
+
+<br><br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock actual:
+${Number(articulo.stock||0)}
+
+<br>
+
+Costo actual:
+$${Number(articulo.costo||0).toFixed(2)}
+
+</div>
+`;
+
+}
+
+
+/* ================= REGISTRAR COMPRA ================= */
+
+async function registrarCompra(){
+
+const mensaje=
+document.getElementById("mensajeCompra");
+
+let articulo=
+articuloCompraSeleccionado;
+
+const codigo=
+campoCompraCodigo.value.trim();
+
+const nombre=
+campoCompraNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("compraCantidad").value||0
+);
+
+const costo=
+Number(
+document.getElementById("compraCosto").value||0
+);
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No encontramos ese articulo.
+</div>
+`;
+
+return;
+
+}
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Indica la cantidad recibida.
+</div>
+`;
+
+return;
+
+}
+
+if(costo<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El costo no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+const nuevoStock=
+Number(articulo.stock||0)+cantidad;
+
+const subtotal=
+cantidad*costo;
+
+const respuestaCompra=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compras",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+body:JSON.stringify({
+
+id_proveedor:null,
+
+fecha:new Date().toISOString(),
+
+total:subtotal,
+
+estado:"completada",
+
+notas:"Compra registrada desde la aplicacion"
+
+})
+}
+);
+
+if(!respuestaCompra.ok){
+
+const errorTexto=
+await respuestaCompra.text();
+
+console.error(
+"Error guardando compra:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la compra.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const comprasGuardadas=
+await respuestaCompra.json();
+
+const compraGuardada=
+comprasGuardadas[0];
+
+if(!compraGuardada||
+!compraGuardada.id){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ La compra no devolvio un identificador valido.
+</div>
+`;
+
+return;
+
+}
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compra_detalles",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+uid:crypto.randomUUID(),
+
+compra_id:compraGuardada.id,
+
+articulo_id:articulo.id,
+
+cantidad:cantidad,
+
+costo_unitario:costo,
+
+subtotal:subtotal
+
+})
+}
+);
+
+if(!respuestaDetalle.ok){
+
+const errorTexto=
+await respuestaDetalle.text();
+
+console.error(
+"Error guardando detalle:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra se creo,
+pero no se pudo guardar el detalle.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+stock:nuevoStock,
+
+costo:costo
+
+})
+}
+);
+
+if(!respuestaArticulo.ok){
+
+console.error(
+await respuestaArticulo.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra quedo guardada,
+pero no se pudo actualizar el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+const fechaOperacion=
+compraGuardada.fecha||
+new Date().toISOString();
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Compra registrada correctamente
+</strong>
+
+<br><br>
+
+Operacion:
+<strong>${escaparHTML(String(compraGuardada.id).substring(0,8))}</strong>
+
+<br>
+
+Fecha y hora:
+${formatearFecha(fechaOperacion)}
+
+<br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad recibida:
+${cantidad}
+
+<br>
+
+Nuevo stock:
+${nuevoStock}
+
+<br>
+
+Costo:
+$${costo.toFixed(2)}
+
+<br>
+
+Total:
+$${subtotal.toFixed(2)}
+
+</div>
+`;
+
+articuloCompraSeleccionado=null;
+
+campoCompraCodigo.value="";
+campoCompraNombre.value="";
+
+document.getElementById("compraCantidad").value="";
+document.getElementById("compraCosto").value="";
+
+document.getElementById("estadoCodigo").innerHTML="";
+document.getElementById("estadoNombre").innerHTML="";
+document.getElementById("resultadoCompra").innerHTML="";
+
+await cargarArticulos();
+
+await cargarHistorialCompras();
+
+}catch(error){
+
+console.error(
+"Error registrando compra:",
+error
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= HISTORIAL COMPRAS ================= */
+
+async function cargarHistorialCompras(){
+
+const contenedor=
+document.getElementById("historialCompras");
+
+if(!contenedor)return;
+
+contenedor.innerHTML="Cargando historial...";
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compras?select=*&order=fecha.desc",
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=await respuesta.text();
+
+console.error(
+"Error historial compras:",
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+No se pudo cargar el historial de compras.
+<br><br>
+${escaparHTML(errorTexto)}
+</div>
+`;
+
+return;
+
+}
+
+const compras=
+await respuesta.json();
+
+if(!compras.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+Todavia no hay compras registradas.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+compras.map(function(c){
+
+const operacion=
+String(c.id||"").substring(0,8);
+
+return `
+<div class="historial">
+
+<strong>
+🛒 Compra
+</strong>
+
+<div class="fecha-operacion">
+📅 ${formatearFecha(c.fecha)}
+</div>
+
+<div class="operacion-id">
+Operacion: ${escaparHTML(operacion)}
+</div>
+
+<div class="dato">
+Total: <strong>$${Number(c.total||0).toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+Estado: ${escaparHTML(c.estado||"")}
+</div>
+
+</div>
+`;
+
+}).join("");
+
+}catch(error){
+
+console.error(error);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= VENTAS ================= */
+
+const campoVentaCodigo=
+document.getElementById("ventaCodigo");
+
+const campoVentaNombre=
+document.getElementById("ventaNombre");
+
+const campoVentaCliente=
+document.getElementById("ventaCliente");
+
+
+document
+.getElementById("ventaTipoCliente")
+.addEventListener(
+"change",
+function(){
+
+const campo=
+document.getElementById("campoClienteVenta");
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(this.value==="cliente"){
+
+campo.classList.remove("oculto");
+
+cargarClientes();
+
+}else{
+
+campo.classList.add("oculto");
+
+document.getElementById("ventaCliente").value="";
+
+}
+
+}
+);
+
+
+campoVentaCliente.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(!texto)return;
+
+const exactoCodigo=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===texto;
+
+});
+
+if(exactoCodigo){
+
+seleccionarClienteVenta(exactoCodigo);
+return;
+
+}
+
+const exacto=
+clientes.find(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()===texto
+||
+String(c.telefono||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarClienteVenta(exacto);
+return;
+
+}
+
+const encontrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesClienteVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese cliente.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesClienteVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoClienteVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el cliente:</strong>
+
+${lista.map(function(c){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarClienteVentaPorId('${c.id}')"
+>
+
+👤 ${escaparHTML(c.nombre||"")}
+
+<br>
+
+Codigo:
+<strong>
+${escaparHTML(c.codigo_cliente||"Sin codigo")}
+</strong>
+
+<br>
+
+Telefono:
+${escaparHTML(c.telefono||"")}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarClienteVentaPorId(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(cliente){
+seleccionarClienteVenta(cliente);
+}
+
+}
+
+
+function seleccionarClienteVenta(cliente){
+
+clienteVentaSeleccionado=cliente;
+
+campoVentaCliente.value=
+cliente.codigo_cliente||"";
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="estado-ok">
+✅ Cliente seleccionado
+</div>
+`;
+
+document.getElementById("resultadoClienteVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>👤 Cliente seleccionado</strong>
+
+<br><br>
+
+Codigo:
+<strong>
+${escaparHTML(cliente.codigo_cliente||"")}
+</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(cliente.nombre||"")}
+
+<br>
+
+Telefono:
+${escaparHTML(cliente.telefono||"")}
+
+</div>
+`;
+
+}
+
+
+campoVentaCodigo.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese codigo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+campoVentaNombre.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese articulo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el articulo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloVentaPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+${Number(a.stock||0)}
+
+<br>
+
+Precio publico:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloVentaPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+seleccionarArticuloVenta(articulo);
+}
+
+}
+
+
+function seleccionarArticuloVenta(articulo){
+
+articuloVentaSeleccionado=articulo;
+
+campoVentaCodigo.value=articulo.codigo||"";
+campoVentaNombre.value=articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("ventaPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Codigo encontrado
+</div>
+`;
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Articulo encontrado
+</div>
+`;
+
+document.getElementById("resultadoVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Articulo seleccionado</strong>
+
+<br><br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioVenta").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio para aplicar un descuento.
+</div>
+`;
+
+actualizarTotalVenta();
+
+}
+
+
+function actualizarTotalVenta(){
+
+const cantidad=
+Number(document.getElementById("ventaCantidad").value||0);
+
+const precio=
+Number(document.getElementById("ventaPrecio").value||0);
+
+const total=cantidad*precio;
+
+document.getElementById("totalVenta").innerHTML=
+"$"+total.toFixed(2);
+
+}
+
+
+/* ================= REGISTRAR VENTA ================= */
+
+async function registrarVenta(){
+
+const mensaje=
+document.getElementById("mensajeVenta");
+
+let articulo=
+articuloVentaSeleccionado;
+
+const codigo=
+campoVentaCodigo.value.trim();
+
+const nombre=
+campoVentaNombre.value.trim();
+
+const cantidad=
+Number(document.getElementById("ventaCantidad").value||0);
+
+const precio=
+Number(document.getElementById("ventaPrecio").value||0);
+
+const tipoCliente=
+document.getElementById("ventaTipoCliente").value;
+
+const clienteTexto=
+document.getElementById("ventaCliente").value.trim();
+
+const metodoPago=
+document.getElementById("ventaMetodoPago").value;
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado&&clienteTexto){
+
+const clienteEncontrado=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+||
+String(c.nombre||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+||
+String(c.telefono||"")
+.toLowerCase()===clienteTexto.toLowerCase();
+
+});
+
+if(clienteEncontrado){
+clienteVentaSeleccionado=clienteEncontrado;
+}
+
+}
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No encontramos ese articulo.
+</div>
+`;
+
+return;
+
+}
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Indica una cantidad valida.
+</div>
+`;
+
+return;
+
+}
+
+const stockActual=
+Number(articulo.stock||0);
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El precio no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Selecciona un cliente.
+</div>
+`;
+
+return;
+
+}
+
+const total=cantidad*precio;
+
+const nuevoStock=stockActual-cantidad;
+
+const idVenta=crypto.randomUUID();
+
+try{
+
+const respuestaVenta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+id:idVenta,
+
+cliente_id:
+tipoCliente==="cliente"
+?clienteVentaSeleccionado.id
+:null,
+
+fecha:new Date().toISOString(),
+
+tipo_cliente:tipoCliente,
+
+metodo_pago:metodoPago,
+
+total:total,
+
+estado:"completada",
+
+notas:"Venta registrada desde la aplicacion"
+
+})
+}
+);
+
+if(!respuestaVenta.ok){
+
+const errorTexto=
+await respuestaVenta.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la venta.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+venta_id:idVenta,
+
+articulo_id:articulo.id,
+
+cantidad:cantidad,
+
+precio_unitario:precio,
+
+subtotal:total
+
+})
+}
+);
+
+if(!respuestaDetalle.ok){
+
+const errorTexto=
+await respuestaDetalle.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta se creo,
+pero no se pudo guardar el detalle.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:nuevoStock
+})
+}
+);
+
+if(!respuestaArticulo.ok){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta quedo guardada,
+pero no se pudo actualizar el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Venta registrada correctamente
+</strong>
+
+<br><br>
+
+Operacion:
+<strong>${escaparHTML(idVenta.substring(0,8))}</strong>
+
+<br>
+
+Fecha y hora:
+${formatearFecha(new Date().toISOString())}
+
+<br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Metodo de pago:
+${escaparHTML(metodoPago)}
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
+
+</div>
+`;
+
+articuloVentaSeleccionado=null;
+clienteVentaSeleccionado=null;
+
+campoVentaCodigo.value="";
+campoVentaNombre.value="";
+
+document.getElementById("ventaCantidad").value="1";
+document.getElementById("ventaPrecio").value="";
+document.getElementById("ventaCliente").value="";
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+actualizarTotalVenta();
+
+await cargarArticulos();
+
+await cargarHistorialVentas();
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= HISTORIAL VENTAS ================= */
+
+async function cargarHistorialVentas(){
+
+const contenedor=
+document.getElementById("historialVentas");
+
+if(!contenedor)return;
+
+contenedor.innerHTML=
+"🔄 Cargando historial de ventas...";
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?select=*&limit=1000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error historial ventas:",
+respuesta.status,
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo cargar el historial de ventas.
+
+<br><br>
+
+Código:
+${respuesta.status}
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const ventas=
+await respuesta.json();
+
+console.log(
+"Ventas encontradas:",
+ventas
+);
+
+if(!Array.isArray(ventas)||!ventas.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+Todavia no hay ventas registradas.
+</div>
+`;
+
+return;
+
+}
+
+
+/* Ordenar las ventas de la mas reciente a la mas antigua */
+
+ventas.sort(function(a,b){
+
+const fechaA=
+new Date(a.fecha||0).getTime();
+
+const fechaB=
+new Date(b.fecha||0).getTime();
+
+return fechaB-fechaA;
+
+});
+
+
+contenedor.innerHTML=
+ventas.map(function(v){
+
+const id=
+String(v.id||"");
+
+const operacion=
+id.substring(0,8);
+
+let tipoCliente=
+"Publico general";
+
+if(v.tipo_cliente==="cliente"){
+tipoCliente="Cliente";
+}
+
+return `
+<div class="historial">
+
+<strong>
+💰 Venta
+</strong>
+
+<div class="fecha-operacion">
+📅 ${formatearFecha(v.fecha)}
+</div>
+
+<div class="operacion-id">
+Operacion: ${escaparHTML(operacion)}
+</div>
+
+<div class="dato">
+Cliente:
+<strong>
+${escaparHTML(tipoCliente)}
+</strong>
+</div>
+
+<div class="dato">
+Metodo:
+${escaparHTML(v.metodo_pago||"")}
+</div>
+
+<div class="dato">
+Total:
+<strong>
+$${Number(v.total||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Estado:
+<span class="estado-ok">
+${escaparHTML(v.estado||"")}
+</span>
+</div>
+
+</div>
+`;
+
+}).join("");
+
+}catch(error){
+
+console.error(
+"Error historial ventas:",
+error
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase al cargar el historial.
+<br><br>
+${escaparHTML(error.message||String(error))}
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= CLIENTES ================= */
+
+async function cargarClientes(){
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+await respuesta.text()
+);
+
+return;
+
+}
+
+clientes=await respuesta.json();
+
+const buscar=
+document.getElementById("buscarCliente");
+
+if(buscar){
+
+if(buscar.value.trim()){
+filtrarClientes();
+}else{
+mostrarClientes(clientes);
+}
+
+}
+
+}catch(error){
+
+console.error(error);
+
+}
+
+}
+
+
+function mostrarClientes(lista){
+
+const contenedor=
+document.getElementById("listaClientes");
+
+if(!contenedor)return;
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay clientes registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(c){
+
+return `
+<div class="cliente">
+
+<div class="codigo-cliente">
+${escaparHTML(c.codigo_cliente||"Sin codigo")}
+</div>
+
+<strong>
+${escaparHTML(c.nombre||"Sin nombre")}
+</strong>
+
+<div class="dato">
+📞 Telefono:
+${escaparHTML(c.telefono||"")}
+</div>
+
+<div class="dato">
+✉️ Correo:
+${escaparHTML(c.email||"")}
+</div>
+
+<div class="dato">
+📍 Direccion:
+${escaparHTML(c.direccion||"")}
+</div>
+
+<div class="dato">
+📝 Notas:
+${escaparHTML(c.notas||"")}
+</div>
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarCliente('${c.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="eliminarCliente('${c.id}')"
+>
+🗑️ Eliminar
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+function filtrarClientes(){
+
+const campo=
+document.getElementById("buscarCliente");
+
+if(!campo)return;
+
+const texto=
+campo.value.trim().toLowerCase();
+
+if(!texto){
+
+mostrarClientes(clientes);
+return;
+
+}
+
+const filtrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarClientes(filtrados);
+
+}
+
+
+/* ================= GENERAR CODIGO CLIENTE ================= */
+/* CORREGIDO: evita reutilizar codigos existentes */
+
+async function generarCodigoCliente(){
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?select=codigo_cliente&limit=5000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+console.error(await respuesta.text());
+
+return "CLI-0001";
+
+}
+
+const datos=
+await respuesta.json();
+
+let mayor=0;
+
+datos.forEach(function(cliente){
+
+const codigo=
+String(cliente.codigo_cliente||"");
+
+const coincidencia=
+codigo.match(/^CLI-(\d+)$/i);
+
+if(coincidencia){
+
+const numero=
+Number(coincidencia[1]);
+
+if(numero>mayor){
+
+mayor=numero;
+
+}
+
+}
+
+});
+
+
+/*
+ Buscamos el primer codigo libre.
+ Esto evita problemas si existen huecos
+ entre los numeros de clientes.
+*/
+
+let siguiente=1;
+
+while(
+datos.some(function(cliente){
+
+return String(cliente.codigo_cliente||"")
+.toUpperCase()===
+"CLI-"+String(siguiente).padStart(4,"0");
+
+})
+){
+
+siguiente++;
+
+}
+
+
+/*
+ Si no hay huecos, siguiente será el primero
+ disponible. El cálculo de mayor queda además
+ preparado para bases con muchos clientes.
+*/
+
+if(siguiente<=mayor){
+
+siguiente=mayor+1;
+
+while(
+datos.some(function(cliente){
+
+return String(cliente.codigo_cliente||"")
+.toUpperCase()===
+"CLI-"+String(siguiente).padStart(4,"0");
+
+})
+){
+
+siguiente++;
+
+}
+
+}
+
+return "CLI-"+String(siguiente).padStart(4,"0");
+
+}catch(error){
+
+console.error(error);
+
+return "CLI-0001";
+
+}
+
+}
+
+
+async function mostrarFormularioCliente(){
+
+clienteEditando=null;
+
+document.getElementById("formCliente")
+.classList.remove("oculto");
+
+document.getElementById("tituloFormularioCliente")
+.innerHTML="Nuevo cliente";
+
+document.getElementById("mensajeCliente").innerHTML="";
+
+document.getElementById("nombreCliente").value="";
+document.getElementById("telefonoCliente").value="";
+document.getElementById("emailCliente").value="";
+document.getElementById("direccionCliente").value="";
+document.getElementById("notasCliente").value="";
+
+document.getElementById("codigoCliente").value=
+"Generando...";
+
+const codigo=
+await generarCodigoCliente();
+
+document.getElementById("codigoCliente").value=
+codigo;
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+function editarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+clienteEditando=cliente;
+
+document.getElementById("formCliente")
+.classList.remove("oculto");
+
+document.getElementById("tituloFormularioCliente")
+.innerHTML="Editar cliente";
+
+document.getElementById("codigoCliente").value=
+cliente.codigo_cliente||"";
+
+document.getElementById("nombreCliente").value=
+cliente.nombre||"";
+
+document.getElementById("telefonoCliente").value=
+cliente.telefono||"";
+
+document.getElementById("emailCliente").value=
+cliente.email||"";
+
+document.getElementById("direccionCliente").value=
+cliente.direccion||"";
+
+document.getElementById("notasCliente").value=
+cliente.notas||"";
+
+document.getElementById("mensajeCliente").innerHTML="";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* ================= GUARDAR CLIENTE ================= */
+/* CORREGIDO: reintenta automaticamente si aparece 23505 */
+
+async function guardarCliente(){
+
+const mensaje=
+document.getElementById("mensajeCliente");
+
+const codigoInicial=
+document.getElementById("codigoCliente").value.trim();
+
+const nombre=
+document.getElementById("nombreCliente").value.trim();
+
+const telefono=
+document.getElementById("telefonoCliente").value.trim();
+
+const email=
+document.getElementById("emailCliente").value.trim();
+
+const direccion=
+document.getElementById("direccionCliente").value.trim();
+
+const notas=
+document.getElementById("notasCliente").value.trim();
+
+if(!codigoInicial||codigoInicial==="Generando..."){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No se pudo generar el codigo del cliente.
+</div>
+`;
+
+return;
+
+}
+
+if(!nombre){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El nombre del cliente es obligatorio.
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+let respuesta;
+
+if(clienteEditando){
+
+respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(clienteEditando.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+nombre:nombre,
+telefono:telefono,
+email:email,
+direccion:direccion,
+notas:notas
+
+})
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el cliente.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+}else{
+
+/*
+ Para un cliente nuevo hacemos hasta 3 intentos.
+ Si otro usuario acaba de utilizar el mismo codigo,
+ Supabase devuelve 23505 y generamos uno nuevo.
+*/
+
+let codigoActual=codigoInicial;
+
+let guardado=false;
+
+for(let intento=1;intento<=3;intento++){
+
+respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+id:crypto.randomUUID(),
+
+codigo_cliente:codigoActual,
+
+nombre:nombre,
+
+telefono:telefono,
+
+email:email,
+
+direccion:direccion,
+
+notas:notas,
+
+activo:true,
+
+creado_at:new Date().toISOString()
+
+})
+}
+);
+
+if(respuesta.ok){
+
+guardado=true;
+break;
+
+}
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error guardando cliente:",
+errorTexto
+);
+
+if(
+errorTexto.includes('"code":"23505"')||
+errorTexto.includes("clientes_codigo_cliente_key")
+){
+
+codigoActual=
+await generarCodigoCliente();
+
+document.getElementById("codigoCliente").value=
+codigoActual;
+
+continue;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el cliente.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+if(!guardado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo generar un codigo de cliente disponible.
+<br><br>
+Intenta nuevamente.
+
+</div>
+`;
+
+return;
+
+}
+
+}
+
+const codigo=
+document.getElementById("codigoCliente").value.trim();
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+✅ Cliente guardado correctamente.
+
+<br><br>
+
+Codigo:
+<strong>${escaparHTML(codigo)}</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(nombre)}
+
+</div>
+`;
+
+clienteEditando=null;
+
+await cargarClientes();
+
+setTimeout(
+cancelarCliente,
+1000
+);
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+function cancelarCliente(){
+
+clienteEditando=null;
+
+document.getElementById("formCliente")
+.classList.add("oculto");
+
+document.getElementById("mensajeCliente").innerHTML="";
+
+}
+
+
+async function eliminarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+if(!confirm(
+"¿Seguro que quieres eliminar al cliente \""+
+cliente.nombre+
+"\"?"
+)){
+
+return;
+
+}
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:headersSupabase,
+body:JSON.stringify({
+activo:false
+})
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(errorTexto);
+
+alert(
+"No se pudo eliminar el cliente.\n\n"+
+errorTexto
+);
+
+return;
+
+}
+
+clientes=
+clientes.filter(function(c){
+return c.id!==id;
+});
+
+filtrarClientes();
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Error de conexion con Supabase."
+);
+
+}
+
+}
+
+
+/* ================= REPORTE VENTAS POR DIA ================= */
+/* AGREGADO: no modifica el registro de ventas existente */
+
+async function cargarReporteVentasDiarias(){
+
+const contenedor=
+document.getElementById("reporteVentasDiarias");
+
+if(!contenedor)return;
+
+contenedor.innerHTML=
+"🔄 Cargando ventas por día...";
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?select=*&limit=1000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error reporte ventas:",
+respuesta.status,
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudieron cargar las ventas.
+
+<br><br>
+
+Código:
+${respuesta.status}
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const ventas=
+await respuesta.json();
+
+if(!Array.isArray(ventas)||!ventas.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+Todavia no hay ventas registradas.
+</div>
+`;
+
+return;
+
+}
+
+const grupos={};
+
+ventas.forEach(function(v){
+
+if(!v.fecha)return;
+
+const fecha=
+new Date(v.fecha);
+
+if(isNaN(fecha.getTime()))return;
+
+const partes=
+new Intl.DateTimeFormat(
+"en-CA",
+{
+timeZone:"America/Mexico_City",
+year:"numeric",
+month:"2-digit",
+day:"2-digit",
+hour:"2-digit",
+minute:"2-digit",
+hourCycle:"h23"
+}
+).formatToParts(fecha);
+
+const valores={};
+
+partes.forEach(function(p){
+valores[p.type]=p.value;
+});
+
+let anio=Number(valores.year);
+let mes=Number(valores.month);
+let dia=Number(valores.day);
+
+const hora=Number(valores.hour);
+const minuto=Number(valores.minute);
+
+if(
+hora>20||
+(hora===20&&minuto>0)
+){
+
+const siguiente=
+new Date(
+Date.UTC(
+anio,
+mes-1,
+dia
+)
+);
+
+siguiente.setUTCDate(
+siguiente.getUTCDate()+1
+);
+
+anio=siguiente.getUTCFullYear();
+mes=siguiente.getUTCMonth()+1;
+dia=siguiente.getUTCDate();
+
+}
+
+const clave=
+String(anio)+
+"-"+
+String(mes).padStart(2,"0")+
+"-"+
+String(dia).padStart(2,"0");
+
+if(!grupos[clave]){
+
+grupos[clave]={
+fecha:clave,
+efectivo:0,
+tarjeta:0,
+transferencia:0,
+aplazo:0,
+total:0,
+cantidad:0
+};
+
+}
+
+const total=
+Number(v.total||0);
+
+const metodo=
+String(v.metodo_pago||"")
+.toLowerCase()
+.trim();
+
+if(metodo==="efectivo"){
+grupos[clave].efectivo+=total;
+}
+else if(metodo==="tarjeta"){
+grupos[clave].tarjeta+=total;
+}
+else if(metodo==="transferencia"){
+grupos[clave].transferencia+=total;
+}
+else if(metodo==="aplazo"){
+grupos[clave].aplazo+=total;
+}
+
+grupos[clave].total+=total;
+grupos[clave].cantidad++;
+
+});
+
+const dias=
+Object.values(grupos)
+.sort(function(a,b){
+return b.fecha.localeCompare(a.fecha);
+});
+
+if(!dias.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay ventas para mostrar.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+dias.map(function(d){
+
+const partes=
+d.fecha.split("-");
+
+const fechaMostrar=
+partes[2]+"/"+
+partes[1]+"/"+
+partes[0];
+
+return `
+<div class="historial">
+
+<strong>
+📅 Ventas del día ${fechaMostrar}
+</strong>
+
+<div class="ayuda">
+Corte: 20:00 hora de México
+</div>
+
+<div class="dato">
+🧾 Número de ventas:
+<strong>${d.cantidad}</strong>
+</div>
+
+<div class="separador"></div>
+
+<div class="dato">
+💵 Efectivo:
+<strong>$${d.efectivo.toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+💳 Tarjeta:
+<strong>$${d.tarjeta.toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+🏦 Transferencia:
+<strong>$${d.transferencia.toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+📋 Aplazo:
+<strong>$${d.aplazo.toFixed(2)}</strong>
+</div>
+
+<div class="separador"></div>
+
+<div class="dato">
+<strong>
+💰 TOTAL DEL DÍA:
+$${d.total.toFixed(2)}
+</strong>
+</div>
+
+</div>
+`;
+
+}).join("");
+
+}catch(error){
+
+console.error(
+"Error reporte ventas diarias:",
+error
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+<br><br>
+
+${escaparHTML(
+error.message||String(error)
+)}
+
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= REPORTE ARTICULOS VENDIDOS ================= */
+/* AGREGADO: solo agrega el reporte, no modifica ventas */
+
+async function cargarReporteArticulosVendidos(){
+
+const contenedor=
+document.getElementById("reporteArticulosVendidos");
+
+if(!contenedor)return;
+
+contenedor.innerHTML=
+"🔄 Cargando artículos vendidos...";
+
+try{
+
+const respuestaVentas=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?select=id,estado&limit=5000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuestaVentas.ok){
+
+const errorTexto=
+await respuestaVentas.text();
+
+console.error(
+"Error cargando ventas para reporte:",
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudieron cargar las ventas.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const ventas=
+await respuestaVentas.json();
+
+const ventasValidas=new Set(
+ventas
+.filter(function(v){
+return String(v.estado||"")
+.toLowerCase()!=="cancelada";
+})
+.map(function(v){
+return v.id;
+})
+);
+
+const respuestaDetalles=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle?select=*&limit=5000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuestaDetalles.ok){
+
+const errorTexto=
+await respuestaDetalles.text();
+
+console.error(
+"Error cargando detalles para reporte:",
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudieron cargar los detalles de las ventas.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const detalles=
+await respuestaDetalles.json();
+
+const respuestaArticulos=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulos.ok){
+
+const errorTexto=
+await respuestaArticulos.text();
+
+console.error(
+"Error cargando articulos para reporte:",
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudieron cargar los artículos.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const articulosReporte=
+await respuestaArticulos.json();
+
+const mapaArticulos={};
+
+articulosReporte.forEach(function(articulo){
+
+mapaArticulos[articulo.id]={
+codigo:articulo.codigo||"",
+nombre:articulo.nombre||"Sin nombre",
+cantidad:0,
+total:0
+};
+
+});
+
+detalles.forEach(function(detalle){
+
+if(!ventasValidas.has(detalle.venta_id)){
+return;
+}
+
+const articulo=
+mapaArticulos[detalle.articulo_id];
+
+if(!articulo){
+return;
+}
+
+const cantidad=
+Number(detalle.cantidad||0);
+
+const subtotal=
+Number(detalle.subtotal||0);
+
+articulo.cantidad+=cantidad;
+articulo.total+=subtotal;
+
+});
+
+const vendidos=
+Object.values(mapaArticulos)
+.filter(function(articulo){
+return articulo.cantidad>0;
+});
+
+if(!vendidos.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay artículos vendidos registrados.
+</div>
+`;
+
+return;
+
+}
+
+const masVendidos=
+[...vendidos]
+.sort(function(a,b){
+
+if(b.cantidad!==a.cantidad){
+return b.cantidad-a.cantidad;
+}
+
+return a.nombre.localeCompare(b.nombre);
+
+})
+.slice(0,10);
+
+const menosVendidos=
+[...vendidos]
+.sort(function(a,b){
+
+if(a.cantidad!==b.cantidad){
+return a.cantidad-b.cantidad;
+}
+
+return a.nombre.localeCompare(b.nombre);
+
+})
+.slice(0,10);
+
+function crearFila(articulo){
+
+return `
+<div class="articulo">
+
+<strong>
+${escaparHTML(articulo.nombre)}
+</strong>
+
+<div class="dato">
+Codigo:
+${escaparHTML(articulo.codigo||"Sin codigo")}
+</div>
+
+<div class="dato">
+Unidades vendidas:
+<strong>${articulo.cantidad}</strong>
+</div>
+
+<div class="dato">
+Total vendido:
+<strong>
+$${articulo.total.toLocaleString("es-MX",{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+})}
+</strong>
+</div>
+
+</div>
+`;
+
+}
+
+let html="";
+
+html+=`
+<h3>🥇 Más vendidos</h3>
+`;
+
+masVendidos.forEach(function(articulo){
+html+=crearFila(articulo);
+});
+
+html+=`
+<div class="separador"></div>
+<h3>📉 Menos vendidos</h3>
+`;
+
+menosVendidos.forEach(function(articulo){
+html+=crearFila(articulo);
+});
+
+contenedor.innerHTML=html;
+
+}catch(error){
+
+console.error(
+"Error reporte articulos vendidos:",
+error
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+<br><br>
+
+${escaparHTML(
+error.message||String(error)
+)}
+
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= FUNCIONES AUXILIARES ================= */
+
+function escaparHTML(texto){
+
+return String(texto)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+function formatearFecha(fecha){
+
+if(!fecha)return "Sin fecha";
+
+const d=new Date(fecha);
+
+if(isNaN(d.getTime())){
+return "Fecha no valida";
+}
+
+return d.toLocaleString(
+"es-MX",
+{
+day:"2-digit",
+month:"2-digit",
+year:"numeric",
+hour:"2-digit",
+minute:"2-digit",
+second:"2-digit"
+}
+);
+
+}
+
+
+/* ================= INICIO ================= */
+
+comprobarConexion();
+
+</script>
+
+</body>
+</html>
