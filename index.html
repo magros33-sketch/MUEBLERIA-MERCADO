@@ -102,14 +102,20 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
-input,select{
+input,select,textarea{
 width:100%;
 padding:13px;
 margin:6px 0 10px;
 border:1px solid #ccc;
 border-radius:8px;
 font-size:16px;
-background:#fff
+background:#fff;
+font-family:Arial,sans-serif
+}
+
+textarea{
+min-height:90px;
+resize:vertical
 }
 
 label{
@@ -186,6 +192,23 @@ margin:3px 0 10px
 font-size:20px;
 font-weight:bold;
 margin-top:10px
+}
+
+.cliente{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:10px 0;
+box-shadow:0 2px 7px rgba(0,0,0,.08)
+}
+
+.cliente strong{
+font-size:18px
+}
+
+.estado-inactivo{
+color:#a00000;
+font-weight:bold
 }
 </style>
 </head>
@@ -575,9 +598,82 @@ onclick="mostrarPantalla('inicio')"
 
 <h2>👥 Clientes</h2>
 
-<div class="tarjeta">
-Próximamente: clientes.
+<button onclick="mostrarFormularioCliente()">
+➕ Nuevo cliente
+</button>
+
+<input
+id="buscarCliente"
+type="text"
+placeholder="Buscar por nombre o teléfono"
+autocomplete="off"
+oninput="filtrarClientes()"
+>
+
+<div id="formCliente" class="tarjeta oculto">
+
+<h3 id="tituloFormularioCliente">
+Nuevo cliente
+</h3>
+
+<label>Nombre</label>
+
+<input
+id="nombreCliente"
+type="text"
+placeholder="Nombre completo"
+>
+
+<label>Teléfono</label>
+
+<input
+id="telefonoCliente"
+type="text"
+placeholder="Teléfono"
+>
+
+<label>Email</label>
+
+<input
+id="emailCliente"
+type="email"
+placeholder="Correo electrónico"
+>
+
+<label>Dirección</label>
+
+<input
+id="direccionCliente"
+type="text"
+placeholder="Dirección"
+>
+
+<label>Notas</label>
+
+<textarea
+id="notasCliente"
+placeholder="Notas del cliente"
+></textarea>
+
+<button
+id="botonGuardarCliente"
+onclick="guardarCliente()"
+>
+💾 Guardar cliente
+</button>
+
+<button
+class="secundario"
+onclick="cancelarEdicionCliente()"
+>
+Cancelar
+</button>
+
+<div id="mensajeCliente"></div>
+
 </div>
+
+<div id="listaClientes"></div>
 
 </section>
 
@@ -692,6 +788,9 @@ let articuloEditando=null;
 let articuloCompraSeleccionado=null;
 let articuloVentaSeleccionado=null;
 
+let clientes=[];
+let clienteEditando=null;
+
 
 /* =====================================================
    NAVEGACIÓN
@@ -720,6 +819,10 @@ cargarArticulos();
 
 if(id==="ventas"){
 cargarArticulos();
+}
+
+if(id==="clientes"){
+cargarClientes();
 }
 
 }
@@ -2701,6 +2804,576 @@ mensaje.innerHTML=
 
 </div>
 `;
+
+}
+
+}
+
+
+/* =====================================================
+   CLIENTES
+   ===================================================== */
+
+/* Cargar clientes activos */
+
+async function cargarClientes(){
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+"Error cargando clientes:",
+respuesta.status,
+await respuesta.text()
+);
+
+document.getElementById("listaClientes").innerHTML=
+`
+<div class="mensaje-error">
+❌ No se pudieron cargar los clientes.
+</div>
+`;
+
+return;
+
+}
+
+clientes=await respuesta.json();
+
+mostrarClientes(clientes);
+
+}catch(error){
+
+console.error(error);
+
+document.getElementById("listaClientes").innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexión con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR CLIENTES
+   ===================================================== */
+
+function mostrarClientes(lista){
+
+const contenedor=
+document.getElementById("listaClientes");
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay clientes registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(c){
+
+return `
+<div class="cliente">
+
+<strong>
+${escaparHTML(c.nombre||"")}
+</strong>
+
+<div class="dato">
+📞 Teléfono:
+${escaparHTML(c.telefono||"")}
+</div>
+
+<div class="dato">
+✉️ Email:
+${escaparHTML(c.email||"")}
+</div>
+
+<div class="dato">
+📍 Dirección:
+${escaparHTML(c.direccion||"")}
+</div>
+
+${c.notas ? `
+<div class="dato">
+📝 Notas:
+${escaparHTML(c.notas)}
+</div>
+` : ""}
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarCliente('${c.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="desactivarCliente('${c.id}')"
+>
+🗑️ Desactivar cliente
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+/* =====================================================
+   BUSCAR CLIENTES
+   ===================================================== */
+
+function filtrarClientes(){
+
+const texto=
+document.getElementById("buscarCliente")
+.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+mostrarClientes(clientes);
+
+return;
+
+}
+
+const filtrados=
+clientes.filter(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarClientes(filtrados);
+
+}
+
+
+/* =====================================================
+   NUEVO CLIENTE
+   ===================================================== */
+
+function mostrarFormularioCliente(){
+
+clienteEditando=null;
+
+document
+.getElementById("formCliente")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormularioCliente")
+.innerHTML=
+"Nuevo cliente";
+
+document
+.getElementById("botonGuardarCliente")
+.innerHTML=
+"💾 Guardar cliente";
+
+document.getElementById("nombreCliente").value="";
+document.getElementById("telefonoCliente").value="";
+document.getElementById("emailCliente").value="";
+document.getElementById("direccionCliente").value="";
+document.getElementById("notasCliente").value="";
+document.getElementById("mensajeCliente").innerHTML="";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   EDITAR CLIENTE
+   ===================================================== */
+
+function editarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+clienteEditando=cliente;
+
+document
+.getElementById("formCliente")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormularioCliente")
+.innerHTML=
+"Editar cliente";
+
+document
+.getElementById("botonGuardarCliente")
+.innerHTML=
+"💾 Guardar cambios";
+
+document.getElementById("nombreCliente").value=
+cliente.nombre||"";
+
+document.getElementById("telefonoCliente").value=
+cliente.telefono||"";
+
+document.getElementById("emailCliente").value=
+cliente.email||"";
+
+document.getElementById("direccionCliente").value=
+cliente.direccion||"";
+
+document.getElementById("notasCliente").value=
+cliente.notas||"";
+
+document.getElementById("mensajeCliente").innerHTML="";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   GUARDAR CLIENTE
+   ===================================================== */
+
+async function guardarCliente(){
+
+const mensaje=
+document.getElementById("mensajeCliente");
+
+const nombre=
+document
+.getElementById("nombreCliente")
+.value
+.trim();
+
+const telefono=
+document
+.getElementById("telefonoCliente")
+.value
+.trim();
+
+const email=
+document
+.getElementById("emailCliente")
+.value
+.trim();
+
+const direccion=
+document
+.getElementById("direccionCliente")
+.value
+.trim();
+
+const notas=
+document
+.getElementById("notasCliente")
+.value
+.trim();
+
+
+if(!nombre){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El nombre del cliente es obligatorio.
+</div>
+`;
+
+return;
+
+}
+
+
+try{
+
+let respuesta;
+
+
+if(clienteEditando){
+
+/* =========================
+   EDITAR CLIENTE
+   ========================= */
+
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(clienteEditando.id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+nombre:nombre,
+
+telefono:telefono,
+
+email:email,
+
+direccion:direccion,
+
+notas:notas
+
+})
+
+}
+);
+
+}else{
+
+/* =========================
+   NUEVO CLIENTE
+   ========================= */
+
+respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id:crypto.randomUUID(),
+
+nombre:nombre,
+
+telefono:telefono,
+
+email:email,
+
+direccion:direccion,
+
+notas:notas,
+
+activo:true,
+
+creado_at:new Date().toISOString()
+
+})
+
+}
+);
+
+}
+
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error guardando cliente:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el cliente.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+✅ Cliente guardado correctamente.
+
+</div>
+`;
+
+
+clienteEditando=null;
+
+await cargarClientes();
+
+setTimeout(
+cancelarEdicionCliente,
+800
+);
+
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   CANCELAR EDICIÓN CLIENTE
+   ===================================================== */
+
+function cancelarEdicionCliente(){
+
+clienteEditando=null;
+
+document
+.getElementById("formCliente")
+.classList.add("oculto");
+
+document
+.getElementById("mensajeCliente")
+.innerHTML="";
+
+}
+
+
+/* =====================================================
+   DESACTIVAR CLIENTE
+   ===================================================== */
+
+async function desactivarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+
+if(!confirm(
+"¿Seguro que quieres desactivar al cliente \""+
+cliente.nombre+
+"\"?"
+)){
+
+return;
+
+}
+
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+activo:false
+
+})
+
+}
+);
+
+
+if(!respuesta.ok){
+
+console.error(
+await respuesta.text()
+);
+
+alert(
+"No se pudo desactivar el cliente."
+);
+
+return;
+
+}
+
+
+await cargarClientes();
+
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Error de conexión con Supabase."
+);
 
 }
 
