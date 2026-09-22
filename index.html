@@ -1071,7 +1071,7 @@ document.getElementById("mensajeArticulo").innerHTML="";
 
 
 /* =====================================================
-   EDITAR
+   EDITAR ARTÍCULO
    ===================================================== */
 
 function editarArticulo(id){
@@ -1271,7 +1271,7 @@ Error de conexión con Supabase.
 
 
 /* =====================================================
-   CANCELAR
+   CANCELAR ARTÍCULO
    ===================================================== */
 
 function cancelarEdicion(){
@@ -1288,7 +1288,7 @@ document.getElementById("mensajeArticulo").innerHTML="";
 
 
 /* =====================================================
-   ELIMINAR
+   ELIMINAR ARTÍCULO
    ===================================================== */
 
 async function eliminarArticulo(id){
@@ -2351,8 +2351,6 @@ const metodoPago=
 document.getElementById("ventaMetodoPago").value;
 
 
-/* Buscar automáticamente por código */
-
 if(!articulo&&codigo){
 
 articulo=
@@ -2366,8 +2364,6 @@ return String(a.codigo||"")
 }
 
 
-/* Buscar automáticamente por nombre */
-
 if(!articulo&&nombre){
 
 articulo=
@@ -2380,8 +2376,6 @@ return String(a.nombre||"")
 
 }
 
-
-/* Validaciones */
 
 if(!articulo){
 
@@ -2486,15 +2480,6 @@ const nuevoStock=
 stockActual-cantidad;
 
 
-/* =====================================================
-   ID DE LA VENTA
-   ===================================================== */
-
-/*
-   Se genera el UUID aquí para no necesitar
-   return=representation en Supabase.
-*/
-
 const idVenta=
 crypto.randomUUID();
 
@@ -2502,9 +2487,9 @@ crypto.randomUUID();
 try{
 
 
-/* =====================================================
-   1. GUARDAR CABECERA DE VENTA
-   ===================================================== */
+/* =========================
+   GUARDAR VENTA
+   ========================= */
 
 const respuestaVenta=
 await fetch(
@@ -2523,7 +2508,6 @@ body:JSON.stringify({
 id:
 idVenta,
 
-/* CORREGIDO: columna real de Supabase */
 cliente_id:
 tipoCliente==="cliente"
 ?cliente
@@ -2535,7 +2519,6 @@ new Date().toISOString(),
 tipo_cliente:
 tipoCliente,
 
-/* CORRECTO: sin acento */
 metodo_pago:
 metodoPago,
 
@@ -2582,9 +2565,9 @@ return;
 }
 
 
-/* =====================================================
-   2. GUARDAR DETALLE
-   ===================================================== */
+/* =========================
+   GUARDAR DETALLE
+   ========================= */
 
 const respuestaDetalle=
 await fetch(
@@ -2600,11 +2583,9 @@ headers:{
 
 body:JSON.stringify({
 
-/* Usamos el mismo ID generado para la venta */
 venta_id:
 idVenta,
 
-/* CORREGIDO: columna real de Supabase */
 "artículo_id":
 articulo.id,
 
@@ -2653,9 +2634,9 @@ return;
 }
 
 
-/* =====================================================
-   3. ACTUALIZAR STOCK
-   ===================================================== */
+/* =========================
+   ACTUALIZAR STOCK
+   ========================= */
 
 const respuestaArticulo=
 await fetch(
@@ -2683,12 +2664,8 @@ nuevoStock
 
 if(!respuestaArticulo.ok){
 
-const errorTexto=
-await respuestaArticulo.text();
-
 console.error(
-"Error actualizando stock:",
-errorTexto
+await respuestaArticulo.text()
 );
 
 mensaje.innerHTML=
@@ -2710,9 +2687,9 @@ return;
 }
 
 
-/* =====================================================
+/* =========================
    ÉXITO
-   ===================================================== */
+   ========================= */
 
 mensaje.innerHTML=
 `
@@ -2759,10 +2736,6 @@ Nuevo stock:
 </div>
 `;
 
-
-/* =====================================================
-   LIMPIAR FORMULARIO
-   ===================================================== */
 
 articuloVentaSeleccionado=null;
 
@@ -2813,8 +2786,6 @@ mensaje.innerHTML=
 /* =====================================================
    CLIENTES
    ===================================================== */
-
-/* Cargar clientes activos */
 
 async function cargarClientes(){
 
@@ -2933,9 +2904,9 @@ onclick="editarCliente('${c.id}')"
 
 <button
 class="eliminar"
-onclick="desactivarCliente('${c.id}')"
+onclick="eliminarCliente('${c.id}')"
 >
-🗑️ Desactivar cliente
+🗑️ Eliminar cliente
 </button>
 
 </div>
@@ -3138,10 +3109,6 @@ let respuesta;
 
 if(clienteEditando){
 
-/* =========================
-   EDITAR CLIENTE
-   ========================= */
-
 respuesta=await fetch(
 SUPABASE_URL+
 "/rest/v1/clientes?id=eq."+
@@ -3172,10 +3139,6 @@ notas:notas
 );
 
 }else{
-
-/* =========================
-   NUEVO CLIENTE
-   ========================= */
 
 respuesta=await fetch(
 SUPABASE_URL+
@@ -3300,10 +3263,10 @@ document
 
 
 /* =====================================================
-   DESACTIVAR CLIENTE
+   ELIMINAR CLIENTE
    ===================================================== */
 
-async function desactivarCliente(id){
+async function eliminarCliente(id){
 
 const cliente=
 clientes.find(function(c){
@@ -3314,7 +3277,7 @@ if(!cliente)return;
 
 
 if(!confirm(
-"¿Seguro que quieres desactivar al cliente \""+
+"¿Seguro que quieres eliminar al cliente \""+
 cliente.nombre+
 "\"?"
 )){
@@ -3351,12 +3314,17 @@ activo:false
 
 if(!respuesta.ok){
 
+const errorTexto=
+await respuesta.text();
+
 console.error(
-await respuesta.text()
+"Error eliminando cliente:",
+errorTexto
 );
 
 alert(
-"No se pudo desactivar el cliente."
+"No se pudo eliminar el cliente.\n\n"+
+errorTexto
 );
 
 return;
