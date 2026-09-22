@@ -2383,6 +2383,19 @@ const nuevoStock=
 stockActual-cantidad;
 
 
+/* =====================================================
+   ID DE LA VENTA
+   ===================================================== */
+
+/*
+   Se genera el UUID aquí para no necesitar
+   return=representation en Supabase.
+*/
+
+const idVenta=
+crypto.randomUUID();
+
+
 try{
 
 
@@ -2399,10 +2412,13 @@ method:"POST",
 
 headers:{
 ...headersSupabase,
-"Prefer":"return=representation"
+"Prefer":"return=minimal"
 },
 
 body:JSON.stringify({
+
+id:
+idVenta,
 
 /* CORREGIDO: columna real de Supabase */
 cliente_id:
@@ -2463,30 +2479,6 @@ return;
 }
 
 
-const ventasGuardadas=
-await respuestaVenta.json();
-
-const ventaGuardada=
-ventasGuardadas[0];
-
-
-if(!ventaGuardada||
-!ventaGuardada.id){
-
-mensaje.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ La venta no devolvió un identificador válido.
-
-</div>
-`;
-
-return;
-
-}
-
-
 /* =====================================================
    2. GUARDAR DETALLE
    ===================================================== */
@@ -2505,9 +2497,9 @@ headers:{
 
 body:JSON.stringify({
 
-/* CORREGIDO: columna real de Supabase */
+/* Usamos el mismo ID generado para la venta */
 venta_id:
-ventaGuardada.id,
+idVenta,
 
 /* CORREGIDO: columna real de Supabase */
 "artículo_id":
