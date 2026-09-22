@@ -59,9 +59,7 @@ background:#123b2a;
 color:#fff
 }
 
-button.secundario{
-background:#777
-}
+button.secundario{background:#777}
 
 button.editar{
 background:#245c44;
@@ -82,17 +80,11 @@ text-align:left;
 border:1px solid #d0ddd5
 }
 
-.menu button{
-margin-bottom:9px
-}
+.menu button{margin-bottom:9px}
 
-.pantalla{
-display:none
-}
+.pantalla{display:none}
 
-.pantalla.activa{
-display:block
-}
+.pantalla.activa{display:block}
 
 .tarjeta{
 background:#fff;
@@ -141,16 +133,11 @@ padding:12px;
 margin:8px 0
 }
 
-.oculto{
-display:none
-}
+.oculto{display:none}
 
-h2{
-margin-top:5px
-}
+h2{margin-top:5px}
 
-.articulo,
-.cliente{
+.articulo,.cliente{
 background:#fff;
 border-radius:12px;
 padding:15px;
@@ -158,17 +145,11 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
-.articulo strong{
-font-size:18px
-}
+.articulo strong{font-size:18px}
 
-.cliente strong{
-font-size:18px
-}
+.cliente strong{font-size:18px}
 
-.dato{
-margin:5px 0
-}
+.dato{margin:5px 0}
 
 .separador{
 height:1px;
@@ -208,9 +189,7 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
-.historial strong{
-font-size:17px
-}
+.historial strong{font-size:17px}
 
 .fecha-operacion{
 font-weight:bold;
@@ -234,7 +213,7 @@ word-break:break-all
 </header>
 
 <div id="conexion">
-Conectando con la base de datos...
+🔄 Comprobando conexión con Supabase...
 </div>
 
 <main>
@@ -243,37 +222,14 @@ Conectando con la base de datos...
 
 <div class="menu">
 
-<button onclick="mostrarPantalla('inventario')">
-📦 Inventario
-</button>
-
-<button onclick="mostrarPantalla('ventas')">
-💰 Ventas
-</button>
-
-<button onclick="mostrarPantalla('compras')">
-🛒 Compras
-</button>
-
-<button onclick="mostrarPantalla('clientes')">
-👥 Clientes
-</button>
-
-<button onclick="mostrarPantalla('proveedores')">
-🚚 Proveedores
-</button>
-
-<button onclick="mostrarPantalla('gastos')">
-💸 Gastos
-</button>
-
-<button onclick="mostrarPantalla('reportes')">
-📊 Reportes
-</button>
-
-<button onclick="mostrarPantalla('administracion')">
-⚙️ Administracion
-</button>
+<button onclick="mostrarPantalla('inventario')">📦 Inventario</button>
+<button onclick="mostrarPantalla('ventas')">💰 Ventas</button>
+<button onclick="mostrarPantalla('compras')">🛒 Compras</button>
+<button onclick="mostrarPantalla('clientes')">👥 Clientes</button>
+<button onclick="mostrarPantalla('proveedores')">🚚 Proveedores</button>
+<button onclick="mostrarPantalla('gastos')">💸 Gastos</button>
+<button onclick="mostrarPantalla('reportes')">📊 Reportes</button>
+<button onclick="mostrarPantalla('administracion')">⚙️ Administracion</button>
 
 </div>
 
@@ -282,29 +238,23 @@ Conectando con la base de datos...
 
 <section id="inventario" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">
-← Volver
-</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
 <h2>📦 Inventario</h2>
 
-<button onclick="mostrarFormularioArticulo()">
-➕ Nuevo articulo
-</button>
+<button onclick="mostrarFormularioArticulo()">➕ Nuevo articulo</button>
 
 <input
 id="buscarArticulo"
 type="text"
 placeholder="Buscar por codigo o nombre"
 autocomplete="off"
-oninput="filtrarArticulos"
+oninput="filtrarArticulos()"
 >
 
 <div id="formArticulo" class="tarjeta oculto">
 
-<h3 id="tituloFormulario">
-Nuevo articulo
-</h3>
+<h3 id="tituloFormulario">Nuevo articulo</h3>
 
 <label>Codigo</label>
 <input id="codigoArticulo" type="text">
@@ -343,9 +293,7 @@ Cancelar
 
 <section id="compras" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">
-← Volver
-</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
 <h2>🛒 Compras</h2>
 
@@ -400,9 +348,7 @@ step="0.01"
 placeholder="Ejemplo: 3500"
 >
 
-<button onclick="registrarCompra()">
-💾 Registrar compra
-</button>
+<button onclick="registrarCompra()">💾 Registrar compra</button>
 
 <div id="mensajeCompra"></div>
 
@@ -427,9 +373,7 @@ Cargando historial...
 
 <section id="ventas" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">
-← Volver
-</button>
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 
 <h2>💰 Ventas</h2>
 
@@ -445,13 +389,8 @@ Busca el articulo por codigo o nombre.
 
 <select id="ventaTipoCliente">
 
-<option value="publico_general">
-Publico en general
-</option>
-
-<option value="cliente">
-Cliente
-</option>
+<option value="publico_general">Publico en general</option>
+<option value="cliente">Cliente</option>
 
 </select>
 
@@ -471,7 +410,6 @@ Puedes buscar por codigo, nombre o telefono.
 </div>
 
 <div id="estadoClienteVenta"></div>
-
 <div id="resultadoClienteVenta"></div>
 
 </div>
@@ -543,9 +481,7 @@ $0.00
 
 </div>
 
-<button onclick="registrarVenta()">
-💾 Registrar venta
-</button>
+<button onclick="registrarVenta()">💾 Registrar venta</button>
 
 <div id="mensajeVenta"></div>
 
@@ -559,4 +495,328 @@ $0.00
 🔄 Actualizar historial
 </button>
 
-<div id
+<div id="historialVentas">
+Cargando historial...
+</div>
+
+</div>
+
+</section>
+
+
+<section id="clientes" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<h2>👥 Clientes</h2>
+
+<button onclick="mostrarFormularioCliente()">➕ Nuevo cliente</button>
+
+<input
+id="buscarCliente"
+type="text"
+placeholder="Buscar por codigo, nombre o telefono"
+autocomplete="off"
+oninput="filtrarClientes()"
+>
+
+<div id="formCliente" class="tarjeta oculto">
+
+<h3 id="tituloFormularioCliente">Nuevo cliente</h3>
+
+<label>Codigo del cliente</label>
+
+<input id="codigoCliente" type="text" readonly>
+
+<div class="ayuda">
+El codigo se genera automaticamente.
+</div>
+
+<label>Nombre</label>
+<input id="nombreCliente" type="text">
+
+<label>Telefono</label>
+<input id="telefonoCliente" type="text">
+
+<label>Correo electronico</label>
+<input id="emailCliente" type="email">
+
+<label>Direccion</label>
+<input id="direccionCliente" type="text">
+
+<label>Notas</label>
+<input id="notasCliente" type="text">
+
+<button onclick="guardarCliente()">💾 Guardar cliente</button>
+
+<button class="secundario" onclick="cancelarCliente()">
+Cancelar
+</button>
+
+<div id="mensajeCliente"></div>
+
+</div>
+
+<div id="listaClientes"></div>
+
+</section>
+
+
+<section id="proveedores" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<h2>🚚 Proveedores</h2>
+
+<div class="tarjeta">
+Proximamente: proveedores.
+</div>
+
+</section>
+
+
+<section id="gastos" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<h2>💸 Gastos</h2>
+
+<div class="tarjeta">
+Proximamente: gastos.
+</div>
+
+</section>
+
+
+<section id="reportes" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<h2>📊 Reportes</h2>
+
+<div class="tarjeta">
+Proximamente: reportes de ventas, articulos mas vendidos y menos vendidos.
+</div>
+
+</section>
+
+
+<section id="administracion" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
+
+<h2>⚙️ Administracion</h2>
+
+<div class="tarjeta">
+Proximamente: administracion y ganancias.
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://ggaqknpwlohpbyxeyque.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+
+const headersSupabase = {
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json"
+};
+
+
+let articulos=[];
+let articuloEditando=null;
+let articuloCompraSeleccionado=null;
+let articuloVentaSeleccionado=null;
+
+let clientes=[];
+let clienteEditando=null;
+let clienteVentaSeleccionado=null;
+
+
+function mostrarPantalla(id){
+
+document.querySelectorAll(".pantalla").forEach(function(p){
+p.classList.remove("activa");
+});
+
+const pantalla=document.getElementById(id);
+
+if(pantalla){
+pantalla.classList.add("activa");
+}
+
+if(id==="inventario"){
+cargarArticulos();
+}
+
+if(id==="compras"){
+cargarArticulos();
+cargarHistorialCompras();
+}
+
+if(id==="ventas"){
+cargarArticulos();
+cargarClientes();
+cargarHistorialVentas();
+}
+
+if(id==="clientes"){
+cargarClientes();
+}
+
+}
+
+
+/* ================= CONEXION ================= */
+
+async function comprobarConexion(){
+
+const conexion=document.getElementById("conexion");
+
+conexion.innerHTML="🔄 Comprobando conexión con Supabase...";
+
+const controlador=new AbortController();
+
+const temporizador=setTimeout(function(){
+controlador.abort();
+},8000);
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=id&limit=1",
+{
+method:"GET",
+headers:headersSupabase,
+signal:controlador.signal,
+cache:"no-store"
+}
+);
+
+clearTimeout(temporizador);
+
+if(respuesta.ok){
+
+conexion.innerHTML=
+"✅ Conectado correctamente con Supabase.";
+
+}else{
+
+const errorTexto=await respuesta.text();
+
+console.error(
+"Error Supabase:",
+respuesta.status,
+errorTexto
+);
+
+conexion.innerHTML=
+"❌ Supabase respondió con error: "+
+respuesta.status;
+
+}
+
+}catch(error){
+
+clearTimeout(temporizador);
+
+console.error(
+"Error de conexión:",
+error
+);
+
+if(error.name==="AbortError"){
+
+conexion.innerHTML=
+"❌ Supabase no respondió después de 8 segundos.";
+
+}else{
+
+conexion.innerHTML=
+"❌ No se pudo conectar con Supabase.";
+
+}
+
+}
+
+
+/* ================= ARTICULOS ================= */
+
+async function cargarArticulos(){
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+"Error cargando articulos:",
+respuesta.status,
+await respuesta.text()
+);
+
+return;
+
+}
+
+articulos=await respuesta.json();
+
+mostrarArticulos(articulos);
+
+}catch(error){
+
+console.error(error);
+
+}
+
+}
+
+
+function mostrarArticulos(lista){
+
+const contenedor=document.getElementById("listaArticulos");
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay articulos registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(a){
+
+return `
+<div class="articulo">
+
+<strong>${escaparHTML(a.nombre||"")}</strong>
+
+<div class="dato">
+Codigo: ${escaparHTML(a.codigo||"")}
+</div>
+
+<div class="dato">
+Costo
