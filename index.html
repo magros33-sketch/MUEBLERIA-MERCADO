@@ -4618,3 +4618,783 @@ contenedor.innerHTML=
 ❌ Error de conexion con Supabase.
 
 <br><br
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= CANCELAR VENTA ================= */
+
+async function cancelarVenta(id){
+
+if(!confirm(
+"¿Seguro que quieres cancelar esta venta?\n\n"+
+"El stock de los artículos será devuelto."
+))return;
+
+try{
+
+const respuestaVenta=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaVenta.ok){
+alert("No se pudo consultar la venta.");
+return;
+}
+
+const ventas=await respuestaVenta.json();
+
+if(!ventas.length){
+alert("No se encontró la venta.");
+return;
+}
+
+const venta=ventas[0];
+
+const estado=
+String(venta.estado||"")
+.toLowerCase()
+.trim();
+
+if(
+estado==="cancelada"||
+estado==="cancelado"
+){
+alert("Esta venta ya está cancelada.");
+return;
+}
+
+
+/* Obtener detalles */
+
+const respuestaDetalle=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle?venta_id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaDetalle.ok){
+alert("No se pudieron obtener los artículos de la venta.");
+return;
+}
+
+const detalles=await respuestaDetalle.json();
+
+
+/* Guardar stocks anteriores */
+
+const cambios=[];
+
+for(const detalle of detalles){
+
+const articuloId=detalle.articulo_id;
+
+const cantidad=
+Number(detalle.cantidad||0);
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok){
+throw new Error(
+"No se pudo consultar el artículo."
+);
+}
+
+const articulosEncontrados=
+await respuestaArticulo.json();
+
+if(!articulosEncontrados.length){
+throw new Error(
+"No se encontró uno de los artículos de la venta."
+);
+}
+
+const articulo=articulosEncontrados[0];
+
+const stockAnterior=
+Number(articulo.stock||0);
+
+const nuevoStock=
+stockAnterior+cantidad;
+
+cambios.push({
+id:articuloId,
+stockAnterior:stockAnterior,
+nuevoStock:nuevoStock
+});
+
+}
+
+
+/* Devolver stock */
+
+for(const cambio of cambios){
+
+const respuestaStock=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.nuevoStock
+})
+}
+);
+
+if(!respuestaStock.ok){
+
+/* Intentar regresar los stocks modificados */
+
+for(const rollback of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:rollback.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"No se pudo devolver correctamente el stock."
+);
+
+return;
+
+}
+
+}
+
+
+/* Marcar venta como cancelada */
+
+const respuestaCancelar=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+estado:"cancelada"
+})
+}
+);
+
+if(!respuestaCancelar.ok){
+
+/* Rollback del stock */
+
+for(const cambio of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"No se pudo cancelar la venta. "+
+"El stock fue restaurado al estado anterior."
+);
+
+return;
+
+}
+
+alert(
+"✅ Venta cancelada correctamente.\n\n"+
+"El stock fue devuelto."
+);
+
+await cargarArticulos();
+await cargarHistorialVentas();
+
+if(
+document.getElementById("reportes")
+.classList.contains("activa")
+){
+
+cargarReporteVentasDiarias();
+cargarReporteArticulosVendidos();
+
+}
+
+}catch(error){
+
+console.error(
+"Error cancelando venta:",
+error
+);
+
+alert(
+"❌ No se pudo cancelar la venta.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= CANCELAR COMPRA ================= */
+
+async function cancelarCompra(id){
+
+if(!confirm(
+"¿Seguro que quieres cancelar esta compra?\n\n"+
+"El stock será revertido."
+))return;
+
+try{
+
+const respuestaCompra=await fetch(
+SUPABASE_URL+
+"/rest/v1/compras?id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaCompra.ok){
+alert("No se pudo consultar la compra.");
+return;
+}
+
+const compras=await respuestaCompra.json();
+
+if(!compras.length){
+alert("No se encontró la compra.");
+return;
+}
+
+const compra=compras[0];
+
+const estado=
+String(compra.estado||"")
+.toLowerCase()
+.trim();
+
+if(
+estado==="cancelada"||
+estado==="cancelado"
+){
+alert("Esta compra ya está cancelada.");
+return;
+}
+
+
+/* Obtener detalles */
+
+const respuestaDetalle=await fetch(
+SUPABASE_URL+
+"/rest/v1/compra_detalles?compra_id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaDetalle.ok){
+alert("No se pudieron obtener los artículos de la compra.");
+return;
+}
+
+const detalles=await respuestaDetalle.json();
+
+const cambios=[];
+
+
+/* Comprobar stock antes de modificar */
+
+for(const detalle of detalles){
+
+const articuloId=detalle.articulo_id;
+
+const cantidad=
+Number(detalle.cantidad||0);
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok){
+throw new Error(
+"No se pudo consultar un artículo."
+);
+}
+
+const encontrados=
+await respuestaArticulo.json();
+
+if(!encontrados.length){
+throw new Error(
+"No se encontró uno de los artículos."
+);
+}
+
+const articulo=encontrados[0];
+
+const stockActual=
+Number(articulo.stock||0);
+
+if(cantidad>stockActual){
+
+alert(
+"❌ No se puede cancelar esta compra.\n\n"+
+"El stock actual de uno de los artículos "+
+"es menor que la cantidad que se recibió."
+);
+
+return;
+
+}
+
+cambios.push({
+id:articuloId,
+stockAnterior:stockActual,
+nuevoStock:stockActual-cantidad
+});
+
+}
+
+
+/* Revertir stock */
+
+for(const cambio of cambios){
+
+const respuestaStock=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.nuevoStock
+})
+}
+);
+
+if(!respuestaStock.ok){
+
+/* Rollback */
+
+for(const rollback of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:rollback.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"❌ No se pudo revertir correctamente el stock."
+);
+
+return;
+
+}
+
+}
+
+
+/* Marcar compra como cancelada */
+
+const respuestaCancelar=await fetch(
+SUPABASE_URL+
+"/rest/v1/compras?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+estado:"cancelada"
+})
+}
+);
+
+if(!respuestaCancelar.ok){
+
+for(const cambio of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"❌ No se pudo cancelar la compra."
+);
+
+return;
+
+}
+
+alert(
+"✅ Compra cancelada correctamente.\n\n"+
+"El stock fue revertido."
+);
+
+await cargarArticulos();
+await cargarHistorialCompras();
+
+}catch(error){
+
+console.error(
+"Error cancelando compra:",
+error
+);
+
+alert(
+"❌ No se pudo cancelar la compra.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= CANCELAR APARTADO ================= */
+
+async function cancelarApartado(id){
+
+if(!confirm(
+"¿Seguro que quieres cancelar este apartado?\n\n"+
+"El artículo regresará al stock."
+))return;
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+alert("No se pudo consultar el apartado.");
+return;
+}
+
+const apartados=await respuesta.json();
+
+if(!apartados.length){
+alert("No se encontró el apartado.");
+return;
+}
+
+const apartado=apartados[0];
+
+const estado=
+String(apartado.estado||"")
+.toLowerCase()
+.trim();
+
+if(
+estado==="cancelada"||
+estado==="cancelado"
+){
+alert("Este apartado ya está cancelado.");
+return;
+}
+
+if(
+estado==="pagado"||
+estado==="liquidado"
+){
+alert(
+"Este apartado ya está pagado/liquidado y no se puede cancelar desde aquí."
+);
+return;
+}
+
+
+const articuloId=apartado.articulo_id;
+
+const cantidad=
+Number(apartado.cantidad||0);
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok){
+alert("No se pudo consultar el artículo.");
+return;
+}
+
+const encontrados=
+await respuestaArticulo.json();
+
+if(!encontrados.length){
+alert("No se encontró el artículo.");
+return;
+}
+
+const articulo=encontrados[0];
+
+const stockAnterior=
+Number(articulo.stock||0);
+
+const nuevoStock=
+stockAnterior+cantidad;
+
+
+/* Devolver stock */
+
+const respuestaStock=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:nuevoStock
+})
+}
+);
+
+if(!respuestaStock.ok){
+alert("No se pudo devolver el artículo al stock.");
+return;
+}
+
+
+/* Marcar apartado como cancelado */
+
+const respuestaCancelar=await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+estado:"cancelada"
+})
+}
+);
+
+if(!respuestaCancelar.ok){
+
+/* Restaurar stock anterior */
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:stockAnterior
+})
+}
+);
+
+alert(
+"❌ No se pudo cancelar el apartado. "+
+"El stock fue restaurado."
+);
+
+return;
+
+}
+
+alert(
+"✅ Apartado cancelado correctamente.\n\n"+
+"El stock fue devuelto."
+);
+
+await cargarArticulos();
+await cargarHistorialApartados();
+
+}catch(error){
+
+console.error(
+"Error cancelando apartado:",
+error
+);
+
+alert(
+"❌ No se pudo cancelar el apartado.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= FUNCIONES AUXILIARES ================= */
+
+function escaparHTML(valor){
+
+return String(valor??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+function formatearFecha(fecha){
+
+if(!fecha)return"";
+
+const d=new Date(fecha);
+
+if(Number.isNaN(d.getTime())){
+return String(fecha);
+}
+
+return d.toLocaleString(
+"es-MX",
+{
+dateStyle:"short",
+timeStyle:"short"
+}
+);
+
+}
+
+
+/* ================= INICIO ================= */
+
+document.addEventListener(
+"DOMContentLoaded",
+function(){
+
+comprobarConexion();
+
+}
+);
+
+</script>
+
+</body>
+</html>
