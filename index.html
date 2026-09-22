@@ -2936,15 +2936,6 @@ contenedor.innerHTML=
 
 try{
 
-/*
- IMPORTANTE:
- No usamos order=fecha.desc porque estaba provocando
- un error PGRST100 al interpretar un valor numerico
- como filtro.
-
- Traemos las ventas y las ordenamos aqui mismo.
-*/
-
 const respuesta=
 await fetch(
 SUPABASE_URL+
@@ -3281,6 +3272,9 @@ mostrarClientes(filtrados);
 }
 
 
+/* ================= GENERAR CODIGO CLIENTE ================= */
+/* CORREGIDO: evita reutilizar codigos existentes */
+
 async function generarCodigoCliente(){
 
 try{
@@ -3288,10 +3282,15 @@ try{
 const respuesta=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/clientes?select=codigo_cliente&order=codigo_cliente.desc&limit=1",
+"/rest/v1/clientes?select=codigo_cliente&limit=5000",
 {
 method:"GET",
-headers:headersSupabase
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
 }
 );
 
@@ -3303,20 +3302,79 @@ return "CLI-0001";
 
 }
 
-const datos=await respuesta.json();
+const datos=
+await respuesta.json();
 
-let siguiente=1;
+let mayor=0;
 
-if(datos.length&&datos[0].codigo_cliente){
+datos.forEach(function(cliente){
+
+const codigo=
+String(cliente.codigo_cliente||"");
 
 const coincidencia=
-String(datos[0].codigo_cliente)
-.match(/(\d+)$/);
+codigo.match(/^CLI-(\d+)$/i);
 
 if(coincidencia){
 
-siguiente=
-Number(coincidencia[1])+1;
+const numero=
+Number(coincidencia[1]);
+
+if(numero>mayor){
+
+mayor=numero;
+
+}
+
+}
+
+});
+
+
+/*
+ Buscamos el primer codigo libre.
+ Esto evita problemas si existen huecos
+ entre los numeros de clientes.
+*/
+
+let siguiente=1;
+
+while(
+datos.some(function(cliente){
+
+return String(cliente.codigo_cliente||"")
+.toUpperCase()===
+"CLI-"+String(siguiente).padStart(4,"0");
+
+})
+){
+
+siguiente++;
+
+}
+
+
+/*
+ Si no hay huecos, siguiente será el primero
+ disponible. El cálculo de mayor queda además
+ preparado para bases con muchos clientes.
+*/
+
+if(siguiente<=mayor){
+
+siguiente=mayor+1;
+
+while(
+datos.some(function(cliente){
+
+return String(cliente.codigo_cliente||"")
+.toUpperCase()===
+"CLI-"+String(siguiente).padStart(4,"0");
+
+})
+){
+
+siguiente++;
 
 }
 
@@ -3415,12 +3473,15 @@ behavior:"smooth"
 }
 
 
+/* ================= GUARDAR CLIENTE ================= */
+/* CORREGIDO: reintenta automaticamente si aparece 23505 */
+
 async function guardarCliente(){
 
 const mensaje=
 document.getElementById("mensajeCliente");
 
-const codigo=
+const codigoInicial=
 document.getElementById("codigoCliente").value.trim();
 
 const nombre=
@@ -3438,7 +3499,7 @@ document.getElementById("direccionCliente").value.trim();
 const notas=
 document.getElementById("notasCliente").value.trim();
 
-if(!codigo||codigo==="Generando..."){
+if(!codigoInicial||codigoInicial==="Generando..."){
 
 mensaje.innerHTML=
 `
@@ -3493,44 +3554,6 @@ notas:notas
 }
 );
 
-}else{
-
-respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/clientes",
-{
-method:"POST",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify({
-
-id:crypto.randomUUID(),
-
-codigo_cliente:codigo,
-
-nombre:nombre,
-
-telefono:telefono,
-
-email:email,
-
-direccion:direccion,
-
-notas:notas,
-
-activo:true,
-
-creado_at:new Date().toISOString()
-
-})
-}
-);
-
-}
-
 if(!respuesta.ok){
 
 const errorTexto=
@@ -3554,6 +3577,123 @@ ${escaparHTML(errorTexto)}
 return;
 
 }
+
+}else{
+
+/*
+ Para un cliente nuevo hacemos hasta 3 intentos.
+ Si otro usuario acaba de utilizar el mismo codigo,
+ Supabase devuelve 23505 y generamos uno nuevo.
+*/
+
+let codigoActual=codigoInicial;
+
+let guardado=false;
+
+for(let intento=1;intento<=3;intento++){
+
+respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+id:crypto.randomUUID(),
+
+codigo_cliente:codigoActual,
+
+nombre:nombre,
+
+telefono:telefono,
+
+email:email,
+
+direccion:direccion,
+
+notas:notas,
+
+activo:true,
+
+creado_at:new Date().toISOString()
+
+})
+}
+);
+
+if(respuesta.ok){
+
+guardado=true;
+break;
+
+}
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error guardando cliente:",
+errorTexto
+);
+
+if(
+errorTexto.includes('"code":"23505"')||
+errorTexto.includes("clientes_codigo_cliente_key")
+){
+
+codigoActual=
+await generarCodigoCliente();
+
+document.getElementById("codigoCliente").value=
+codigoActual;
+
+continue;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el cliente.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+if(!guardado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo generar un codigo de cliente disponible.
+<br><br>
+Intenta nuevamente.
+
+</div>
+`;
+
+return;
+
+}
+
+}
+
+const codigo=
+document.getElementById("codigoCliente").value.trim();
 
 mensaje.innerHTML=
 `
