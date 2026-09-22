@@ -749,7 +749,6 @@ if(id==="ventas"){
 cargarArticulos();
 cargarClientes();
 
-/* Actualizar siempre el historial al entrar en Ventas */
 setTimeout(function(){
 cargarHistorialVentas();
 },100);
@@ -2861,7 +2860,6 @@ actualizarTotalVenta();
 
 await cargarArticulos();
 
-/* Actualizar inmediatamente el historial */
 await cargarHistorialVentas();
 
 }catch(error){
@@ -2896,15 +2894,17 @@ try{
 
 /*
  IMPORTANTE:
- Se agrega un parámetro único a la consulta para
- evitar que el navegador reutilice una respuesta anterior.
+ No usamos order=fecha.desc porque estaba provocando
+ un error PGRST100 al interpretar un valor numerico
+ como filtro.
+
+ Traemos las ventas y las ordenamos aqui mismo.
 */
 
 const respuesta=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/ventas?select=*&order=fecha.desc&t="+
-Date.now(),
+"/rest/v1/ventas?select=*&limit=1000",
 {
 method:"GET",
 headers:{
@@ -2969,6 +2969,22 @@ Todavia no hay ventas registradas.
 return;
 
 }
+
+
+/* Ordenar las ventas de la mas reciente a la mas antigua */
+
+ventas.sort(function(a,b){
+
+const fechaA=
+new Date(a.fecha||0).getTime();
+
+const fechaB=
+new Date(b.fecha||0).getTime();
+
+return fechaB-fechaA;
+
+});
+
 
 contenedor.innerHTML=
 ventas.map(function(v){
