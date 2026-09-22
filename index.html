@@ -158,7 +158,10 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
-.articulo strong,
+.articulo strong{
+font-size:18px
+}
+
 .cliente strong{
 font-size:18px
 }
@@ -464,18 +467,22 @@ Cliente
 </select>
 
 
-<!-- ================= CLIENTE EN VENTA ================= -->
+<!-- ================= CLIENTE DE LA VENTA ================= -->
 
 <div id="campoClienteVenta" class="oculto">
 
-<label>Código o nombre del cliente</label>
+<label>Código del cliente</label>
 
 <input
 id="ventaCliente"
 type="text"
-placeholder="Ejemplo: CLI-0001 o Juan Pérez"
+placeholder="Ejemplo: CLI-0001"
 autocomplete="off"
 >
+
+<div class="ayuda">
+Puedes buscar por código, nombre o teléfono.
+</div>
 
 <div id="estadoClienteVenta"></div>
 
@@ -607,7 +614,7 @@ oninput="filtrarClientes()"
 Nuevo cliente
 </h3>
 
-<label>Código de cliente</label>
+<label>Código del cliente</label>
 
 <input
 id="codigoCliente"
@@ -624,6 +631,7 @@ El código se genera automáticamente.
 <input
 id="nombreCliente"
 type="text"
+placeholder="Nombre completo"
 >
 
 <label>Teléfono</label>
@@ -631,13 +639,15 @@ type="text"
 <input
 id="telefonoCliente"
 type="text"
+placeholder="Teléfono"
 >
 
-<label>Email</label>
+<label>Correo electrónico</label>
 
 <input
 id="emailCliente"
 type="email"
+placeholder="Correo electrónico"
 >
 
 <label>Dirección</label>
@@ -645,6 +655,7 @@ type="email"
 <input
 id="direccionCliente"
 type="text"
+placeholder="Dirección"
 >
 
 <label>Notas</label>
@@ -652,6 +663,8 @@ type="text"
 <input
 id="notasCliente"
 type="text"
+placeholder="Notas"
+
 >
 
 <button
@@ -662,7 +675,7 @@ onclick="guardarCliente()"
 
 <button
 class="secundario"
-onclick="cancelarEdicionCliente()"
+onclick="cancelarCliente()"
 >
 Cancelar
 </button>
@@ -1002,7 +1015,7 @@ onclick="eliminarArticulo('${a.id}')"
 
 
 /* =====================================================
-   FILTRO
+   FILTRO ARTÍCULOS
    ===================================================== */
 
 function filtrarArticulos(){
@@ -1071,7 +1084,7 @@ document.getElementById("mensajeArticulo").innerHTML="";
 
 
 /* =====================================================
-   EDITAR
+   EDITAR ARTÍCULO
    ===================================================== */
 
 function editarArticulo(id){
@@ -1271,7 +1284,7 @@ Error de conexión con Supabase.
 
 
 /* =====================================================
-   CANCELAR
+   CANCELAR ARTÍCULO
    ===================================================== */
 
 function cancelarEdicion(){
@@ -1455,4 +1468,2407 @@ return String(a.nombre||"")
 
 });
 
-if(encontr
+if(encontrados.length){
+
+mostrarOpcionesCompra(encontrados);
+
+}else{
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese artículo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesCompra(lista){
+
+const contenedor=
+document.getElementById("resultadoCompra");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el artículo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloCompraPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Código: ${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock actual: ${Number(a.stock||0)}
+
+<br>
+
+Costo: $${Number(a.costo||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloCompraPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+
+seleccionarArticuloCompra(articulo);
+
+}
+
+}
+
+
+function seleccionarArticuloCompra(articulo){
+
+articuloCompraSeleccionado=articulo;
+
+campoCompraCodigo.value=
+articulo.codigo||"";
+
+campoCompraNombre.value=
+articulo.nombre||"";
+
+document.getElementById("compraCosto").value=
+articulo.costo??"";
+
+document.getElementById("estadoCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Código encontrado
+</div>
+`;
+
+document.getElementById("estadoNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Artículo encontrado
+</div>
+`;
+
+document.getElementById("resultadoCompra").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Artículo seleccionado</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock actual:
+${Number(articulo.stock||0)}
+
+<br>
+
+Costo actual:
+$${Number(articulo.costo||0).toFixed(2)}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   REGISTRAR COMPRA
+   ===================================================== */
+
+async function registrarCompra(){
+
+const mensaje=
+document.getElementById("mensajeCompra");
+
+let articulo=
+articuloCompraSeleccionado;
+
+const codigo=
+campoCompraCodigo.value.trim();
+
+const nombre=
+campoCompraNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("compraCantidad").value||0
+);
+
+const costo=
+Number(
+document.getElementById("compraCosto").value||0
+);
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No encontramos ese artículo.
+
+Escribe el código o nombre exactamente como aparece en Inventario.
+
+</div>
+`;
+
+return;
+
+}
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Indica la cantidad recibida.
+
+</div>
+`;
+
+return;
+
+}
+
+if(costo<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ El costo no puede ser negativo.
+
+</div>
+`;
+
+return;
+
+}
+
+try{
+
+const nuevoStock=
+Number(articulo.stock||0)+cantidad;
+
+const subtotal=
+cantidad*costo;
+
+
+const respuestaCompra=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compras",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+
+body:JSON.stringify({
+
+id_proveedor:null,
+
+fecha:new Date().toISOString(),
+
+total:subtotal,
+
+estado:"completada",
+
+notas:"Compra registrada desde la aplicación"
+
+})
+
+}
+);
+
+
+if(!respuestaCompra.ok){
+
+console.error(
+await respuestaCompra.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la compra.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const comprasGuardadas=
+await respuestaCompra.json();
+
+const compraGuardada=
+comprasGuardadas[0];
+
+
+if(!compraGuardada||
+!compraGuardada.id){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra no devolvió un identificador válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/compra_detalles",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id_compra:compraGuardada.id,
+
+id_articulo:articulo.id,
+
+cantidad:cantidad,
+
+costo:costo,
+
+subtotal:subtotal
+
+})
+
+}
+);
+
+
+if(!respuestaDetalle.ok){
+
+console.error(
+await respuestaDetalle.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra se creó, pero no se pudo guardar el detalle.
+
+No se modificó el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:nuevoStock,
+
+costo:costo
+
+})
+
+}
+
+);
+
+
+if(!respuestaArticulo.ok){
+
+console.error(
+await respuestaArticulo.text()
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La compra quedó guardada,
+pero no se pudo actualizar el stock.
+
+Revisa Inventario antes de volver a registrar esta compra.
+
+</div>
+`;
+
+return;
+
+}
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Compra registrada correctamente
+</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad recibida:
+${cantidad}
+
+<br>
+
+Nuevo stock:
+${nuevoStock}
+
+<br>
+
+Costo:
+$${costo.toFixed(2)}
+
+<br>
+
+Total de compra:
+$${subtotal.toFixed(2)}
+
+<br><br>
+
+📋 La compra quedó guardada en el historial.
+
+</div>
+`;
+
+
+articuloCompraSeleccionado=null;
+
+campoCompraCodigo.value="";
+
+campoCompraNombre.value="";
+
+document.getElementById("compraCantidad").value="";
+
+document.getElementById("compraCosto").value="";
+
+document.getElementById("estadoCodigo").innerHTML="";
+
+document.getElementById("estadoNombre").innerHTML="";
+
+document.getElementById("resultadoCompra").innerHTML="";
+
+
+await cargarArticulos();
+
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   VENTAS
+   ===================================================== */
+
+const campoVentaCodigo=
+document.getElementById("ventaCodigo");
+
+const campoVentaNombre=
+document.getElementById("ventaNombre");
+
+const campoVentaCliente=
+document.getElementById("ventaCliente");
+
+
+/* =====================================================
+   TIPO DE CLIENTE
+   ===================================================== */
+
+document
+.getElementById("ventaTipoCliente")
+.addEventListener(
+"change",
+function(){
+
+const campo=
+document.getElementById("campoClienteVenta");
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(this.value==="cliente"){
+
+campo.classList.remove("oculto");
+
+cargarClientes();
+
+}else{
+
+campo.classList.add("oculto");
+
+document.getElementById("ventaCliente").value="";
+
+}
+
+}
+);
+
+
+/* =====================================================
+   BUSCAR CLIENTE PARA VENTA
+   ===================================================== */
+
+campoVentaCliente.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(!texto){
+return;
+}
+
+
+/* Primero buscamos coincidencia exacta por código */
+
+const exactoCodigo=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===texto;
+
+});
+
+if(exactoCodigo){
+
+seleccionarClienteVenta(exactoCodigo);
+
+return;
+
+}
+
+
+/* Después nombre o teléfono exactos */
+
+const exacto=
+clientes.find(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()===texto
+||
+String(c.telefono||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarClienteVenta(exacto);
+
+return;
+
+}
+
+
+/* Búsqueda parcial */
+
+const encontrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+
+if(encontrados.length){
+
+mostrarOpcionesClienteVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese cliente.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   OPCIONES CLIENTE VENTA
+   ===================================================== */
+
+function mostrarOpcionesClienteVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoClienteVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el cliente:</strong>
+
+${lista.map(function(c){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarClienteVentaPorId('${c.id}')"
+>
+
+👤 ${escaparHTML(c.nombre||"")}
+
+<br>
+
+Código:
+<strong>
+${escaparHTML(c.codigo_cliente||"Sin código")}
+</strong>
+
+<br>
+
+Teléfono:
+${escaparHTML(c.telefono||"")}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarClienteVentaPorId(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(cliente){
+
+seleccionarClienteVenta(cliente);
+
+}
+
+}
+
+
+/* =====================================================
+   SELECCIONAR CLIENTE VENTA
+   ===================================================== */
+
+function seleccionarClienteVenta(cliente){
+
+clienteVentaSeleccionado=cliente;
+
+campoVentaCliente.value=
+cliente.codigo_cliente||"";
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="estado-ok">
+✅ Cliente seleccionado
+</div>
+`;
+
+document.getElementById("resultadoClienteVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>👤 Cliente seleccionado</strong>
+
+<br><br>
+
+Código:
+<strong>
+${escaparHTML(cliente.codigo_cliente||"")}
+</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(cliente.nombre||"")}
+
+<br>
+
+Teléfono:
+${escaparHTML(cliente.telefono||"")}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   BUSCAR VENTA POR CÓDIGO
+   ===================================================== */
+
+campoVentaCodigo.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese código.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   BUSCAR VENTA POR NOMBRE
+   ===================================================== */
+
+campoVentaNombre.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontró ese artículo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+/* =====================================================
+   OPCIONES DE VENTA
+   ===================================================== */
+
+function mostrarOpcionesVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el artículo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloVentaPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+${Number(a.stock||0)}
+
+<br>
+
+Precio público:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+/* =====================================================
+   SELECCIONAR ARTÍCULO DE VENTA
+   ===================================================== */
+
+function seleccionarArticuloVentaPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+
+seleccionarArticuloVenta(articulo);
+
+}
+
+}
+
+
+/* =====================================================
+   ARTÍCULO SELECCIONADO PARA VENTA
+   ===================================================== */
+
+function seleccionarArticuloVenta(articulo){
+
+articuloVentaSeleccionado=articulo;
+
+campoVentaCodigo.value=
+articulo.codigo||"";
+
+campoVentaNombre.value=
+articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("ventaPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Código encontrado
+</div>
+`;
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Artículo encontrado
+</div>
+`;
+
+document.getElementById("resultadoVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Artículo seleccionado</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Código:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio público:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioVenta").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio para aplicar un descuento.
+</div>
+`;
+
+actualizarTotalVenta();
+
+}
+
+
+/* =====================================================
+   TOTAL VENTA
+   ===================================================== */
+
+function actualizarTotalVenta(){
+
+const cantidad=
+Number(
+document.getElementById("ventaCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("ventaPrecio").value||0
+);
+
+const total=
+cantidad*precio;
+
+document.getElementById("totalVenta").innerHTML=
+"$"+total.toFixed(2);
+
+}
+
+
+/* =====================================================
+   REGISTRAR VENTA
+   ===================================================== */
+
+async function registrarVenta(){
+
+const mensaje=
+document.getElementById("mensajeVenta");
+
+let articulo=
+articuloVentaSeleccionado;
+
+const codigo=
+campoVentaCodigo.value.trim();
+
+const nombre=
+campoVentaNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("ventaCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("ventaPrecio").value||0
+);
+
+const tipoCliente=
+document.getElementById("ventaTipoCliente").value;
+
+const clienteTexto=
+document.getElementById("ventaCliente").value.trim();
+
+const metodoPago=
+document.getElementById("ventaMetodoPago").value;
+
+
+/* Buscar automáticamente por código */
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+
+/* Buscar automáticamente por nombre */
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+
+/* =====================================================
+   BUSCAR CLIENTE
+   ===================================================== */
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado&&clienteTexto){
+
+const clienteEncontrado=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+
+||
+
+String(c.nombre||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+
+||
+
+String(c.telefono||"")
+.toLowerCase()===clienteTexto.toLowerCase();
+
+});
+
+if(clienteEncontrado){
+
+clienteVentaSeleccionado=
+clienteEncontrado;
+
+}
+
+}
+
+
+/* =====================================================
+   VALIDACIONES
+   ===================================================== */
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No encontramos ese artículo.
+
+Selecciona un artículo válido.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Indica una cantidad válida.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const stockActual=
+Number(articulo.stock||0);
+
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ El precio no puede ser negativo.
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Selecciona un cliente por su código,
+nombre o teléfono.
+
+</div>
+`;
+
+return;
+
+}
+
+
+const total=
+cantidad*precio;
+
+const nuevoStock=
+stockActual-cantidad;
+
+
+/* =====================================================
+   ID DE LA VENTA
+   ===================================================== */
+
+const idVenta=
+crypto.randomUUID();
+
+
+try{
+
+
+/* =====================================================
+   1. GUARDAR CABECERA DE VENTA
+   ===================================================== */
+
+const respuestaVenta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id:
+idVenta,
+
+cliente_id:
+tipoCliente==="cliente"
+?clienteVentaSeleccionado.id
+:null,
+
+fecha:
+new Date().toISOString(),
+
+tipo_cliente:
+tipoCliente,
+
+metodo_pago:
+metodoPago,
+
+total:
+total,
+
+estado:
+"completada",
+
+notas:
+"Venta registrada desde la aplicación"
+
+})
+
+}
+);
+
+
+if(!respuestaVenta.ok){
+
+const errorTexto=
+await respuestaVenta.text();
+
+console.error(
+"Error guardando venta:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la venta.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   2. GUARDAR DETALLE
+   ===================================================== */
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+venta_id:
+idVenta,
+
+"artículo_id":
+articulo.id,
+
+cantidad:
+cantidad,
+
+precio_unitario:
+precio,
+
+subtotal:
+total
+
+})
+
+}
+);
+
+
+if(!respuestaDetalle.ok){
+
+const errorTexto=
+await respuestaDetalle.text();
+
+console.error(
+"Error guardando detalle:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta se creó, pero no se pudo guardar el detalle.
+
+El stock todavía no fue descontado.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   3. ACTUALIZAR STOCK
+   ===================================================== */
+
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+stock:
+nuevoStock
+
+})
+
+}
+);
+
+
+if(!respuestaArticulo.ok){
+
+const errorTexto=
+await respuestaArticulo.text();
+
+console.error(
+"Error actualizando stock:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta quedó guardada,
+pero no se pudo actualizar el stock.
+
+<br><br>
+
+⚠️ Revisa el inventario antes de volver a registrar esta venta.
+
+</div>
+`;
+
+return;
+
+}
+
+
+/* =====================================================
+   ÉXITO
+   ===================================================== */
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Venta registrada correctamente
+</strong>
+
+<br><br>
+
+Artículo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Método de pago:
+${escaparHTML(metodoPago)}
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
+
+<br><br>
+
+📋 La venta quedó guardada.
+
+</div>
+`;
+
+
+/* =====================================================
+   LIMPIAR FORMULARIO
+   ===================================================== */
+
+articuloVentaSeleccionado=null;
+clienteVentaSeleccionado=null;
+
+campoVentaCodigo.value="";
+
+campoVentaNombre.value="";
+
+document.getElementById("ventaCantidad").value="1";
+
+document.getElementById("ventaPrecio").value="";
+
+document.getElementById("ventaCliente").value="";
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+
+document.getElementById("estadoVentaNombre").innerHTML="";
+
+document.getElementById("resultadoVenta").innerHTML="";
+
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+actualizarTotalVenta();
+
+await cargarArticulos();
+
+
+}catch(error){
+
+console.error(
+"Error registrando venta:",
+error
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   CLIENTES
+   ===================================================== */
+
+
+/* =====================================================
+   CARGAR CLIENTES
+   ===================================================== */
+
+async function cargarClientes(){
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?select=*&activo=eq.true&order=nombre.asc",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error cargando clientes:",
+respuesta.status,
+errorTexto
+);
+
+return;
+
+}
+
+clientes=
+await respuesta.json();
+
+const buscar=
+document.getElementById("buscarCliente");
+
+if(buscar){
+
+if(buscar.value.trim()){
+
+filtrarClientes();
+
+}else{
+
+mostrarClientes(clientes);
+
+}
+
+}
+
+}catch(error){
+
+console.error(
+"Error cargando clientes:",
+error
+);
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR CLIENTES
+   ===================================================== */
+
+function mostrarClientes(lista){
+
+const contenedor=
+document.getElementById("listaClientes");
+
+if(!contenedor)return;
+
+if(!lista.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay clientes registrados.
+</div>
+`;
+
+return;
+
+}
+
+contenedor.innerHTML=
+lista.map(function(c){
+
+return `
+<div class="cliente">
+
+<div class="codigo-cliente">
+
+${escaparHTML(c.codigo_cliente||"Sin código")}
+
+</div>
+
+<strong>
+${escaparHTML(c.nombre||"Sin nombre")}
+</strong>
+
+<div class="dato">
+📞 Teléfono:
+${escaparHTML(c.telefono||"")}
+</div>
+
+<div class="dato">
+✉️ Correo:
+${escaparHTML(c.email||"")}
+</div>
+
+<div class="dato">
+📍 Dirección:
+${escaparHTML(c.direccion||"")}
+</div>
+
+<div class="dato">
+📝 Notas:
+${escaparHTML(c.notas||"")}
+</div>
+
+<div class="separador"></div>
+
+<button
+class="editar"
+onclick="editarCliente('${c.id}')"
+>
+✏️ Editar
+</button>
+
+<button
+class="eliminar"
+onclick="eliminarCliente('${c.id}')"
+>
+🗑️ Eliminar
+</button>
+
+</div>
+`;
+
+}).join("");
+
+}
+
+
+/* =====================================================
+   FILTRAR CLIENTES
+   ===================================================== */
+
+function filtrarClientes(){
+
+const campo=
+document.getElementById("buscarCliente");
+
+if(!campo)return;
+
+const texto=
+campo.value
+.trim()
+.toLowerCase();
+
+if(!texto){
+
+mostrarClientes(clientes);
+
+return;
+
+}
+
+const filtrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+
+||
+
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+mostrarClientes(filtrados);
+
+}
+
+
+/* =====================================================
+   GENERAR CÓDIGO CLIENTE
+   ===================================================== */
+
+async function generarCodigoCliente(){
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?select=codigo_cliente&order=codigo_cliente.desc&limit=1",
+{
+method:"GET",
+headers:headersSupabase
+}
+);
+
+if(!respuesta.ok){
+
+console.error(
+"Error obteniendo último código:",
+await respuesta.text()
+);
+
+return "CLI-0001";
+
+}
+
+const datos=
+await respuesta.json();
+
+let siguiente=1;
+
+if(datos.length&&datos[0].codigo_cliente){
+
+const coincidencia=
+String(datos[0].codigo_cliente)
+.match(/(\d+)$/);
+
+if(coincidencia){
+
+siguiente=
+Number(coincidencia[1])+1;
+
+}
+
+}
+
+return "CLI-"+String(siguiente).padStart(4,"0");
+
+}catch(error){
+
+console.error(error);
+
+return "CLI-0001";
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR FORMULARIO CLIENTE
+   ===================================================== */
+
+async function mostrarFormularioCliente(){
+
+clienteEditando=null;
+
+document
+.getElementById("formCliente")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormularioCliente")
+.innerHTML=
+"Nuevo cliente";
+
+document
+.getElementById("mensajeCliente")
+.innerHTML="";
+
+document
+.getElementById("nombreCliente")
+.value="";
+
+document
+.getElementById("telefonoCliente")
+.value="";
+
+document
+.getElementById("emailCliente")
+.value="";
+
+document
+.getElementById("direccionCliente")
+.value="";
+
+document
+.getElementById("notasCliente")
+.value="";
+
+document
+.getElementById("codigoCliente")
+.value=
+"Generando...";
+
+const codigo=
+await generarCodigoCliente();
+
+document
+.getElementById("codigoCliente")
+.value=
+codigo;
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   EDITAR CLIENTE
+   ===================================================== */
+
+function editarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+clienteEditando=
+cliente;
+
+document
+.getElementById("formCliente")
+.classList.remove("oculto");
+
+document
+.getElementById("tituloFormularioCliente")
+.innerHTML=
+"Editar cliente";
+
+document
+.getElementById("codigoCliente")
+.value=
+cliente.codigo_cliente||"";
+
+document
+.getElementById("nombreCliente")
+.value=
+cliente.nombre||"";
+
+document
+.getElementById("telefonoCliente")
+.value=
+cliente.telefono||"";
+
+document
+.getElementById("emailCliente")
+.value=
+cliente.email||"";
+
+document
+.getElementById("direccionCliente")
+.value=
+cliente.direccion||"";
+
+document
+.getElementById("notasCliente")
+.value=
+cliente.notas||"";
+
+document
+.getElementById("mensajeCliente")
+.innerHTML="";
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =====================================================
+   GUARDAR CLIENTE
+   ===================================================== */
+
+async function guardarCliente(){
+
+const mensaje=
+document.getElementById("mensajeCliente");
+
+const codigo=
+document
+.getElementById("codigoCliente")
+.value
+.trim();
+
+const nombre=
+document
+.getElementById("nombreCliente")
+.value
+.trim();
+
+const telefono=
+document
+.getElementById("telefonoCliente")
+.value
+.trim();
+
+const email=
+document
+.getElementById("emailCliente")
+.value
+.trim();
+
+const direccion=
+document
+.getElementById("direccionCliente")
+.value
+.trim();
+
+const notas=
+document
+.getElementById("notasCliente")
+.value
+.trim();
+
+
+if(!codigo||codigo==="Generando..."){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No se pudo generar el código del cliente.
+</div>
+`;
+
+return;
+
+}
+
+
+if(!nombre){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El nombre del cliente es obligatorio.
+</div>
+`;
+
+return;
+
+}
+
+
+try{
+
+let respuesta;
+
+
+/* =====================================================
+   EDITAR
+   ===================================================== */
+
+if(clienteEditando){
+
+respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(clienteEditando.id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+nombre:
+nombre,
+
+telefono:
+telefono,
+
+email:
+email,
+
+direccion:
+direccion,
+
+notas:
+notas
+
+})
+
+}
+);
+
+}else{
+
+
+/* =====================================================
+   NUEVO CLIENTE
+   ===================================================== */
+
+respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes",
+{
+method:"POST",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+id:
+crypto.randomUUID(),
+
+codigo_cliente:
+codigo,
+
+nombre:
+nombre,
+
+telefono:
+telefono,
+
+email:
+email,
+
+direccion:
+direccion,
+
+notas:
+notas,
+
+activo:
+true,
+
+creado_at:
+new Date().toISOString()
+
+})
+
+}
+);
+
+}
+
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error guardando cliente:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el cliente.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+✅ Cliente guardado correctamente.
+
+<br><br>
+
+Código:
+<strong>${escaparHTML(codigo)}</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(nombre)}
+
+</div>
+`;
+
+
+clienteEditando=null;
+
+await cargarClientes();
+
+setTimeout(
+cancelarCliente,
+1000
+);
+
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   CANCELAR CLIENTE
+   ===================================================== */
+
+function cancelarCliente(){
+
+clienteEditando=null;
+
+document
+.getElementById("formCliente")
+.classList
+.add("oculto");
+
+document
+.getElementById("mensajeCliente")
+.innerHTML="";
+
+}
+
+
+/* =====================================================
+   ELIMINAR CLIENTE
+   ===================================================== */
+
+async function eliminarCliente(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(!cliente)return;
+
+
+if(!confirm(
+"¿Seguro que quieres eliminar al cliente \""+
+cliente.nombre+
+"\"?"
+)){
+
+return;
+
+}
+
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/clientes?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+activo:false
+
+})
+
+}
+);
+
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error eliminando cliente:",
+errorTexto
+);
+
+alert(
+"No se pudo eliminar el cliente.\n\n"+
+errorTexto
+);
+
+return;
+
+}
+
+
+/* Quitar inmediatamente de la pantalla */
+
+clientes=
+clientes.filter(function(c){
+
+return c.id!==id;
+
+});
+
+
+filtrarClientes();
+
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Error de conexión con Supabase."
+);
+
+}
+
+}
+
+
+/* =====================================================
+   ESCAPAR HTML
+   ===================================================== */
+
+function escaparHTML(texto){
+
+return String(texto)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+/* =====================================================
+   INICIAR
+   ===================================================== */
+
+comprobarConexion();
+
+</script>
+
+</body>
+</html>
