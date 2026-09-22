@@ -251,6 +251,10 @@ Comprobando conexión con la base de datos...
 💰 Ventas
 </button>
 
+<button onclick="mostrarPantalla('apartados')">
+📋 Apartados
+</button>
+
 <button onclick="mostrarPantalla('compras')">
 🛒 Compras
 </button>
@@ -568,6 +572,171 @@ Cargando historial...
 </section>
 
 
+<!-- ================= APARTADOS ================= -->
+
+<section id="apartados" class="pantalla">
+
+<button class="secundario" onclick="mostrarPantalla('inicio')">
+← Volver
+</button>
+
+<h2>📋 Apartados</h2>
+
+<div class="tarjeta">
+
+<h3>➕ Nuevo apartado</h3>
+
+<div class="ayuda">
+Al crear el apartado, el stock se descuenta inmediatamente.
+Los pagos posteriores no vuelven a descontar stock.
+</div>
+
+<label>Cliente</label>
+
+<input
+id="apartadoCliente"
+type="text"
+placeholder="Codigo, nombre o telefono"
+autocomplete="off"
+>
+
+<div id="estadoClienteApartado"></div>
+
+<div id="resultadoClienteApartado"></div>
+
+
+<label>Codigo del articulo</label>
+
+<input
+id="apartadoCodigo"
+type="text"
+placeholder="Escribe el codigo"
+autocomplete="off"
+>
+
+<div id="estadoApartadoCodigo"></div>
+
+
+<label>Nombre del articulo</label>
+
+<input
+id="apartadoNombre"
+type="text"
+placeholder="Escribe el nombre"
+autocomplete="off"
+>
+
+<div id="estadoApartadoNombre"></div>
+
+<div id="resultadoApartado"></div>
+
+
+<label>Cantidad</label>
+
+<input
+id="apartadoCantidad"
+type="number"
+min="1"
+value="1"
+oninput="actualizarTotalApartado()"
+>
+
+
+<label>Precio por unidad</label>
+
+<input
+id="apartadoPrecio"
+type="number"
+min="0"
+step="0.01"
+oninput="actualizarTotalApartado()"
+>
+
+
+<div id="infoPrecioApartado"></div>
+
+
+<div class="info-articulo">
+
+<strong>Total del apartado</strong>
+
+<div id="totalApartado" class="precio-venta">
+$0.00
+</div>
+
+</div>
+
+
+<label>Anticipo</label>
+
+<input
+id="apartadoAnticipo"
+type="number"
+min="0"
+step="0.01"
+value="0"
+oninput="actualizarTotalApartado()"
+>
+
+
+<div class="info-articulo">
+
+<strong>Saldo pendiente</strong>
+
+<div id="saldoApartado" class="precio-venta">
+$0.00
+</div>
+
+</div>
+
+
+<label>Metodo de pago del anticipo</label>
+
+<select id="apartadoMetodoPago">
+
+<option value="efectivo">Efectivo</option>
+<option value="tarjeta">Tarjeta</option>
+<option value="transferencia">Transferencia</option>
+<option value="aplazo">Aplazo</option>
+
+</select>
+
+
+<label>Notas</label>
+
+<input
+id="apartadoNotas"
+type="text"
+placeholder="Notas del apartado"
+>
+
+
+<button onclick="registrarApartado()">
+💾 Crear apartado
+</button>
+
+<div id="mensajeApartado"></div>
+
+</div>
+
+
+<div class="tarjeta">
+
+<h3>📋 Historial de apartados</h3>
+
+<button onclick="cargarHistorialApartados()">
+🔄 Actualizar apartados
+</button>
+
+<div id="historialApartados">
+Cargando apartados...
+</div>
+
+</div>
+
+</section>
+
+
 <section id="clientes" class="pantalla">
 
 <button class="secundario" onclick="mostrarPantalla('inicio')">
@@ -692,8 +861,6 @@ Cargando ventas...
 </div>
 
 
-<!-- AGREGADO: REPORTE DE ARTICULOS MAS Y MENOS VENDIDOS -->
-
 <div class="tarjeta">
 
 <h3>🪑 Artículos más y menos vendidos</h3>
@@ -757,6 +924,12 @@ let clienteEditando=null;
 let clienteVentaSeleccionado=null;
 
 
+/* ================= APARTADOS ================= */
+
+let articuloApartadoSeleccionado=null;
+let clienteApartadoSeleccionado=null;
+
+
 /* ================= NAVEGACION ================= */
 
 function mostrarPantalla(id){
@@ -792,6 +965,20 @@ cargarHistorialVentas();
 
 if(id==="clientes"){
 cargarClientes();
+}
+
+
+/* AGREGADO: Apartados */
+
+if(id==="apartados"){
+
+cargarArticulos();
+cargarClientes();
+
+setTimeout(function(){
+cargarHistorialApartados();
+},100);
+
 }
 
 
@@ -3105,407 +3292,593 @@ ${escaparHTML(error.message||String(error))}
 }
 
 
-/* ================= CLIENTES ================= */
-
-async function cargarClientes(){
-
-try{
-
-const respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/clientes?select=*&activo=eq.true&order=nombre.asc",
-{
-method:"GET",
-headers:headersSupabase,
-cache:"no-store"
-}
-);
-
-if(!respuesta.ok){
-
-console.error(
-await respuesta.text()
-);
-
-return;
-
-}
-
-clientes=await respuesta.json();
-
-const buscar=
-document.getElementById("buscarCliente");
-
-if(buscar){
-
-if(buscar.value.trim()){
-filtrarClientes();
-}else{
-mostrarClientes(clientes);
-}
-
-}
-
-}catch(error){
-
-console.error(error);
-
-}
-
-}
+/* ================= APARTADOS ================= */
 
 
-function mostrarClientes(lista){
+/* CLIENTE */
 
-const contenedor=
-document.getElementById("listaClientes");
+const campoApartadoCliente=
+document.getElementById("apartadoCliente");
 
-if(!contenedor)return;
-
-if(!lista.length){
-
-contenedor.innerHTML=
-`
-<div class="tarjeta">
-No hay clientes registrados.
-</div>
-`;
-
-return;
-
-}
-
-contenedor.innerHTML=
-lista.map(function(c){
-
-return `
-<div class="cliente">
-
-<div class="codigo-cliente">
-${escaparHTML(c.codigo_cliente||"Sin codigo")}
-</div>
-
-<strong>
-${escaparHTML(c.nombre||"Sin nombre")}
-</strong>
-
-<div class="dato">
-📞 Telefono:
-${escaparHTML(c.telefono||"")}
-</div>
-
-<div class="dato">
-✉️ Correo:
-${escaparHTML(c.email||"")}
-</div>
-
-<div class="dato">
-📍 Direccion:
-${escaparHTML(c.direccion||"")}
-</div>
-
-<div class="dato">
-📝 Notas:
-${escaparHTML(c.notas||"")}
-</div>
-
-<div class="separador"></div>
-
-<button
-class="editar"
-onclick="editarCliente('${c.id}')"
->
-✏️ Editar
-</button>
-
-<button
-class="eliminar"
-onclick="eliminarCliente('${c.id}')"
->
-🗑️ Eliminar
-</button>
-
-</div>
-`;
-
-}).join("");
-
-}
-
-
-function filtrarClientes(){
-
-const campo=
-document.getElementById("buscarCliente");
-
-if(!campo)return;
+campoApartadoCliente.addEventListener(
+"input",
+function(){
 
 const texto=
-campo.value.trim().toLowerCase();
+this.value.trim().toLowerCase();
 
-if(!texto){
+clienteApartadoSeleccionado=null;
 
-mostrarClientes(clientes);
+document.getElementById("estadoClienteApartado").innerHTML="";
+document.getElementById("resultadoClienteApartado").innerHTML="";
+
+if(!texto)return;
+
+const exactoCodigo=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===texto;
+
+});
+
+if(exactoCodigo){
+
+seleccionarClienteApartado(exactoCodigo);
 return;
 
 }
 
-const filtrados=
+const exacto=
+clientes.find(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()===texto
+||
+String(c.telefono||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarClienteApartado(exacto);
+return;
+
+}
+
+const encontrados=
 clientes.filter(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase()
-.includes(texto)
+.toLowerCase().includes(texto)
 ||
 String(c.nombre||"")
-.toLowerCase()
-.includes(texto)
+.toLowerCase().includes(texto)
 ||
 String(c.telefono||"")
-.toLowerCase()
-.includes(texto);
+.toLowerCase().includes(texto);
 
 });
 
-mostrarClientes(filtrados);
+if(encontrados.length){
+
+mostrarOpcionesClienteApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoClienteApartado").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese cliente.
+</div>
+`;
 
 }
 
-
-/* ================= GENERAR CODIGO CLIENTE ================= */
-/* CORREGIDO: evita reutilizar codigos existentes */
-
-async function generarCodigoCliente(){
-
-try{
-
-const respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/clientes?select=codigo_cliente&limit=5000",
-{
-method:"GET",
-headers:{
-...headersSupabase,
-"Cache-Control":"no-cache",
-"Pragma":"no-cache"
-},
-cache:"no-store"
 }
 );
 
-if(!respuesta.ok){
 
-console.error(await respuesta.text());
+function mostrarOpcionesClienteApartado(lista){
 
-return "CLI-0001";
+const contenedor=
+document.getElementById("resultadoClienteApartado");
 
-}
+contenedor.innerHTML=
+`
+<div class="info-articulo">
 
-const datos=
-await respuesta.json();
+<strong>🔎 Selecciona el cliente:</strong>
 
-let mayor=0;
+${lista.map(function(c){
 
-datos.forEach(function(cliente){
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarClienteApartadoPorId('${c.id}')"
+>
 
-const codigo=
-String(cliente.codigo_cliente||"");
+👤 ${escaparHTML(c.nombre||"")}
 
-const coincidencia=
-codigo.match(/^CLI-(\d+)$/i);
+<br>
 
-if(coincidencia){
+Codigo:
+<strong>
+${escaparHTML(c.codigo_cliente||"Sin codigo")}
+</strong>
 
-const numero=
-Number(coincidencia[1]);
+<br>
 
-if(numero>mayor){
+Telefono:
+${escaparHTML(c.telefono||"")}
 
-mayor=numero;
+</button>
+`;
 
-}
+}).join("")}
 
-}
-
-});
-
-
-/*
- Buscamos el primer codigo libre.
- Esto evita problemas si existen huecos
- entre los numeros de clientes.
-*/
-
-let siguiente=1;
-
-while(
-datos.some(function(cliente){
-
-return String(cliente.codigo_cliente||"")
-.toUpperCase()===
-"CLI-"+String(siguiente).padStart(4,"0");
-
-})
-){
-
-siguiente++;
+</div>
+`;
 
 }
 
 
-/*
- Si no hay huecos, siguiente será el primero
- disponible. El cálculo de mayor queda además
- preparado para bases con muchos clientes.
-*/
-
-if(siguiente<=mayor){
-
-siguiente=mayor+1;
-
-while(
-datos.some(function(cliente){
-
-return String(cliente.codigo_cliente||"")
-.toUpperCase()===
-"CLI-"+String(siguiente).padStart(4,"0");
-
-})
-){
-
-siguiente++;
-
-}
-
-}
-
-return "CLI-"+String(siguiente).padStart(4,"0");
-
-}catch(error){
-
-console.error(error);
-
-return "CLI-0001";
-
-}
-
-}
-
-
-async function mostrarFormularioCliente(){
-
-clienteEditando=null;
-
-document.getElementById("formCliente")
-.classList.remove("oculto");
-
-document.getElementById("tituloFormularioCliente")
-.innerHTML="Nuevo cliente";
-
-document.getElementById("mensajeCliente").innerHTML="";
-
-document.getElementById("nombreCliente").value="";
-document.getElementById("telefonoCliente").value="";
-document.getElementById("emailCliente").value="";
-document.getElementById("direccionCliente").value="";
-document.getElementById("notasCliente").value="";
-
-document.getElementById("codigoCliente").value=
-"Generando...";
-
-const codigo=
-await generarCodigoCliente();
-
-document.getElementById("codigoCliente").value=
-codigo;
-
-window.scrollTo({
-top:0,
-behavior:"smooth"
-});
-
-}
-
-
-function editarCliente(id){
+function seleccionarClienteApartadoPorId(id){
 
 const cliente=
 clientes.find(function(c){
 return c.id===id;
 });
 
-if(!cliente)return;
+if(cliente){
+seleccionarClienteApartado(cliente);
+}
 
-clienteEditando=cliente;
+}
 
-document.getElementById("formCliente")
-.classList.remove("oculto");
 
-document.getElementById("tituloFormularioCliente")
-.innerHTML="Editar cliente";
+function seleccionarClienteApartado(cliente){
 
-document.getElementById("codigoCliente").value=
+clienteApartadoSeleccionado=cliente;
+
+campoApartadoCliente.value=
 cliente.codigo_cliente||"";
 
-document.getElementById("nombreCliente").value=
-cliente.nombre||"";
+document.getElementById("estadoClienteApartado").innerHTML=
+`
+<div class="estado-ok">
+✅ Cliente seleccionado
+</div>
+`;
 
-document.getElementById("telefonoCliente").value=
-cliente.telefono||"";
+document.getElementById("resultadoClienteApartado").innerHTML=
+`
+<div class="info-articulo">
 
-document.getElementById("emailCliente").value=
-cliente.email||"";
+<strong>👤 Cliente seleccionado</strong>
 
-document.getElementById("direccionCliente").value=
-cliente.direccion||"";
+<br><br>
 
-document.getElementById("notasCliente").value=
-cliente.notas||"";
+Codigo:
+<strong>
+${escaparHTML(cliente.codigo_cliente||"")}
+</strong>
 
-document.getElementById("mensajeCliente").innerHTML="";
+<br>
 
-window.scrollTo({
-top:0,
-behavior:"smooth"
+Nombre:
+${escaparHTML(cliente.nombre||"")}
+
+<br>
+
+Telefono:
+${escaparHTML(cliente.telefono||"")}
+
+</div>
+`;
+
+}
+
+
+/* ARTICULO */
+
+const campoApartadoCodigo=
+document.getElementById("apartadoCodigo");
+
+const campoApartadoNombre=
+document.getElementById("apartadoNombre");
+
+
+campoApartadoCodigo.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloApartadoSeleccionado=null;
+
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+if(!texto){
+
+document.getElementById("apartadoPrecio").value="";
+
+actualizarTotalApartado();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloApartado(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoApartadoCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese codigo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+campoApartadoNombre.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloApartadoSeleccionado=null;
+
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+if(!texto){
+
+document.getElementById("apartadoPrecio").value="";
+
+actualizarTotalApartado();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloApartado(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoApartadoNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese articulo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesApartado(lista){
+
+const contenedor=
+document.getElementById("resultadoApartado");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el articulo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloApartadoPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(a.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloApartadoPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+seleccionarArticuloApartado(articulo);
+}
+
+}
+
+
+function seleccionarArticuloApartado(articulo){
+
+articuloApartadoSeleccionado=articulo;
+
+campoApartadoCodigo.value=
+articulo.codigo||"";
+
+campoApartadoNombre.value=
+articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("apartadoPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoApartadoCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Codigo encontrado
+</div>
+`;
+
+document.getElementById("estadoApartadoNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Articulo encontrado
+</div>
+`;
+
+document.getElementById("resultadoApartado").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Articulo seleccionado</strong>
+
+<br><br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioApartado").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio del apartado.
+</div>
+`;
+
+actualizarTotalApartado();
+
+}
+
+
+/* TOTAL Y SALDO */
+
+function actualizarTotalApartado(){
+
+const cantidad=
+Number(
+document.getElementById("apartadoCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("apartadoPrecio").value||0
+);
+
+const anticipo=
+Number(
+document.getElementById("apartadoAnticipo").value||0
+);
+
+const total=
+cantidad*precio;
+
+let saldo=
+total-anticipo;
+
+if(saldo<0){
+saldo=0;
+}
+
+document.getElementById("totalApartado").innerHTML=
+"$"+total.toFixed(2);
+
+document.getElementById("saldoApartado").innerHTML=
+"$"+saldo.toFixed(2);
+
+}
+
+
+/* REGISTRAR APARTADO */
+
+async function registrarApartado(){
+
+const mensaje=
+document.getElementById("mensajeApartado");
+
+let articulo=
+articuloApartadoSeleccionado;
+
+const codigo=
+campoApartadoCodigo.value.trim();
+
+const nombre=
+campoApartadoNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("apartadoCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("apartadoPrecio").value||0
+);
+
+const anticipo=
+Number(
+document.getElementById("apartadoAnticipo").value||0
+);
+
+const metodoPago=
+document.getElementById("apartadoMetodoPago").value;
+
+const notas=
+document.getElementById("apartadoNotas").value.trim();
+
+
+if(!clienteApartadoSeleccionado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Selecciona un cliente para el apartado.
+</div>
+`;
+
+return;
+
+}
+
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
 });
 
 }
 
 
-/* ================= GUARDAR CLIENTE ================= */
-/* CORREGIDO: reintenta automaticamente si aparece 23505 */
-
-async function guardarCliente(){
-
-const mensaje=
-document.getElementById("mensajeCliente");
-
-const codigoInicial=
-document.getElementById("codigoCliente").value.trim();
-
-const nombre=
-document.getElementById("nombreCliente").value.trim();
-
-const telefono=
-document.getElementById("telefonoCliente").value.trim();
-
-const email=
-document.getElementById("emailCliente").value.trim();
-
-const direccion=
-document.getElementById("direccionCliente").value.trim();
-
-const notas=
-document.getElementById("notasCliente").value.trim();
-
-if(!codigoInicial||codigoInicial==="Generando..."){
+if(!articulo){
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-❌ No se pudo generar el codigo del cliente.
+❌ No encontramos ese articulo.
 </div>
 `;
 
@@ -3513,60 +3886,175 @@ return;
 
 }
 
-if(!nombre){
+
+if(!cantidad||cantidad<1){
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-❌ El nombre del cliente es obligatorio.
+❌ Indica una cantidad valida.
 </div>
 `;
 
 return;
 
 }
+
+
+const stockActual=
+Number(articulo.stock||0);
+
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El precio no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+
+const total=
+cantidad*precio;
+
+
+if(anticipo<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El anticipo no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+
+if(anticipo>total){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El anticipo no puede ser mayor que el total.
+</div>
+`;
+
+return;
+
+}
+
+
+const saldo=
+total-anticipo;
+
+
+const idApartado=
+crypto.randomUUID();
+
 
 try{
 
-let respuesta;
 
-if(clienteEditando){
+/*
+ Primero guardamos el apartado.
+ El stock todavía no se toca hasta confirmar
+ que el apartado se guardó correctamente.
+*/
 
-respuesta=
+const respuestaApartado=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/clientes?id=eq."+
-encodeURIComponent(clienteEditando.id),
+"/rest/v1/apartados",
 {
-method:"PATCH",
+method:"POST",
 headers:{
 ...headersSupabase,
-"Prefer":"return=minimal"
+"Prefer":"return=representation"
 },
 body:JSON.stringify({
 
-nombre:nombre,
-telefono:telefono,
-email:email,
-direccion:direccion,
+id:idApartado,
+
+cliente_id:
+clienteApartadoSeleccionado.id,
+
+articulo_id:
+articulo.id,
+
+cantidad:cantidad,
+
+precio_unitario:precio,
+
+fecha:new Date().toISOString(),
+
+total:total,
+
+pagado:anticipo,
+
+saldo:saldo,
+
+estado:
+saldo<=0
+?"pagado"
+:"pendiente",
+
+metodo_pago:metodoPago,
+
 notas:notas
 
 })
 }
 );
 
-if(!respuesta.ok){
+
+if(!respuestaApartado.ok){
 
 const errorTexto=
-await respuesta.text();
+await respuestaApartado.text();
 
-console.error(errorTexto);
+console.error(
+"Error guardando apartado:",
+errorTexto
+);
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ No se pudo guardar el cliente.
+❌ No se pudo crear el apartado.
 
 <br><br>
 
@@ -3579,24 +4067,17 @@ return;
 
 }
 
-}else{
 
 /*
- Para un cliente nuevo hacemos hasta 3 intentos.
- Si otro usuario acaba de utilizar el mismo codigo,
- Supabase devuelve 23505 y generamos uno nuevo.
+ Si existe anticipo, registramos el pago.
 */
 
-let codigoActual=codigoInicial;
+if(anticipo>0){
 
-let guardado=false;
-
-for(let intento=1;intento<=3;intento++){
-
-respuesta=
+const respuestaPago=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/clientes",
+"/rest/v1/apartado_pagos",
 {
 method:"POST",
 headers:{
@@ -3607,61 +4088,56 @@ body:JSON.stringify({
 
 id:crypto.randomUUID(),
 
-codigo_cliente:codigoActual,
+apartado_id:idApartado,
 
-nombre:nombre,
+fecha:new Date().toISOString(),
 
-telefono:telefono,
+importe:anticipo,
 
-email:email,
+metodo_pago:metodoPago,
 
-direccion:direccion,
-
-notas:notas,
-
-activo:true,
-
-creado_at:new Date().toISOString()
+notas:"Anticipo inicial del apartado"
 
 })
 }
 );
 
-if(respuesta.ok){
 
-guardado=true;
-break;
-
-}
+if(!respuestaPago.ok){
 
 const errorTexto=
-await respuesta.text();
+await respuestaPago.text();
 
 console.error(
-"Error guardando cliente:",
+"Error guardando anticipo:",
 errorTexto
 );
 
-if(
-errorTexto.includes('"code":"23505"')||
-errorTexto.includes("clientes_codigo_cliente_key")
-){
 
-codigoActual=
-await generarCodigoCliente();
+/*
+ Intentamos eliminar el apartado creado para no dejar
+ un apartado incompleto.
+*/
 
-document.getElementById("codigoCliente").value=
-codigoActual;
-
-continue;
-
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(idApartado),
+{
+method:"DELETE",
+headers:headersSupabase
 }
+);
+
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ No se pudo guardar el cliente.
+❌ No se pudo guardar el anticipo.
+<br><br>
+
+No se realizó el descuento del stock.
 
 <br><br>
 
@@ -3674,15 +4150,78 @@ return;
 
 }
 
-if(!guardado){
+}
+
+
+/*
+ Ahora descontamos el stock.
+*/
+
+const nuevoStock=
+stockActual-cantidad;
+
+
+const respuestaStock=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+stock:nuevoStock
+
+})
+}
+);
+
+
+if(!respuestaStock.ok){
+
+const errorTexto=
+await respuestaStock.text();
+
+console.error(
+"Error actualizando stock del apartado:",
+errorTexto
+);
+
+
+/*
+ Intentamos eliminar el apartado para evitar que exista
+ un apartado que no pudo reservar correctamente el stock.
+*/
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(idApartado),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
 
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ No se pudo generar un codigo de cliente disponible.
+❌ El apartado se guardó,
+pero no se pudo descontar el stock.
+
 <br><br>
-Intenta nuevamente.
+
+No se dejó activo el apartado.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
 
 </div>
 `;
@@ -3691,42 +4230,107 @@ return;
 
 }
 
-}
-
-const codigo=
-document.getElementById("codigoCliente").value.trim();
 
 mensaje.innerHTML=
 `
 <div class="mensaje-exito">
 
-✅ Cliente guardado correctamente.
+<strong>
+✅ Apartado creado correctamente
+</strong>
 
 <br><br>
 
-Codigo:
-<strong>${escaparHTML(codigo)}</strong>
+Operacion:
+<strong>
+${escaparHTML(idApartado.substring(0,8))}
+</strong>
 
 <br>
 
-Nombre:
-${escaparHTML(nombre)}
+Fecha:
+${formatearFecha(new Date().toISOString())}
+
+<br>
+
+Cliente:
+${escaparHTML(clienteApartadoSeleccionado.nombre||"")}
+
+<br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Anticipo:
+<strong>$${anticipo.toFixed(2)}</strong>
+
+<br>
+
+Saldo:
+<strong>$${saldo.toFixed(2)}</strong>
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
 
 </div>
 `;
 
-clienteEditando=null;
 
-await cargarClientes();
+/*
+ Limpiar formulario.
+*/
 
-setTimeout(
-cancelarCliente,
-1000
-);
+articuloApartadoSeleccionado=null;
+clienteApartadoSeleccionado=null;
+
+campoApartadoCliente.value="";
+campoApartadoCodigo.value="";
+campoApartadoNombre.value="";
+
+document.getElementById("apartadoCantidad").value="1";
+document.getElementById("apartadoPrecio").value="";
+document.getElementById("apartadoAnticipo").value="0";
+document.getElementById("apartadoNotas").value="";
+
+document.getElementById("estadoClienteApartado").innerHTML="";
+document.getElementById("resultadoClienteApartado").innerHTML="";
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+actualizarTotalApartado();
+
+await cargarArticulos();
+
+await cargarHistorialApartados();
+
 
 }catch(error){
 
-console.error(error);
+console.error(
+"Error registrando apartado:",
+error
+);
 
 mensaje.innerHTML=
 `
@@ -3740,108 +4344,25 @@ mensaje.innerHTML=
 }
 
 
-function cancelarCliente(){
+/* ================= HISTORIAL APARTADOS ================= */
 
-clienteEditando=null;
-
-document.getElementById("formCliente")
-.classList.add("oculto");
-
-document.getElementById("mensajeCliente").innerHTML="";
-
-}
-
-
-async function eliminarCliente(id){
-
-const cliente=
-clientes.find(function(c){
-return c.id===id;
-});
-
-if(!cliente)return;
-
-if(!confirm(
-"¿Seguro que quieres eliminar al cliente \""+
-cliente.nombre+
-"\"?"
-)){
-
-return;
-
-}
-
-try{
-
-const respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/clientes?id=eq."+
-encodeURIComponent(id),
-{
-method:"PATCH",
-headers:headersSupabase,
-body:JSON.stringify({
-activo:false
-})
-}
-);
-
-if(!respuesta.ok){
-
-const errorTexto=
-await respuesta.text();
-
-console.error(errorTexto);
-
-alert(
-"No se pudo eliminar el cliente.\n\n"+
-errorTexto
-);
-
-return;
-
-}
-
-clientes=
-clientes.filter(function(c){
-return c.id!==id;
-});
-
-filtrarClientes();
-
-}catch(error){
-
-console.error(error);
-
-alert(
-"Error de conexion con Supabase."
-);
-
-}
-
-}
-
-
-/* ================= REPORTE VENTAS POR DIA ================= */
-/* AGREGADO: no modifica el registro de ventas existente */
-
-async function cargarReporteVentasDiarias(){
+async function cargarHistorialApartados(){
 
 const contenedor=
-document.getElementById("reporteVentasDiarias");
+document.getElementById("historialApartados");
 
 if(!contenedor)return;
 
 contenedor.innerHTML=
-"🔄 Cargando ventas por día...";
+"🔄 Cargando apartados...";
+
 
 try{
 
 const respuesta=
 await fetch(
 SUPABASE_URL+
-"/rest/v1/ventas?select=*&limit=1000",
+"/rest/v1/apartados?select=*&order=fecha.desc",
 {
 method:"GET",
 headers:{
@@ -3853,14 +4374,14 @@ cache:"no-store"
 }
 );
 
+
 if(!respuesta.ok){
 
 const errorTexto=
 await respuesta.text();
 
 console.error(
-"Error reporte ventas:",
-respuesta.status,
+"Error historial apartados:",
 errorTexto
 );
 
@@ -3868,12 +4389,7 @@ contenedor.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ No se pudieron cargar las ventas.
-
-<br><br>
-
-Código:
-${respuesta.status}
+❌ No se pudo cargar el historial de apartados.
 
 <br><br>
 
@@ -3886,15 +4402,17 @@ return;
 
 }
 
-const ventas=
+
+const apartados=
 await respuesta.json();
 
-if(!Array.isArray(ventas)||!ventas.length){
+
+if(!Array.isArray(apartados)||!apartados.length){
 
 contenedor.innerHTML=
 `
 <div class="tarjeta">
-Todavia no hay ventas registradas.
+Todavia no hay apartados registrados.
 </div>
 `;
 
@@ -3902,201 +4420,194 @@ return;
 
 }
 
-const grupos={};
 
-ventas.forEach(function(v){
-
-if(!v.fecha)return;
-
-const fecha=
-new Date(v.fecha);
-
-if(isNaN(fecha.getTime()))return;
-
-const partes=
-new Intl.DateTimeFormat(
-"en-CA",
-{
-timeZone:"America/Mexico_City",
-year:"numeric",
-month:"2-digit",
-day:"2-digit",
-hour:"2-digit",
-minute:"2-digit",
-hourCycle:"h23"
-}
-).formatToParts(fecha);
-
-const valores={};
-
-partes.forEach(function(p){
-valores[p.type]=p.value;
-});
-
-let anio=Number(valores.year);
-let mes=Number(valores.month);
-let dia=Number(valores.day);
-
-const hora=Number(valores.hour);
-const minuto=Number(valores.minute);
-
-if(
-hora>20||
-(hora===20&&minuto>0)
-){
-
-const siguiente=
-new Date(
-Date.UTC(
-anio,
-mes-1,
-dia
-)
-);
-
-siguiente.setUTCDate(
-siguiente.getUTCDate()+1
-);
-
-anio=siguiente.getUTCFullYear();
-mes=siguiente.getUTCMonth()+1;
-dia=siguiente.getUTCDate();
-
-}
-
-const clave=
-String(anio)+
-"-"+
-String(mes).padStart(2,"0")+
-"-"+
-String(dia).padStart(2,"0");
-
-if(!grupos[clave]){
-
-grupos[clave]={
-fecha:clave,
-efectivo:0,
-tarjeta:0,
-transferencia:0,
-aplazo:0,
-total:0,
-cantidad:0
-};
-
-}
-
-const total=
-Number(v.total||0);
-
-const metodo=
-String(v.metodo_pago||"")
-.toLowerCase()
-.trim();
-
-if(metodo==="efectivo"){
-grupos[clave].efectivo+=total;
-}
-else if(metodo==="tarjeta"){
-grupos[clave].tarjeta+=total;
-}
-else if(metodo==="transferencia"){
-grupos[clave].transferencia+=total;
-}
-else if(metodo==="aplazo"){
-grupos[clave].aplazo+=total;
-}
-
-grupos[clave].total+=total;
-grupos[clave].cantidad++;
-
-});
-
-const dias=
-Object.values(grupos)
-.sort(function(a,b){
-return b.fecha.localeCompare(a.fecha);
-});
-
-if(!dias.length){
+/*
+ Cargamos clientes y articulos desde los arrays actuales.
+*/
 
 contenedor.innerHTML=
+apartados.map(function(a){
+
+const cliente=
+clientes.find(function(c){
+return c.id===a.cliente_id;
+});
+
+const articulo=
+articulos.find(function(x){
+return x.id===a.articulo_id;
+});
+
+
+const nombreCliente=
+cliente
+?cliente.nombre
+:"Cliente no disponible";
+
+
+const nombreArticulo=
+articulo
+?articulo.nombre
+:"Articulo no disponible";
+
+
+const estado=
+String(a.estado||"pendiente").toLowerCase();
+
+
+let estadoHTML=
 `
-<div class="tarjeta">
-No hay ventas para mostrar.
-</div>
+<span class="estado-ok">
+${escaparHTML(a.estado||"pendiente")}
+</span>
 `;
 
-return;
+
+if(estado==="cancelado"||estado==="cancelada"){
+
+estadoHTML=
+`
+<strong style="color:#a00000">
+${escaparHTML(a.estado)}
+</strong>
+`;
 
 }
 
-contenedor.innerHTML=
-dias.map(function(d){
 
-const partes=
-d.fecha.split("-");
+const puedeCancelar=
+estado!=="cancelado"&&
+estado!=="cancelada"&&
+estado!=="liquidado"&&
+estado!=="pagado";
 
-const fechaMostrar=
-partes[2]+"/"+
-partes[1]+"/"+
-partes[0];
+
+let botones="";
+
+
+if(puedeCancelar){
+
+botones+=
+`
+<button
+class="eliminar"
+onclick="cancelarApartado('${a.id}')"
+>
+❌ Cancelar apartado y devolver stock
+</button>
+`;
+
+}
+
+
+if(estado==="pendiente"&&Number(a.saldo||0)>0){
+
+botones+=
+`
+<button
+onclick="registrarAbonoApartado('${a.id}')"
+>
+💵 Registrar abono
+</button>
+`;
+
+}
+
 
 return `
 <div class="historial">
 
 <strong>
-📅 Ventas del día ${fechaMostrar}
+📋 Apartado
 </strong>
 
-<div class="ayuda">
-Corte: 20:00 hora de México
+<div class="fecha-operacion">
+📅 ${formatearFecha(a.fecha)}
+</div>
+
+<div class="operacion-id">
+Operacion:
+${escaparHTML(String(a.id||"").substring(0,8))}
 </div>
 
 <div class="dato">
-🧾 Número de ventas:
-<strong>${d.cantidad}</strong>
-</div>
-
-<div class="separador"></div>
-
-<div class="dato">
-💵 Efectivo:
-<strong>$${d.efectivo.toFixed(2)}</strong>
-</div>
-
-<div class="dato">
-💳 Tarjeta:
-<strong>$${d.tarjeta.toFixed(2)}</strong>
-</div>
-
-<div class="dato">
-🏦 Transferencia:
-<strong>$${d.transferencia.toFixed(2)}</strong>
-</div>
-
-<div class="dato">
-📋 Aplazo:
-<strong>$${d.aplazo.toFixed(2)}</strong>
-</div>
-
-<div class="separador"></div>
-
-<div class="dato">
+Cliente:
 <strong>
-💰 TOTAL DEL DÍA:
-$${d.total.toFixed(2)}
+${escaparHTML(nombreCliente)}
 </strong>
 </div>
+
+<div class="dato">
+Articulo:
+<strong>
+${escaparHTML(nombreArticulo)}
+</strong>
+</div>
+
+<div class="dato">
+Cantidad:
+${Number(a.cantidad||0)}
+</div>
+
+<div class="dato">
+Precio por unidad:
+$${Number(a.precio_unitario||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Total:
+<strong>
+$${Number(a.total||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Pagado:
+<strong>
+$${Number(a.pagado||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Saldo:
+<strong>
+$${Number(a.saldo||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Metodo inicial:
+${escaparHTML(a.metodo_pago||"")}
+</div>
+
+<div class="dato">
+Estado:
+${estadoHTML}
+</div>
+
+${a.notas?
+`
+<div class="dato">
+📝 Notas:
+${escaparHTML(a.notas)}
+</div>
+`
+:""}
+
+<div class="separador"></div>
+
+${botones}
 
 </div>
 `;
 
 }).join("");
 
+
 }catch(error){
 
 console.error(
-"Error reporte ventas diarias:",
+"Error historial apartados:",
 error
 );
 
@@ -4104,391 +4615,6 @@ contenedor.innerHTML=
 `
 <div class="mensaje-error">
 
-❌ Error de conexión con Supabase.
+❌ Error de conexion con Supabase.
 
-<br><br>
-
-${escaparHTML(
-error.message||String(error)
-)}
-
-</div>
-`;
-
-}
-
-}
-
-
-/* ================= REPORTE ARTICULOS VENDIDOS ================= */
-/* AGREGADO: solo agrega el reporte, no modifica ventas */
-
-async function cargarReporteArticulosVendidos(){
-
-const contenedor=
-document.getElementById("reporteArticulosVendidos");
-
-if(!contenedor)return;
-
-contenedor.innerHTML=
-"🔄 Cargando artículos vendidos...";
-
-try{
-
-const respuestaVentas=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/ventas?select=id,estado&limit=5000",
-{
-method:"GET",
-headers:{
-...headersSupabase,
-"Cache-Control":"no-cache",
-"Pragma":"no-cache"
-},
-cache:"no-store"
-}
-);
-
-if(!respuestaVentas.ok){
-
-const errorTexto=
-await respuestaVentas.text();
-
-console.error(
-"Error cargando ventas para reporte:",
-errorTexto
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ No se pudieron cargar las ventas.
-
-<br><br>
-
-${escaparHTML(errorTexto)}
-
-</div>
-`;
-
-return;
-
-}
-
-const ventas=
-await respuestaVentas.json();
-
-const ventasValidas=new Set(
-ventas
-.filter(function(v){
-return String(v.estado||"")
-.toLowerCase()!=="cancelada";
-})
-.map(function(v){
-return v.id;
-})
-);
-
-const respuestaDetalles=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/ventas_detalle?select=*&limit=5000",
-{
-method:"GET",
-headers:{
-...headersSupabase,
-"Cache-Control":"no-cache",
-"Pragma":"no-cache"
-},
-cache:"no-store"
-}
-);
-
-if(!respuestaDetalles.ok){
-
-const errorTexto=
-await respuestaDetalles.text();
-
-console.error(
-"Error cargando detalles para reporte:",
-errorTexto
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ No se pudieron cargar los detalles de las ventas.
-
-<br><br>
-
-${escaparHTML(errorTexto)}
-
-</div>
-`;
-
-return;
-
-}
-
-const detalles=
-await respuestaDetalles.json();
-
-const respuestaArticulos=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",
-{
-method:"GET",
-headers:{
-...headersSupabase,
-"Cache-Control":"no-cache",
-"Pragma":"no-cache"
-},
-cache:"no-store"
-}
-);
-
-if(!respuestaArticulos.ok){
-
-const errorTexto=
-await respuestaArticulos.text();
-
-console.error(
-"Error cargando articulos para reporte:",
-errorTexto
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ No se pudieron cargar los artículos.
-
-<br><br>
-
-${escaparHTML(errorTexto)}
-
-</div>
-`;
-
-return;
-
-}
-
-const articulosReporte=
-await respuestaArticulos.json();
-
-const mapaArticulos={};
-
-articulosReporte.forEach(function(articulo){
-
-mapaArticulos[articulo.id]={
-codigo:articulo.codigo||"",
-nombre:articulo.nombre||"Sin nombre",
-cantidad:0,
-total:0
-};
-
-});
-
-detalles.forEach(function(detalle){
-
-if(!ventasValidas.has(detalle.venta_id)){
-return;
-}
-
-const articulo=
-mapaArticulos[detalle.articulo_id];
-
-if(!articulo){
-return;
-}
-
-const cantidad=
-Number(detalle.cantidad||0);
-
-const subtotal=
-Number(detalle.subtotal||0);
-
-articulo.cantidad+=cantidad;
-articulo.total+=subtotal;
-
-});
-
-const vendidos=
-Object.values(mapaArticulos)
-.filter(function(articulo){
-return articulo.cantidad>0;
-});
-
-if(!vendidos.length){
-
-contenedor.innerHTML=
-`
-<div class="tarjeta">
-No hay artículos vendidos registrados.
-</div>
-`;
-
-return;
-
-}
-
-const masVendidos=
-[...vendidos]
-.sort(function(a,b){
-
-if(b.cantidad!==a.cantidad){
-return b.cantidad-a.cantidad;
-}
-
-return a.nombre.localeCompare(b.nombre);
-
-})
-.slice(0,10);
-
-const menosVendidos=
-[...vendidos]
-.sort(function(a,b){
-
-if(a.cantidad!==b.cantidad){
-return a.cantidad-b.cantidad;
-}
-
-return a.nombre.localeCompare(b.nombre);
-
-})
-.slice(0,10);
-
-function crearFila(articulo){
-
-return `
-<div class="articulo">
-
-<strong>
-${escaparHTML(articulo.nombre)}
-</strong>
-
-<div class="dato">
-Codigo:
-${escaparHTML(articulo.codigo||"Sin codigo")}
-</div>
-
-<div class="dato">
-Unidades vendidas:
-<strong>${articulo.cantidad}</strong>
-</div>
-
-<div class="dato">
-Total vendido:
-<strong>
-$${articulo.total.toLocaleString("es-MX",{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-})}
-</strong>
-</div>
-
-</div>
-`;
-
-}
-
-let html="";
-
-html+=`
-<h3>🥇 Más vendidos</h3>
-`;
-
-masVendidos.forEach(function(articulo){
-html+=crearFila(articulo);
-});
-
-html+=`
-<div class="separador"></div>
-<h3>📉 Menos vendidos</h3>
-`;
-
-menosVendidos.forEach(function(articulo){
-html+=crearFila(articulo);
-});
-
-contenedor.innerHTML=html;
-
-}catch(error){
-
-console.error(
-"Error reporte articulos vendidos:",
-error
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ Error de conexión con Supabase.
-
-<br><br>
-
-${escaparHTML(
-error.message||String(error)
-)}
-
-</div>
-`;
-
-}
-
-}
-
-
-/* ================= FUNCIONES AUXILIARES ================= */
-
-function escaparHTML(texto){
-
-return String(texto)
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#039;");
-
-}
-
-
-function formatearFecha(fecha){
-
-if(!fecha)return "Sin fecha";
-
-const d=new Date(fecha);
-
-if(isNaN(d.getTime())){
-return "Fecha no valida";
-}
-
-return d.toLocaleString(
-"es-MX",
-{
-day:"2-digit",
-month:"2-digit",
-year:"numeric",
-hour:"2-digit",
-minute:"2-digit",
-second:"2-digit"
-}
-);
-
-}
-
-
-/* ================= INICIO ================= */
-
-comprobarConexion();
-
-</script>
-
-</body>
-</html>
+<br><br
