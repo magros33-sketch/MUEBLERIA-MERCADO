@@ -673,7 +673,22 @@ Proximamente: gastos.
 <h2>📊 Reportes</h2>
 
 <div class="tarjeta">
-Proximamente: reportes de ventas, articulos mas vendidos y menos vendidos.
+
+<h3>💰 Ventas por día</h3>
+
+<div class="ayuda">
+Corte diario a las 20:00, hora de México.
+Las ventas posteriores a las 20:00 pasan al siguiente día comercial.
+</div>
+
+<button onclick="cargarReporteVentasDiarias()">
+🔄 Actualizar ventas por día
+</button>
+
+<div id="reporteVentasDiarias">
+Cargando ventas...
+</div>
+
 </div>
 
 </section>
@@ -756,6 +771,13 @@ cargarHistorialVentas();
 
 if(id==="clientes"){
 cargarClientes();
+}
+
+
+/* AGREGADO: cargar reporte al abrir Reportes */
+
+if(id==="reportes"){
+cargarReporteVentasDiarias();
 }
 
 }
@@ -3632,6 +3654,376 @@ console.error(error);
 alert(
 "Error de conexion con Supabase."
 );
+
+}
+
+}
+
+
+/* ================= REPORTE VENTAS POR DIA ================= */
+/* AGREGADO: no modifica el registro de ventas existente */
+
+async function cargarReporteVentasDiarias(){
+
+const contenedor=
+document.getElementById("reporteVentasDiarias");
+
+if(!contenedor)return;
+
+contenedor.innerHTML=
+"🔄 Cargando ventas por día...";
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?select=*&limit=1000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error reporte ventas:",
+respuesta.status,
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudieron cargar las ventas.
+
+<br><br>
+
+Código:
+${respuesta.status}
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const ventas=
+await respuesta.json();
+
+if(!Array.isArray(ventas)||!ventas.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+Todavia no hay ventas registradas.
+</div>
+`;
+
+return;
+
+}
+
+
+/*
+ CORTE DIARIO:
+ 20:00 HORAS DE MEXICO.
+
+ Una venta a las 20:00 exactamente
+ pertenece al día actual.
+
+ Una venta después de las 20:00
+ pertenece al siguiente día comercial.
+*/
+
+const grupos={};
+
+ventas.forEach(function(v){
+
+if(!v.fecha)return;
+
+const fecha=
+new Date(v.fecha);
+
+if(isNaN(fecha.getTime()))return;
+
+
+/*
+ Convertimos la fecha a hora de
+ America/Mexico_City.
+*/
+
+const partes=
+new Intl.DateTimeFormat(
+"en-CA",
+{
+timeZone:"America/Mexico_City",
+year:"numeric",
+month:"2-digit",
+day:"2-digit",
+hour:"2-digit",
+minute:"2-digit",
+hourCycle:"h23"
+}
+).formatToParts(fecha);
+
+const valores={};
+
+partes.forEach(function(p){
+
+valores[p.type]=p.value;
+
+});
+
+
+let anio=
+Number(valores.year);
+
+let mes=
+Number(valores.month);
+
+let dia=
+Number(valores.day);
+
+const hora=
+Number(valores.hour);
+
+const minuto=
+Number(valores.minute);
+
+
+/*
+ Después de las 20:00 pasa
+ al siguiente día comercial.
+*/
+
+if(
+hora>20||
+(hora===20&&minuto>0)
+){
+
+const siguiente=
+new Date(
+Date.UTC(
+anio,
+mes-1,
+dia
+)
+);
+
+siguiente.setUTCDate(
+siguiente.getUTCDate()+1
+);
+
+anio=
+siguiente.getUTCFullYear();
+
+mes=
+siguiente.getUTCMonth()+1;
+
+dia=
+siguiente.getUTCDate();
+
+}
+
+
+const clave=
+String(anio)+
+"-"+
+String(mes).padStart(2,"0")+
+"-"+
+String(dia).padStart(2,"0");
+
+
+if(!grupos[clave]){
+
+grupos[clave]={
+fecha:clave,
+efectivo:0,
+tarjeta:0,
+transferencia:0,
+aplazo:0,
+total:0,
+cantidad:0
+};
+
+}
+
+
+const total=
+Number(v.total||0);
+
+const metodo=
+String(v.metodo_pago||"")
+.toLowerCase()
+.trim();
+
+
+if(metodo==="efectivo"){
+
+grupos[clave].efectivo+=total;
+
+}
+
+else if(metodo==="tarjeta"){
+
+grupos[clave].tarjeta+=total;
+
+}
+
+else if(metodo==="transferencia"){
+
+grupos[clave].transferencia+=total;
+
+}
+
+else if(metodo==="aplazo"){
+
+grupos[clave].aplazo+=total;
+
+}
+
+
+grupos[clave].total+=total;
+
+grupos[clave].cantidad++;
+
+});
+
+
+const dias=
+Object.values(grupos)
+.sort(function(a,b){
+
+return b.fecha.localeCompare(a.fecha);
+
+});
+
+
+if(!dias.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+No hay ventas para mostrar.
+</div>
+`;
+
+return;
+
+}
+
+
+contenedor.innerHTML=
+dias.map(function(d){
+
+const partes=
+d.fecha.split("-");
+
+const fechaMostrar=
+partes[2]+"/"+
+partes[1]+"/"+
+partes[0];
+
+return `
+<div class="historial">
+
+<strong>
+📅 Ventas del día ${fechaMostrar}
+</strong>
+
+<div class="ayuda">
+Corte: 20:00 hora de México
+</div>
+
+<div class="dato">
+🧾 Número de ventas:
+<strong>
+${d.cantidad}
+</strong>
+</div>
+
+<div class="separador"></div>
+
+<div class="dato">
+💵 Efectivo:
+<strong>
+$${d.efectivo.toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+💳 Tarjeta:
+<strong>
+$${d.tarjeta.toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+🏦 Transferencia:
+<strong>
+$${d.transferencia.toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+📋 Aplazo:
+<strong>
+$${d.aplazo.toFixed(2)}
+</strong>
+</div>
+
+<div class="separador"></div>
+
+<div class="dato">
+<strong>
+💰 TOTAL DEL DÍA:
+$${d.total.toFixed(2)}
+</strong>
+</div>
+
+</div>
+`;
+
+}).join("");
+
+
+}catch(error){
+
+console.error(
+"Error reporte ventas diarias:",
+error
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexión con Supabase.
+
+<br><br>
+
+${escaparHTML(
+error.message||String(error)
+)}
+
+</div>
+`;
 
 }
 
