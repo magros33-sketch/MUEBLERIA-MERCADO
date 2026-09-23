@@ -6096,7 +6096,133 @@ function escaparHTML(valor){
     .replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#039;");
-   }
+   }/* ===== CORRECCIÓN CLIENTES ===== */
+
+async function eliminarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  if(!confirm(
+    "¿Eliminar este cliente?\n\n" +
+    (cliente.codigo_cliente || "") +
+    " - " +
+    (cliente.nombre || "")
+  )){
+    return;
+  }
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/clientes?id=eq." +
+      encodeURIComponent(String(cliente.id)),
+      {
+        method:"DELETE",
+        headers:{
+          "apikey":SUPABASE_KEY,
+          "Authorization":"Bearer "+SUPABASE_KEY,
+          "Content-Type":"application/json",
+          "Prefer":"return=representation"
+        }
+      }
+    );
+
+    const resultado = await respuesta.text();
+
+    console.log("RESPUESTA ELIMINAR:",respuesta.status,resultado);
+
+    if(!respuesta.ok){
+      throw new Error(resultado);
+    }
+
+    await cargarClientes();
+
+    alert("Cliente eliminado correctamente.");
+
+  }catch(error){
+
+    console.error("ERROR AL ELIMINAR CLIENTE:",error);
+
+    alert(
+      "No se pudo eliminar el cliente.\n\n" +
+      error.message
+    );
+  }
+}
+
+
+function editarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  clienteEditando = cliente.id;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "block";
+  }
+
+  document.getElementById("codigoCliente").value =
+    cliente.codigo_cliente || "";
+
+  document.getElementById("nombreCliente").value =
+    cliente.nombre || "";
+
+  document.getElementById("telefonoCliente").value =
+    cliente.telefono || "";
+
+  document.getElementById("emailCliente").value =
+    cliente.email || "";
+
+  document.getElementById("direccionCliente").value =
+    cliente.direccion || "";
+
+  document.getElementById("notasCliente").value =
+    cliente.notas || "";
+
+  const titulo =
+    document.getElementById("tituloFormularioCliente");
+
+  if(titulo){
+    titulo.textContent = "Editar cliente";
+  }
+
+  const boton =
+    document.getElementById("botonGuardarCliente");
+
+  if(boton){
+    boton.textContent = "Guardar cambios";
+  }
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  if(mensaje){
+    mensaje.innerHTML = "";
+  }
+
+  formulario.scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
+}
 </script>
 
 </body>
