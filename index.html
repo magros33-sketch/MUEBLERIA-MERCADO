@@ -5393,7 +5393,732 @@ comprobarConexion();
 
 }
 );
+/* =========================================================
+   CLIENTES - AGREGAR SIN TOCAR EL RESTO DEL INDEX
+   ========================================================= */
 
+async function cargarClientes(){
+  try{
+    const respuesta = await fetch(
+      SUPABASE_URL + "/rest/v1/clientes?select=*&order=nombre.asc",
+      { headers: headersSupabase }
+    );
+
+    if(!respuesta.ok){
+      throw new Error(await respuesta.text());
+    }
+
+    clientes = await respuesta.json();
+
+    mostrarClientes(clientes);
+    cargarClientesEnSelectores();
+
+  }catch(error){
+    console.error("Error cargando clientes:", error);
+    clientes = [];
+    mostrarClientes([]);
+    cargarClientesEnSelectores();
+  }
+}
+
+
+function mostrarClientes(lista){
+
+  const contenedor = document.getElementById("listaClientes");
+
+  if(!contenedor) return;
+
+  if(!lista || lista.length === 0){
+    contenedor.innerHTML =
+      '<div class="vacio">No hay clientes registrados.</div>';
+    return;
+  }
+
+  contenedor.innerHTML = lista.map(c => {
+
+    const id = escaparHTML(c.id || "");
+    const codigo = escaparHTML(c.codigo_cliente || "");
+    const nombre = escaparHTML(c.nombre || "");
+    const telefono = escaparHTML(c.telefono || "");
+    const email = escaparHTML(c.email || "");
+    const direccion = escaparHTML(c.direccion || "");
+    const notas = escaparHTML(c.notas || "");
+
+    return `
+      <div class="cliente">
+
+        <div class="codigo-cliente">
+          ${codigo || "Sin código"}
+        </div>
+
+        <strong>${nombre || "Sin nombre"}</strong>
+
+        ${telefono
+          ? `<div>📞 ${telefono}</div>`
+          : ""}
+
+        ${email
+          ? `<div>✉️ ${email}</div>`
+          : ""}
+
+        ${direccion
+          ? `<div>📍 ${direccion}</div>`
+          : ""}
+
+        ${notas
+          ? `<div>📝 ${notas}</div>`
+          : ""}
+
+        <div class="acciones">
+
+          <button
+            type="button"
+            onclick="editarCliente('${id}')">
+            ✏️ Editar
+          </button>
+
+          <button
+            type="button"
+            class="btn-danger"
+            onclick="eliminarCliente('${id}')">
+            🗑️ Eliminar
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+function filtrarClientes(){
+
+  const texto =
+    (document.getElementById("buscarCliente")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  if(!texto){
+    mostrarClientes(clientes);
+    return;
+  }
+
+  const filtrados = clientes.filter(c => {
+
+    return [
+      c.codigo_cliente,
+      c.nombre,
+      c.telefono,
+      c.email,
+      c.direccion
+    ].some(valor =>
+      String(valor || "")
+      .toLowerCase()
+      .includes(texto)
+    );
+
+  });
+
+  mostrarClientes(filtrados);
+}
+
+
+/* =========================================================
+   NUEVO CLIENTE
+   ========================================================= */
+
+function mostrarFormularioCliente(){
+
+  clienteEditando = null;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  const codigo =
+    document.getElementById("codigoCliente");
+
+  const nombre =
+    document.getElementById("nombreCliente");
+
+  const telefono =
+    document.getElementById("telefonoCliente");
+
+  const email =
+    document.getElementById("emailCliente");
+
+  const direccion =
+    document.getElementById("direccionCliente");
+
+  const notas =
+    document.getElementById("notasCliente");
+
+  if(!formulario) return;
+
+  formulario.style.display = "block";
+
+  if(codigo) codigo.value = "Generando...";
+  if(nombre) nombre.value = "";
+  if(telefono) telefono.value = "";
+  if(email) email.value = "";
+  if(direccion) direccion.value = "";
+  if(notas) notas.value = "";
+
+  if(mensaje) mensaje.innerHTML = "";
+
+  const titulo =
+    document.getElementById("tituloFormularioCliente");
+
+  const boton =
+    document.getElementById("botonGuardarCliente");
+
+  if(titulo)
+    titulo.textContent = "Nuevo cliente";
+
+  if(boton)
+    boton.textContent = "Guardar cliente";
+
+  generarSiguienteCodigoCliente().then(codigoNuevo => {
+
+    if(!clienteEditando && codigo){
+      codigo.value = codigoNuevo;
+    }
+
+  });
+}
+
+
+/* =========================================================
+   GENERAR CLI-0001, CLI-0002, CLI-0003...
+   ========================================================= */
+
+async function generarSiguienteCodigoCliente(){
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/clientes?select=codigo_cliente&order=codigo_cliente.desc&limit=1000",
+      {
+        headers: headersSupabase
+      }
+    );
+
+    if(!respuesta.ok){
+      throw new Error(await respuesta.text());
+    }
+
+    const datos = await respuesta.json();
+
+    let mayor = 0;
+
+    datos.forEach(c => {
+
+      const codigo =
+        String(c.codigo_cliente || "");
+
+      const coincidencia =
+        codigo.match(/(\d+)$/);
+
+      if(coincidencia){
+
+        const numero =
+          parseInt(coincidencia[1],10);
+
+        if(numero > mayor){
+          mayor = numero;
+        }
+
+      }
+
+    });
+
+    return "CLI-" +
+      String(mayor + 1).padStart(4,"0");
+
+  }catch(error){
+
+    console.error(
+      "Error generando código:",
+      error
+    );
+
+    let mayor = 0;
+
+    clientes.forEach(c => {
+
+      const coincidencia =
+        String(c.codigo_cliente || "")
+        .match(/(\d+)$/);
+
+      if(coincidencia){
+
+        const numero =
+          parseInt(coincidencia[1],10);
+
+        if(numero > mayor){
+          mayor = numero;
+        }
+
+      }
+
+    });
+
+    return "CLI-" +
+      String(mayor + 1).padStart(4,"0");
+  }
+}
+
+
+/* =========================================================
+   GUARDAR / EDITAR CLIENTE
+   ========================================================= */
+
+async function guardarCliente(){
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  const codigo =
+    document.getElementById("codigoCliente")
+    ?.value.trim();
+
+  const nombre =
+    document.getElementById("nombreCliente")
+    ?.value.trim();
+
+  const telefono =
+    document.getElementById("telefonoCliente")
+    ?.value.trim();
+
+  const email =
+    document.getElementById("emailCliente")
+    ?.value.trim();
+
+  const direccion =
+    document.getElementById("direccionCliente")
+    ?.value.trim();
+
+  const notas =
+    document.getElementById("notasCliente")
+    ?.value.trim();
+
+  if(!nombre){
+
+    if(mensaje){
+      mensaje.innerHTML =
+        '<span class="error">Escribe el nombre del cliente.</span>';
+    }
+
+    return;
+  }
+
+  try{
+
+    if(mensaje){
+      mensaje.innerHTML =
+        "Guardando cliente...";
+    }
+
+    const datos = {
+
+      codigo_cliente:
+        codigo ||
+        await generarSiguienteCodigoCliente(),
+
+      nombre: nombre,
+
+      telefono: telefono,
+
+      email: email,
+
+      direccion: direccion,
+
+      notas: notas
+
+    };
+
+    let respuesta;
+
+    /* EDITAR */
+
+    if(clienteEditando){
+
+      respuesta = await fetch(
+
+        SUPABASE_URL +
+        "/rest/v1/clientes?id=eq." +
+        encodeURIComponent(clienteEditando),
+
+        {
+          method: "PATCH",
+
+          headers: {
+            ...headersSupabase,
+            "Prefer": "return=representation"
+          },
+
+          body: JSON.stringify(datos)
+        }
+
+      );
+
+    }
+
+    /* NUEVO */
+
+    else{
+
+      respuesta = await fetch(
+
+        SUPABASE_URL +
+        "/rest/v1/clientes",
+
+        {
+          method: "POST",
+
+          headers: {
+            ...headersSupabase,
+            "Prefer": "return=representation"
+          },
+
+          body: JSON.stringify(datos)
+        }
+
+      );
+
+    }
+
+    if(!respuesta.ok){
+
+      const errorTexto =
+        await respuesta.text();
+
+      /* Si el código ya existe, genera otro */
+
+      if(
+        !clienteEditando &&
+        (
+          errorTexto.includes("23505") ||
+          errorTexto.toLowerCase()
+            .includes("duplicate")
+        )
+      ){
+
+        datos.codigo_cliente =
+          await generarSiguienteCodigoCliente();
+
+        respuesta = await fetch(
+
+          SUPABASE_URL +
+          "/rest/v1/clientes",
+
+          {
+            method: "POST",
+
+            headers: {
+              ...headersSupabase,
+              "Prefer": "return=representation"
+            },
+
+            body: JSON.stringify(datos)
+          }
+
+        );
+
+      }
+
+      if(!respuesta.ok){
+        throw new Error(
+          await respuesta.text()
+        );
+      }
+    }
+
+    if(mensaje){
+      mensaje.innerHTML =
+        '<span class="ok">✓ Cliente guardado correctamente.</span>';
+    }
+
+    clienteEditando = null;
+
+    const formulario =
+      document.getElementById("formCliente");
+
+    if(formulario){
+      formulario.style.display = "none";
+    }
+
+    await cargarClientes();
+
+  }catch(error){
+
+    console.error(
+      "Error guardando cliente:",
+      error
+    );
+
+    if(mensaje){
+
+      mensaje.innerHTML =
+        '<span class="error">' +
+        'No se pudo guardar el cliente.<br>' +
+        escaparHTML(
+          error.message || String(error)
+        ) +
+        '</span>';
+
+    }
+
+  }
+}
+
+
+/* =========================================================
+   EDITAR CLIENTE
+   ========================================================= */
+
+function editarCliente(id){
+
+  const cliente =
+    clientes.find(
+      c => String(c.id) === String(id)
+    );
+
+  if(!cliente){
+
+    alert("No se encontró el cliente.");
+
+    return;
+  }
+
+  clienteEditando = cliente.id;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "block";
+  }
+
+  const titulo =
+    document.getElementById(
+      "tituloFormularioCliente"
+    );
+
+  const boton =
+    document.getElementById(
+      "botonGuardarCliente"
+    );
+
+  const mensaje =
+    document.getElementById(
+      "mensajeCliente"
+    );
+
+  if(titulo)
+    titulo.textContent = "Editar cliente";
+
+  if(boton)
+    boton.textContent = "Guardar cambios";
+
+  if(mensaje)
+    mensaje.innerHTML = "";
+
+  document.getElementById(
+    "codigoCliente"
+  ).value =
+    cliente.codigo_cliente || "";
+
+  document.getElementById(
+    "nombreCliente"
+  ).value =
+    cliente.nombre || "";
+
+  document.getElementById(
+    "telefonoCliente"
+  ).value =
+    cliente.telefono || "";
+
+  document.getElementById(
+    "emailCliente"
+  ).value =
+    cliente.email || "";
+
+  document.getElementById(
+    "direccionCliente"
+  ).value =
+    cliente.direccion || "";
+
+  document.getElementById(
+    "notasCliente"
+  ).value =
+    cliente.notas || "";
+}
+
+
+/* =========================================================
+   CANCELAR EDICIÓN
+   ========================================================= */
+
+function cancelarCliente(){
+
+  clienteEditando = null;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "none";
+  }
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  if(mensaje){
+    mensaje.innerHTML = "";
+  }
+}
+
+
+/* =========================================================
+   ELIMINAR CLIENTE
+   ========================================================= */
+
+async function eliminarCliente(id){
+
+  const cliente =
+    clientes.find(
+      c => String(c.id) === String(id)
+    );
+
+  if(!cliente) return;
+
+  const confirmar = confirm(
+    "¿Eliminar al cliente " +
+    (cliente.nombre || "") +
+    " (" +
+    (cliente.codigo_cliente || "") +
+    ")?"
+  );
+
+  if(!confirmar) return;
+
+  try{
+
+    const respuesta = await fetch(
+
+      SUPABASE_URL +
+      "/rest/v1/clientes?id=eq." +
+      encodeURIComponent(id),
+
+      {
+        method: "DELETE",
+        headers: headersSupabase
+      }
+
+    );
+
+    if(!respuesta.ok){
+      throw new Error(
+        await respuesta.text()
+      );
+    }
+
+    await cargarClientes();
+
+  }catch(error){
+
+    console.error(
+      "Error eliminando cliente:",
+      error
+    );
+
+    alert(
+      "No se pudo eliminar el cliente.\n\n" +
+      "Si este cliente ya tiene ventas o apartados, " +
+      "la base de datos puede impedir eliminarlo " +
+      "para conservar el historial."
+    );
+  }
+}
+
+
+/* =========================================================
+   CLIENTES EN VENTAS Y APARTADOS
+   ========================================================= */
+
+function cargarClientesEnSelectores(){
+
+  const selectVenta =
+    document.getElementById("ventaCliente");
+
+  const selectApartado =
+    document.getElementById("apartadoCliente");
+
+  const opciones =
+    clientes.map(c => {
+
+      return `
+        <option value="${escaparHTML(c.id || "")}">
+          ${escaparHTML(c.codigo_cliente || "")}
+          -
+          ${escaparHTML(c.nombre || "")}
+          ${c.telefono
+            ? " - " + escaparHTML(c.telefono)
+            : ""}
+        </option>
+      `;
+
+    }).join("");
+
+  if(selectVenta){
+
+    const valorActual =
+      selectVenta.value;
+
+    selectVenta.innerHTML =
+      '<option value="">Seleccionar cliente</option>' +
+      opciones;
+
+    if(valorActual){
+      selectVenta.value = valorActual;
+    }
+  }
+
+  if(selectApartado){
+
+    const valorActual =
+      selectApartado.value;
+
+    selectApartado.innerHTML =
+      '<option value="">Seleccionar cliente</option>' +
+      opciones;
+
+    if(valorActual){
+      selectApartado.value = valorActual;
+    }
+  }
+}
+
+
+/* =========================================================
+   PROTECCIÓN PARA MOSTRAR TEXTO SIN ROMPER EL HTML
+   ========================================================= */
+
+function escaparHTML(valor){
+
+  return String(valor ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+   }
 </script>
 
 </body>
