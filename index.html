@@ -5884,82 +5884,58 @@ async function guardarCliente(){
 
 function editarCliente(id){
 
-  const cliente =
-    clientes.find(
-      c => String(c.id) === String(id)
-    );
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
 
   if(!cliente){
-
     alert("No se encontró el cliente.");
-
     return;
   }
 
   clienteEditando = cliente.id;
 
-  const formulario =
-    document.getElementById("formCliente");
+  const formulario = document.getElementById("formCliente");
 
   if(formulario){
     formulario.style.display = "block";
   }
 
-  const titulo =
-    document.getElementById(
-      "tituloFormularioCliente"
-    );
+  const titulo = document.getElementById("tituloFormularioCliente");
+  const boton = document.getElementById("botonGuardarCliente");
+  const mensaje = document.getElementById("mensajeCliente");
 
-  const boton =
-    document.getElementById(
-      "botonGuardarCliente"
-    );
-
-  const mensaje =
-    document.getElementById(
-      "mensajeCliente"
-    );
-
-  if(titulo)
+  if(titulo){
     titulo.textContent = "Editar cliente";
+  }
 
-  if(boton)
+  if(boton){
     boton.textContent = "Guardar cambios";
+  }
 
-  if(mensaje)
+  if(mensaje){
     mensaje.innerHTML = "";
+  }
 
-  document.getElementById(
-    "codigoCliente"
-  ).value =
-    cliente.codigo_cliente || "";
+  const codigo = document.getElementById("codigoCliente");
+  const nombre = document.getElementById("nombreCliente");
+  const telefono = document.getElementById("telefonoCliente");
+  const email = document.getElementById("emailCliente");
+  const direccion = document.getElementById("direccionCliente");
+  const notas = document.getElementById("notasCliente");
 
-  document.getElementById(
-    "nombreCliente"
-  ).value =
-    cliente.nombre || "";
+  if(codigo) codigo.value = cliente.codigo_cliente || "";
+  if(nombre) nombre.value = cliente.nombre || "";
+  if(telefono) telefono.value = cliente.telefono || "";
+  if(email) email.value = cliente.email || "";
+  if(direccion) direccion.value = cliente.direccion || "";
+  if(notas) notas.value = cliente.notas || "";
 
-  document.getElementById(
-    "telefonoCliente"
-  ).value =
-    cliente.telefono || "";
-
-  document.getElementById(
-    "emailCliente"
-  ).value =
-    cliente.email || "";
-
-  document.getElementById(
-    "direccionCliente"
-  ).value =
-    cliente.direccion || "";
-
-  document.getElementById(
-    "notasCliente"
-  ).value =
-    cliente.notas || "";
+  formulario.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
-
 
 /* =========================================================
    CANCELAR EDICIÓN
