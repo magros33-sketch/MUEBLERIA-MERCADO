@@ -5991,43 +5991,47 @@ function cancelarCliente(){
 
 async function eliminarCliente(id){
 
-  const cliente =
-    clientes.find(
-      c => String(c.id) === String(id)
-    );
-
-  if(!cliente) return;
-
-  const confirmar = confirm(
-    "¿Eliminar al cliente " +
-    (cliente.nombre || "") +
-    " (" +
-    (cliente.codigo_cliente || "") +
-    ")?"
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
   );
 
-  if(!confirmar) return;
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  if(!confirm(
+    "¿Quieres eliminar al cliente?\n\n" +
+    (cliente.codigo_cliente || "") +
+    " - " +
+    (cliente.nombre || "")
+  )){
+    return;
+  }
 
   try{
 
     const respuesta = await fetch(
-
       SUPABASE_URL +
       "/rest/v1/clientes?id=eq." +
-      encodeURIComponent(id),
-
+      encodeURIComponent(cliente.id),
       {
         method: "DELETE",
-        headers: headersSupabase
+        headers: {
+          ...headersSupabase,
+          "Prefer": "return=minimal"
+        }
       }
-
     );
 
     if(!respuesta.ok){
-      throw new Error(
-        await respuesta.text()
-      );
+
+      const error = await respuesta.text();
+
+      throw new Error(error);
     }
+
+    alert("Cliente eliminado correctamente.");
 
     await cargarClientes();
 
@@ -6040,13 +6044,11 @@ async function eliminarCliente(id){
 
     alert(
       "No se pudo eliminar el cliente.\n\n" +
-      "Si este cliente ya tiene ventas o apartados, " +
-      "la base de datos puede impedir eliminarlo " +
-      "para conservar el historial."
+      "Detalle:\n" +
+      (error.message || error)
     );
   }
 }
-
 
 /* =========================================================
    CLIENTES EN VENTAS Y APARTADOS
