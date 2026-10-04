@@ -972,6 +972,115 @@ let clientes=[];
 let clienteEditando=null;
 let clienteVentaSeleccionado=null;
 
+/* ================= EDITAR VENTA ================= */
+
+async function editarVenta(id){
+
+try{
+  const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+  if(!rv.ok)throw new Error("No se pudo consultar la venta.");
+  const ventas=await rv.json();
+  if(!ventas.length)throw new Error("No se encontró la venta.");
+
+  const venta=ventas[0];
+  const estado=String(venta.estado||"").toLowerCase().trim();
+  if(estado==="cancelada"||estado==="cancelado"){
+    alert("Esta venta está cancelada y no se puede editar.");
+    return;
+  }
+
+  const rd=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+  if(!rd.ok)throw new Error("No se pudo consultar el detalle de la venta.");
+  const detalles=await rd.json();
+  if(!detalles.length)throw new Error("La venta no tiene detalle para editar.");
+  if(detalles.length!==1){
+    alert("Esta venta tiene varios artículos. La edición individual se habilitará después.");
+    return;
+  }
+
+  const detalle=detalles[0];
+  const cantidadAnterior=Number(detalle.cantidad||0);
+  const precioAnterior=Number(detalle.precio_unitario||0);
+
+  const nuevaCantidad=Number(prompt("Cantidad:",String(cantidadAnterior)));
+  if(!Number.isFinite(nuevaCantidad)||nuevaCantidad<1||!Number.isInteger(nuevaCantidad)){
+    alert("La cantidad debe ser un número entero mayor que 0.");
+    return;
+  }
+
+  const nuevoPrecio=Number(prompt("Precio por unidad:",precioAnterior.toFixed(2)));
+  if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0){
+    alert("El precio no es válido.");
+    return;
+  }
+
+  const articuloId=detalle.articulo_id;
+  const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{headers:headersSupabase,cache:"no-store"});
+  if(!ra.ok)throw new Error("No se pudo consultar el artículo.");
+  const arts=await ra.json();
+  if(!arts.length)throw new Error("No se encontró el artículo.");
+  const articulo=arts[0];
+
+  const stockActual=Number(articulo.stock||0);
+  const diferencia=nuevaCantidad-cantidadAnterior;
+
+  if(diferencia>0 && stockActual<diferencia){
+    alert("No hay suficiente stock para aumentar la cantidad. Disponible para esta modificación: "+stockActual);
+    return;
+  }
+
+  const stockNuevo=stockActual-diferencia;
+  const totalNuevo=nuevaCantidad*nuevoPrecio;
+  const stockAnterior=stockActual;
+
+  const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+    method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+    body:JSON.stringify({stock:stockNuevo})
+  });
+  if(!rs.ok)throw new Error("No se pudo actualizar el stock.");
+
+  const rd2=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id),{
+    method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+    body:JSON.stringify({cantidad:nuevaCantidad,precio_unitario:nuevoPrecio,subtotal:totalNuevo})
+  });
+
+  if(!rd2.ok){
+    await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+      method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+      body:JSON.stringify({stock:stockAnterior})
+    });
+    throw new Error("No se pudo actualizar el detalle de la venta.");
+  }
+
+  const rv2=await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(id),{
+    method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+    body:JSON.stringify({total:totalNuevo})
+  });
+
+  if(!rv2.ok){
+    await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id),{
+      method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+      body:JSON.stringify({cantidad:cantidadAnterior,precio_unitario:precioAnterior,subtotal:cantidadAnterior*precioAnterior})
+    });
+    await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+      method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+      body:JSON.stringify({stock:stockAnterior})
+    });
+    throw new Error("No se pudo actualizar el total de la venta.");
+  }
+
+  alert("✅ Venta editada correctamente. El stock fue ajustado.");
+  await cargarArticulos();
+  await cargarHistorialVentas();
+
+}catch(error){
+  console.error("Error editando venta:",error);
+  alert("❌ No se pudo editar la venta.\n\n"+(error.message||String(error)));
+}
+
+}
+
+
 
 /* ================= APARTADOS ================= */
 
@@ -3298,6 +3407,12 @@ Total:
 Estado:
 <span class="estado-ok">${escaparHTML(v.estado||"")}</span>
 </div>
+
+<div class="separador"></div>
+
+${String(v.estado||"").toLowerCase()!=="cancelada"&&String(v.estado||"").toLowerCase()!=="cancelado"
+?'<button onclick="editarVenta(\''+id+'\')">✏️ Editar venta</button><button class="eliminar" onclick="cancelarVenta(\''+id+'\')">🗑️ Eliminar venta y devolver stock</button>'
+:'<div class="ayuda">Venta cancelada. El stock ya fue devuelto.</div>'}
 
 </div>`;
 }).join("")}`;
