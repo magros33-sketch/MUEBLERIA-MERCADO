@@ -6405,14 +6405,17 @@ async function cargarResumenAdministracion(){
     const totalVentas = ventas.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.precio_total),0);
     const totalCompras = compras.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.monto),0);
     const totalGastos = gastos.reduce((s,v)=>s+numeroAdmin(v.importe ?? v.total ?? v.monto),0);
-    const resultado = totalVentas-totalCompras-totalGastos;
+    const gananciaVentas = totalVentas-totalCompras;
+    const porcentajeGanancia = totalVentas>0 ? (gananciaVentas/totalVentas)*100 : 0;
+    const resultado = gananciaVentas-totalGastos;
 
     contenedor.innerHTML = `
       <div class="info-articulo"><strong>Ventas válidas</strong><div class="precio-venta">${dineroAdmin(totalVentas)}</div></div>
       <div class="info-articulo"><strong>Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas</div></div>
       <div class="info-articulo"><strong>Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
-      <div class="info-articulo"><strong>Resultado aproximado</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
-      <div class="ayuda">Resultado aproximado = ventas − compras − gastos. No sustituye una contabilidad formal.</div>
+      <div class="info-articulo"><strong>Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
+      <div class="ayuda">Ganancia sobre las ventas = ventas − compras. Es una estimación basada en el total de compras registradas; no sustituye una contabilidad formal.</div>
     `;
   }catch(error){
     console.error("Error en administración:",error);
