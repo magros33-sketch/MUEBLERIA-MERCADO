@@ -976,10 +976,44 @@ Cargando artículos vendidos...
 ← Volver
 </button>
 
-<h2>⚙️ Administracion</h2>
+<h2>⚙️ Administración</h2>
+
+<div class="tarjeta" id="accesoAdministracion">
+
+<h3>🔐 Acceso de administración</h3>
+<div class="ayuda">
+El administrador puede consultar ganancias y la información completa de ventas, compras y gastos.
+</div>
+
+<label>PIN de administrador</label>
+<input id="pinAdministracion" type="password" inputmode="numeric" maxlength="8" placeholder="Introduce tu PIN">
+
+<button onclick="entrarAdministracion()">🔓 Entrar</button>
+
+<div id="mensajeAdministracion"></div>
+
+</div>
+
+<div id="panelAdministracion" class="oculto">
 
 <div class="tarjeta">
-Proximamente: administracion y ganancias.
+<h3>📊 Resumen del negocio</h3>
+<button onclick="cargarResumenAdministracion()">🔄 Actualizar resumen</button>
+<div id="resumenAdministracion">Cargando...</div>
+</div>
+
+<div class="tarjeta">
+<h3>🔑 Cambiar PIN</h3>
+<label>PIN actual</label>
+<input id="pinActualAdmin" type="password" inputmode="numeric" maxlength="8">
+<label>Nuevo PIN</label>
+<input id="pinNuevoAdmin" type="password" inputmode="numeric" maxlength="8">
+<button onclick="cambiarPinAdministracion()">💾 Cambiar PIN</button>
+<div id="mensajeCambioPin"></div>
+</div>
+
+<button class="secundario" onclick="salirAdministracion()">🔒 Cerrar sesión de administración</button>
+
 </div>
 
 </section>
@@ -6629,6 +6663,2210 @@ await cargarHistorialGastos();
 }catch(e){
 console.error("Error eliminando gasto:",e);
 alert("No se pudo eliminar el gasto.\n\n"+(e.message||String(e)));
+}
+}
+
+/* ================= ADMINISTRACION ================= */
+
+let administracionActiva=false;
+
+function obtenerPinAdmin(){
+return localStorage.getItem("muebleria_admin_pin")||"1234";
+}
+
+function entrarAdministracion(){
+const pin=document.getElementById("pinAdministracion")?.value||"";
+const mensaje=document.getElementById("mensajeAdministracion");
+if(pin!==obtenerPinAdmin()){
+if(mensaje)mensaje.innerHTML='<div class="mensaje-error">❌ PIN incorrecto.</div>';
+return;
+}
+administracionActiva=true;
+document.getElementById("accesoAdministracion").classList.add("oculto");
+document.getElementById("panelAdministracion").classList.remove("oculto");
+if(mensaje)mensaje.innerHTML="";
+document.getElementById("pinAdministracion").value="";
+cargarResumenAdministracion();
+}
+
+function salirAdministracion(){
+administracionActiva=false;
+document.getElementById("panelAdministracion").classList.add("oculto");
+document.getElementById("accesoAdministracion").classList.remove("oculto");
+document.getElementById("pinActualAdmin").value="";
+document.getElementById("pinNuevoAdmin").value="";
+}
+
+async function cambiarPinAdministracion(){
+if(!administracionActiva)return;
+const actual=document.getElementById("pinActualAdmin")?.value||"";
+const nuevo=document.getElementById("pinNuevoAdmin")?.value||"";
+const mensaje=document.getElementById("mensajeCambioPin");
+if(actual!==obtenerPinAdmin()){mensaje.innerHTML='<div class="mensaje-error">❌ El PIN actual no es correcto.</div>';return;}
+if(!/^\d{4,8}$/.test(nuevo)){mensaje.innerHTML='<div class="mensaje-error">❌ El nuevo PIN debe tener entre 4 y 8 números.</div>';return;}
+localStorage.setItem("muebleria_admin_pin",nuevo);
+document.getElementById("pinActualAdmin").value="";
+document.getElementById("pinNuevoAdmin").value="";
+mensaje.innerHTML='<div class="mensaje-exito">✓ PIN cambiado correctamente en este dispositivo.</div>';
+}
+
+async function cargarResumenAdministracion(){
+const contenedor=document.getElementById("resumenAdministracion");
+if(!contenedor||!administracionActiva)return;
+contenedor.innerHTML="🔄 Calculando...";
+try{
+const [rv,rc,rg]=await Promise.all([
+fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,total,estado&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/compras?select=id,total&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=id,importe&limit=5000",{headers:headersSupabase,cache:"no-store"})
+]);
+if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+if(!rc.ok)throw new Error("Compras: "+await rc.text());
+if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+const ventas=await rv.json(), compras=await rc.json(), gastos=await rg.json();
+const ventasValidas=ventas.filter(v=>String(v.estado||"completada").toLowerCase()!=="cancelada");
+const totalVentas=ventasValidas.reduce((s,v)=>s+(Number(v.total)||0),0);
+const totalCompras=compras.reduce((s,v)=>s+(Number(v.total)||0),0);
+const totalGastos=gastos.reduce((s,v)=>s+(Number(v.importe)||0),0);
+const resultado=totalVentas-totalCompras-totalGastos;
+contenedor.innerHTML=
+'<div class="dato">💰 Ventas: <strong>
+
+function partesFechaMexico(fecha){
+const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hour12:false}).formatToParts(new Date(fecha));
+const get=t=>p.find(x=>x.type===t)?.value||"";
+return {year:get("year"),month:get("month"),day:get("day"),hour:Number(get("hour")||0)};
+}
+
+function diaComercialMexico(fecha){
+const p=partesFechaMexico(fecha);
+if(!p.year)return "";
+let d=new Date(p.year+"-"+p.month+"-"+p.day+"T12:00:00");
+if(p.hour>=20)d.setDate(d.getDate()+1);
+return d.toISOString().slice(0,10);
+}
+
+async function cargarReporteVentasDiarias(){
+const contenedor=document.getElementById("reporteVentasDiarias");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando reporte...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,fecha,total,metodo_pago,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const ventas=await r.json();
+const mapa={};
+ventas.filter(v=>String(v.estado||"completada").toLowerCase()!=="cancelada").forEach(v=>{
+const dia=diaComercialMexico(v.fecha);
+if(!dia)return;
+if(!mapa[dia])mapa[dia]={cantidad:0,total:0,metodos:{}};
+mapa[dia].cantidad++;
+mapa[dia].total+=Number(v.total)||0;
+const m=v.metodo_pago||"sin especificar";
+mapa[dia].metodos[m]=(mapa[dia].metodos[m]||0)+(Number(v.total)||0);
+});
+const dias=Object.keys(mapa).sort().reverse();
+if(!dias.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay ventas para mostrar.</div>';return;}
+contenedor.innerHTML=dias.map(dia=>{
+const x=mapa[dia];
+const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+t.toFixed(2)+'</strong></div>').join("");
+return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
+}).join("");
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarReporteArticulosVendidos(){
+const contenedor=document.getElementById("reporteArticulosVendidos");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando artículos vendidos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=articulo_id,cantidad,subtotal,venta_id&limit=10000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const detalles=await r.json();
+const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!rv.ok)throw new Error(await rv.text());
+const ventas=await rv.json();
+const canceladas=new Set(ventas.filter(v=>String(v.estado||"").toLowerCase()==="cancelada").map(v=>String(v.id)));
+const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!ra.ok)throw new Error(await ra.text());
+const articulos=await ra.json();
+const porId={};
+articulos.forEach(a=>porId[String(a.id)]=a);
+const mapa={};
+detalles.filter(d=>!canceladas.has(String(d.venta_id))).forEach(d=>{
+const id=String(d.articulo_id||"");
+if(!mapa[id])mapa[id]={unidades:0,total:0};
+mapa[id].unidades+=Number(d.cantidad)||0;
+mapa[id].total+=Number(d.subtotal)||0;
+});
+const lista=Object.entries(mapa).map(([id,x])=>({...x,articulo:porId[id]||{}})).sort((a,b)=>b.unidades-a.unidades);
+if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';return;}
+const mas=lista.slice(0,5);
+const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
+const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
+contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de artículos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+totalVentas.toFixed(2)+'</strong></div>'+
+'<div class="dato">🛒 Compras: <strong>
+
+function partesFechaMexico(fecha){
+const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hour12:false}).formatToParts(new Date(fecha));
+const get=t=>p.find(x=>x.type===t)?.value||"";
+return {year:get("year"),month:get("month"),day:get("day"),hour:Number(get("hour")||0)};
+}
+
+function diaComercialMexico(fecha){
+const p=partesFechaMexico(fecha);
+if(!p.year)return "";
+let d=new Date(p.year+"-"+p.month+"-"+p.day+"T12:00:00");
+if(p.hour>=20)d.setDate(d.getDate()+1);
+return d.toISOString().slice(0,10);
+}
+
+async function cargarReporteVentasDiarias(){
+const contenedor=document.getElementById("reporteVentasDiarias");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando reporte...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,fecha,total,metodo_pago,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const ventas=await r.json();
+const mapa={};
+ventas.filter(v=>String(v.estado||"completada").toLowerCase()!=="cancelada").forEach(v=>{
+const dia=diaComercialMexico(v.fecha);
+if(!dia)return;
+if(!mapa[dia])mapa[dia]={cantidad:0,total:0,metodos:{}};
+mapa[dia].cantidad++;
+mapa[dia].total+=Number(v.total)||0;
+const m=v.metodo_pago||"sin especificar";
+mapa[dia].metodos[m]=(mapa[dia].metodos[m]||0)+(Number(v.total)||0);
+});
+const dias=Object.keys(mapa).sort().reverse();
+if(!dias.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay ventas para mostrar.</div>';return;}
+contenedor.innerHTML=dias.map(dia=>{
+const x=mapa[dia];
+const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+t.toFixed(2)+'</strong></div>').join("");
+return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
+}).join("");
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarReporteArticulosVendidos(){
+const contenedor=document.getElementById("reporteArticulosVendidos");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando artículos vendidos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=articulo_id,cantidad,subtotal,venta_id&limit=10000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const detalles=await r.json();
+const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!rv.ok)throw new Error(await rv.text());
+const ventas=await rv.json();
+const canceladas=new Set(ventas.filter(v=>String(v.estado||"").toLowerCase()==="cancelada").map(v=>String(v.id)));
+const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!ra.ok)throw new Error(await ra.text());
+const articulos=await ra.json();
+const porId={};
+articulos.forEach(a=>porId[String(a.id)]=a);
+const mapa={};
+detalles.filter(d=>!canceladas.has(String(d.venta_id))).forEach(d=>{
+const id=String(d.articulo_id||"");
+if(!mapa[id])mapa[id]={unidades:0,total:0};
+mapa[id].unidades+=Number(d.cantidad)||0;
+mapa[id].total+=Number(d.subtotal)||0;
+});
+const lista=Object.entries(mapa).map(([id,x])=>({...x,articulo:porId[id]||{}})).sort((a,b)=>b.unidades-a.unidades);
+if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';return;}
+const mas=lista.slice(0,5);
+const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
+const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
+contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de artículos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+totalCompras.toFixed(2)+'</strong></div>'+
+'<div class="dato">💸 Gastos: <strong>
+
+function partesFechaMexico(fecha){
+const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hour12:false}).formatToParts(new Date(fecha));
+const get=t=>p.find(x=>x.type===t)?.value||"";
+return {year:get("year"),month:get("month"),day:get("day"),hour:Number(get("hour")||0)};
+}
+
+function diaComercialMexico(fecha){
+const p=partesFechaMexico(fecha);
+if(!p.year)return "";
+let d=new Date(p.year+"-"+p.month+"-"+p.day+"T12:00:00");
+if(p.hour>=20)d.setDate(d.getDate()+1);
+return d.toISOString().slice(0,10);
+}
+
+async function cargarReporteVentasDiarias(){
+const contenedor=document.getElementById("reporteVentasDiarias");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando reporte...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,fecha,total,metodo_pago,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const ventas=await r.json();
+const mapa={};
+ventas.filter(v=>String(v.estado||"completada").toLowerCase()!=="cancelada").forEach(v=>{
+const dia=diaComercialMexico(v.fecha);
+if(!dia)return;
+if(!mapa[dia])mapa[dia]={cantidad:0,total:0,metodos:{}};
+mapa[dia].cantidad++;
+mapa[dia].total+=Number(v.total)||0;
+const m=v.metodo_pago||"sin especificar";
+mapa[dia].metodos[m]=(mapa[dia].metodos[m]||0)+(Number(v.total)||0);
+});
+const dias=Object.keys(mapa).sort().reverse();
+if(!dias.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay ventas para mostrar.</div>';return;}
+contenedor.innerHTML=dias.map(dia=>{
+const x=mapa[dia];
+const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+t.toFixed(2)+'</strong></div>').join("");
+return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
+}).join("");
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarReporteArticulosVendidos(){
+const contenedor=document.getElementById("reporteArticulosVendidos");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando artículos vendidos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=articulo_id,cantidad,subtotal,venta_id&limit=10000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const detalles=await r.json();
+const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!rv.ok)throw new Error(await rv.text());
+const ventas=await rv.json();
+const canceladas=new Set(ventas.filter(v=>String(v.estado||"").toLowerCase()==="cancelada").map(v=>String(v.id)));
+const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!ra.ok)throw new Error(await ra.text());
+const articulos=await ra.json();
+const porId={};
+articulos.forEach(a=>porId[String(a.id)]=a);
+const mapa={};
+detalles.filter(d=>!canceladas.has(String(d.venta_id))).forEach(d=>{
+const id=String(d.articulo_id||"");
+if(!mapa[id])mapa[id]={unidades:0,total:0};
+mapa[id].unidades+=Number(d.cantidad)||0;
+mapa[id].total+=Number(d.subtotal)||0;
+});
+const lista=Object.entries(mapa).map(([id,x])=>({...x,articulo:porId[id]||{}})).sort((a,b)=>b.unidades-a.unidades);
+if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';return;}
+const mas=lista.slice(0,5);
+const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
+const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
+contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de artículos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+totalGastos.toFixed(2)+'</strong></div>'+
+'<div class="separador"></div>'+
+'<div class="precio-venta">📈 Resultado: 
+
+function partesFechaMexico(fecha){
+const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hour12:false}).formatToParts(new Date(fecha));
+const get=t=>p.find(x=>x.type===t)?.value||"";
+return {year:get("year"),month:get("month"),day:get("day"),hour:Number(get("hour")||0)};
+}
+
+function diaComercialMexico(fecha){
+const p=partesFechaMexico(fecha);
+if(!p.year)return "";
+let d=new Date(p.year+"-"+p.month+"-"+p.day+"T12:00:00");
+if(p.hour>=20)d.setDate(d.getDate()+1);
+return d.toISOString().slice(0,10);
+}
+
+async function cargarReporteVentasDiarias(){
+const contenedor=document.getElementById("reporteVentasDiarias");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando reporte...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,fecha,total,metodo_pago,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const ventas=await r.json();
+const mapa={};
+ventas.filter(v=>String(v.estado||"completada").toLowerCase()!=="cancelada").forEach(v=>{
+const dia=diaComercialMexico(v.fecha);
+if(!dia)return;
+if(!mapa[dia])mapa[dia]={cantidad:0,total:0,metodos:{}};
+mapa[dia].cantidad++;
+mapa[dia].total+=Number(v.total)||0;
+const m=v.metodo_pago||"sin especificar";
+mapa[dia].metodos[m]=(mapa[dia].metodos[m]||0)+(Number(v.total)||0);
+});
+const dias=Object.keys(mapa).sort().reverse();
+if(!dias.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay ventas para mostrar.</div>';return;}
+contenedor.innerHTML=dias.map(dia=>{
+const x=mapa[dia];
+const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+t.toFixed(2)+'</strong></div>').join("");
+return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
+}).join("");
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarReporteArticulosVendidos(){
+const contenedor=document.getElementById("reporteArticulosVendidos");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando artículos vendidos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=articulo_id,cantidad,subtotal,venta_id&limit=10000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const detalles=await r.json();
+const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!rv.ok)throw new Error(await rv.text());
+const ventas=await rv.json();
+const canceladas=new Set(ventas.filter(v=>String(v.estado||"").toLowerCase()==="cancelada").map(v=>String(v.id)));
+const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,codigo,nombre&limit=5000",{headers:headersSupabase,cache:"no-store"});
+if(!ra.ok)throw new Error(await ra.text());
+const articulos=await ra.json();
+const porId={};
+articulos.forEach(a=>porId[String(a.id)]=a);
+const mapa={};
+detalles.filter(d=>!canceladas.has(String(d.venta_id))).forEach(d=>{
+const id=String(d.articulo_id||"");
+if(!mapa[id])mapa[id]={unidades:0,total:0};
+mapa[id].unidades+=Number(d.cantidad)||0;
+mapa[id].total+=Number(d.subtotal)||0;
+});
+const lista=Object.entries(mapa).map(([id,x])=>({...x,articulo:porId[id]||{}})).sort((a,b)=>b.unidades-a.unidades);
+if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';return;}
+const mas=lista.slice(0,5);
+const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
+const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
+contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de artículos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
+</script>
+
+</body>
+</html>+resultado.toFixed(2)+'</div>'+
+'<div class="ayuda">Resultado aproximado = ventas − compras − gastos. No sustituye una contabilidad fiscal.</div>';
+}catch(e){
+console.error(e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo calcular el resumen.<br>'+escaparHTML(e.message||String(e))+'</div>';
 }
 }
 
