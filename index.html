@@ -2422,7 +2422,7 @@ Total: <strong>$${Number(c.total||0).toFixed(2)}</strong>
 Estado: ${escaparHTML(c.estado||"")}
 <div class="separador"></div>
 ${String(c.estado||"").toLowerCase()!=="cancelada"&&String(c.estado||"").toLowerCase()!=="cancelado"
-?'<button onclick="editarCompra(\''+id+'\')">✏️ Editar compra</button><button class="eliminar" onclick="cancelarCompra(\''+id+'\')">🗑️ Eliminar compra y quitar del stock</button>'
+?'<button onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button><button class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>'
 :'<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>'}
 </div>
 
