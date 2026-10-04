@@ -1625,9 +1625,9 @@ return a.id===id;
 if(!articulo)return;
 
 if(!confirm(
-"¿Seguro que quieres eliminar el articulo \""+
-articulo.nombre+
-"\"?"
+"¿Seguro que quieres eliminar el articulo \"" +
+articulo.nombre +
+"\"?\\n\\nEl articulo se ocultará del inventario y se conservará su historial."
 ))return;
 
 try{
@@ -1637,28 +1637,42 @@ SUPABASE_URL+
 "/rest/v1/articulos?id=eq."+
 encodeURIComponent(id),
 {
-method:"DELETE",
-headers:headersSupabase
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+activo:false
+})
 }
 );
 
 if(!respuesta.ok){
 
-console.error(await respuesta.text());
+const errorTexto=await respuesta.text();
+console.error("Error eliminando articulo:",errorTexto);
 
-alert("No se pudo eliminar el articulo.");
+alert(
+"❌ No se pudo eliminar el artículo.\\n\\n"+
+errorTexto
+);
 
 return;
-
 }
+
+alert("✅ Artículo eliminado del inventario. Su historial se conserva.");
 
 await cargarArticulos();
 
 }catch(error){
 
-console.error(error);
+console.error("Error eliminando articulo:",error);
 
-alert("Error de conexion con Supabase.");
+alert(
+"❌ Error con Supabase.\\n\\n"+
+(error.message||String(error))
+);
 
 }
 
