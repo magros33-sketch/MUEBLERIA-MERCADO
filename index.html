@@ -559,6 +559,17 @@ $0.00
 
 <h3>📋 Historial de ventas</h3>
 
+<div class="ayuda">
+Puedes consultar las ventas organizadas por día, semana o mes.
+</div>
+
+<label>Organizar por</label>
+<select id="ventasAgrupacion" onchange="cargarHistorialVentas()">
+<option value="dia">Día</option>
+<option value="semana">Semana</option>
+<option value="mes">Mes</option>
+</select>
+
 <button onclick="cargarHistorialVentas()">
 🔄 Actualizar historial
 </button>
@@ -3114,18 +3125,14 @@ mensaje.innerHTML=
 
 async function cargarHistorialVentas(){
 
-const contenedor=
-document.getElementById("historialVentas");
-
+const contenedor=document.getElementById("historialVentas");
 if(!contenedor)return;
 
-contenedor.innerHTML=
-"🔄 Cargando historial de ventas...";
+contenedor.innerHTML="🔄 Cargando historial de ventas...";
 
 try{
 
-const respuesta=
-await fetch(
+const respuesta=await fetch(
 SUPABASE_URL+
 "/rest/v1/ventas?select=*&limit=1000",
 {
@@ -3140,97 +3147,90 @@ cache:"no-store"
 );
 
 if(!respuesta.ok){
-
-const errorTexto=
-await respuesta.text();
-
-console.error(
-"Error historial ventas:",
-respuesta.status,
-errorTexto
-);
-
-contenedor.innerHTML=
-`
+const errorTexto=await respuesta.text();
+contenedor.innerHTML=`
 <div class="mensaje-error">
-
-❌ No se pudo cargar el historial de ventas.
-
-<br><br>
-
-Código:
-${respuesta.status}
-
-<br><br>
-
+❌ No se pudo cargar el historial de ventas.<br><br>
+Código: ${respuesta.status}<br><br>
 ${escaparHTML(errorTexto)}
-
-</div>
-`;
-
+</div>`;
 return;
-
 }
 
-const ventas=
-await respuesta.json();
-
-console.log(
-"Ventas encontradas:",
-ventas
-);
+const ventas=await respuesta.json();
 
 if(!Array.isArray(ventas)||!ventas.length){
-
-contenedor.innerHTML=
-`
-<div class="tarjeta">
-Todavia no hay ventas registradas.
-</div>
-`;
-
+contenedor.innerHTML=`
+<div class="tarjeta">Todavia no hay ventas registradas.</div>`;
 return;
-
 }
-
-
-/* Ordenar las ventas de la mas reciente a la mas antigua */
 
 ventas.sort(function(a,b){
-
-const fechaA=
-new Date(a.fecha||0).getTime();
-
-const fechaB=
-new Date(b.fecha||0).getTime();
-
-return fechaB-fechaA;
-
+return new Date(b.fecha||0).getTime()-new Date(a.fecha||0).getTime();
 });
 
+const agrupacion=document.getElementById("ventasAgrupacion")?.value||"dia";
 
-contenedor.innerHTML=
-ventas.map(function(v){
+function claveGrupo(fecha){
+const d=new Date(fecha);
+if(Number.isNaN(d.getTime()))return "Sin fecha";
 
-const id=
-String(v.id||"");
-
-const operacion=
-id.substring(0,8);
-
-let tipoCliente=
-"Publico general";
-
-if(v.tipo_cliente==="cliente"){
-tipoCliente="Cliente";
+if(agrupacion==="mes"){
+return d.toLocaleDateString("es-MX",{month:"long",year:"numeric"});
 }
+
+if(agrupacion==="semana"){
+const copia=new Date(d);
+const dia=(copia.getDay()+6)%7;
+copia.setDate(copia.getDate()-dia);
+const inicio=copia.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
+const fin=new Date(copia);
+fin.setDate(copia.getDate()+6);
+const final=fin.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
+return "Semana del "+inicio+" al "+final;
+}
+
+return d.toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+}
+
+const grupos=[];
+const mapa={};
+
+ventas.forEach(function(v){
+const clave=claveGrupo(v.fecha);
+if(!mapa[clave]){
+mapa[clave]=[];
+grupos.push(clave);
+}
+mapa[clave].push(v);
+});
+
+contenedor.innerHTML=grupos.map(function(grupo){
+
+const lista=mapa[grupo];
+const totalGrupo=lista.reduce(function(s,v){
+return s+Number(v.total||0);
+},0);
+
+return `
+<div class="tarjeta">
+<h3>📅 ${escaparHTML(grupo)}</h3>
+<div class="dato">
+<strong>${lista.length}</strong> venta(s) ·
+<strong>$${totalGrupo.toFixed(2)}</strong>
+</div>
+</div>
+
+${lista.map(function(v){
+
+const id=String(v.id||"");
+const operacion=id.substring(0,8);
+const tipoCliente=v.tipo_cliente==="cliente"?"Cliente":"Publico general";
 
 return `
 <div class="historial">
 
-<strong>
-💰 Venta
-</strong>
+<strong>💰 Venta</strong>
 
 <div class="fecha-operacion">
 📅 ${formatearFecha(v.fecha)}
@@ -3242,9 +3242,7 @@ Operacion: ${escaparHTML(operacion)}
 
 <div class="dato">
 Cliente:
-<strong>
-${escaparHTML(tipoCliente)}
-</strong>
+<strong>${escaparHTML(tipoCliente)}</strong>
 </div>
 
 <div class="dato">
@@ -3254,38 +3252,28 @@ ${escaparHTML(v.metodo_pago||"")}
 
 <div class="dato">
 Total:
-<strong>
-$${Number(v.total||0).toFixed(2)}
-</strong>
+<strong>$${Number(v.total||0).toFixed(2)}</strong>
 </div>
 
 <div class="dato">
 Estado:
-<span class="estado-ok">
-${escaparHTML(v.estado||"")}
-</span>
+<span class="estado-ok">${escaparHTML(v.estado||"")}</span>
 </div>
 
-</div>
-`;
-
+</div>`;
+}).join("")}`;
 }).join("");
 
 }catch(error){
 
-console.error(
-"Error historial ventas:",
-error
-);
+console.error("Error historial ventas:",error);
 
-contenedor.innerHTML=
-`
+contenedor.innerHTML=`
 <div class="mensaje-error">
 ❌ Error de conexion con Supabase al cargar el historial.
 <br><br>
 ${escaparHTML(error.message||String(error))}
-</div>
-`;
+</div>`;
 
 }
 
