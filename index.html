@@ -6382,44 +6382,61 @@ function dineroAdmin(valor){
 }
 
 async function cargarResumenAdministracion(){
-  const contenedor = document.getElementById("resumenAdministracion");
-  if(!contenedor) return;
-
-  contenedor.innerHTML = "Cargando resumen...";
+  const contenedor=document.getElementById("resumenAdministracion");
+  if(!contenedor)return;
+  contenedor.innerHTML="Cargando ganancias sobre ventas cobradas en su totalidad...";
 
   try{
-    const [rv, rc, rg] = await Promise.all([
+    const [rv,rd,ra,rc,rg]=await Promise.all([
       fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&estado=neq.cancelada",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,costo",{headers:headersSupabase,cache:"no-store"}),
       fetch(SUPABASE_URL+"/rest/v1/compras?select=*",{headers:headersSupabase,cache:"no-store"}),
       fetch(SUPABASE_URL+"/rest/v1/gastos?select=*",{headers:headersSupabase,cache:"no-store"})
     ]);
 
-    if(!rv.ok) throw new Error("Ventas: "+await rv.text());
-    if(!rc.ok) throw new Error("Compras: "+await rc.text());
-    if(!rg.ok) throw new Error("Gastos: "+await rg.text());
+    if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+    if(!rd.ok)throw new Error("Detalles de ventas: "+await rd.text());
+    if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+    if(!rc.ok)throw new Error("Compras: "+await rc.text());
+    if(!rg.ok)throw new Error("Gastos: "+await rg.text());
 
-    const ventas = await rv.json();
-    const compras = await rc.json();
-    const gastos = await rg.json();
+    const ventas=await rv.json();
+    const detalles=await rd.json();
+    const articulosAdmin=await ra.json();
+    const compras=await rc.json();
+    const gastos=await rg.json();
 
-    const totalVentas = ventas.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.precio_total),0);
-    const totalCompras = compras.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.monto),0);
-    const totalGastos = gastos.reduce((s,v)=>s+numeroAdmin(v.importe ?? v.total ?? v.monto),0);
-    const gananciaVentas = totalVentas-totalCompras;
-    const porcentajeGanancia = totalVentas>0 ? (gananciaVentas/totalVentas)*100 : 0;
-    const resultado = gananciaVentas-totalGastos;
+    const mapaCosto={};
+    articulosAdmin.forEach(a=>mapaCosto[String(a.id)]=numeroAdmin(a.costo));
 
-    contenedor.innerHTML = `
-      <div class="info-articulo"><strong>Ventas válidas</strong><div class="precio-venta">${dineroAdmin(totalVentas)}</div></div>
-      <div class="info-articulo"><strong>Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
-      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas</div></div>
+    const ventasCobradas=ventas.filter(v=>numeroAdmin(v.total)>0);
+    const totalVentasCobradas=ventasCobradas.reduce((s,v)=>s+numeroAdmin(v.total),0);
+    const idsVentas={};
+    ventasCobradas.forEach(v=>idsVentas[String(v.id)]=true);
+
+    const costoVentas=detalles.reduce((s,d)=>{
+      if(!idsVentas[String(d.venta_id)])return s;
+      return s+numeroAdmin(d.cantidad)*numeroAdmin(mapaCosto[String(d.articulo_id)]);
+    },0);
+
+    const gananciaVentas=totalVentasCobradas-costoVentas;
+    const porcentajeGanancia=totalVentasCobradas>0?(gananciaVentas/totalVentasCobradas)*100:0;
+    const totalCompras=compras.reduce((s,v)=>s+numeroAdmin(v.total??v.importe??v.monto),0);
+    const totalGastos=gastos.reduce((s,v)=>s+numeroAdmin(v.importe??v.total??v.monto),0);
+    const resultado=gananciaVentas-totalGastos;
+
+    contenedor.innerHTML=`
+      <div class="info-articulo"><strong>💵 Ventas cobradas en su totalidad</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
+      <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas cobradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
       <div class="info-articulo"><strong>Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
       <div class="info-articulo"><strong>Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
-      <div class="ayuda">Ganancia sobre las ventas = ventas − compras. Es una estimación basada en el total de compras registradas; no sustituye una contabilidad formal.</div>
+      <div class="ayuda">La ganancia se calcula sobre ventas cobradas, usando el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
     `;
   }catch(error){
     console.error("Error en administración:",error);
-    contenedor.innerHTML = '<div class="mensaje-error">No se pudo cargar el resumen.<br>'+escaparHTML(error.message||String(error))+'</div>';
+    contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el resumen.<br>'+escaparHTML(error.message||String(error))+'</div>';
   }
 }
 
