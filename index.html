@@ -2245,7 +2245,7 @@ error
 mensaje.innerHTML=
 `
 <div class="mensaje-error">
-❌ Error de conexion con Supabase.
+❌ Error con Supabase.<br><br>${escaparHTML(error.message||String(error))}
 </div>
 `;
 
