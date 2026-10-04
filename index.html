@@ -816,16 +816,25 @@ Cancelar
 
 <section id="proveedores" class="pantalla">
 
-<button class="secundario" onclick="mostrarPantalla('inicio')">
-← Volver
-</button>
-
+<button class="secundario" onclick="mostrarPantalla('inicio')">← Volver</button>
 <h2>🚚 Proveedores</h2>
+<button onclick="mostrarFormularioProveedor()">➕ Nuevo proveedor</button>
 
-<div class="tarjeta">
-Proximamente: proveedores.
+<input id="buscarProveedor" type="text" placeholder="Buscar por nombre, contacto o telefono" autocomplete="off" oninput="filtrarProveedores">
+
+<div id="formProveedor" class="tarjeta oculto">
+<h3 id="tituloFormularioProveedor">Nuevo proveedor</h3>
+<label>Nombre del proveedor</label><input id="nombreProveedor" type="text">
+<label>Persona de contacto</label><input id="contactoProveedor" type="text">
+<label>Telefono</label><input id="telefonoProveedor" type="text">
+<label>Correo electronico</label><input id="emailProveedor" type="email">
+<label>Direccion</label><input id="direccionProveedor" type="text">
+<label>Notas</label><input id="notasProveedor" type="text">
+<button id="botonGuardarProveedor" onclick="guardarProveedor()">💾 Guardar proveedor</button>
+<button class="secundario" onclick="cancelarProveedor()">Cancelar</button>
+<div id="mensajeProveedor"></div>
 </div>
-
+<div id="listaProveedores"></div>
 </section>
 
 
@@ -978,6 +987,10 @@ if(id==="clientes"){
 cargarClientes();
 }
 
+if(id==="proveedores"){
+cargarProveedores();
+}
+
 
 /* AGREGADO: Apartados */
 
@@ -997,8 +1010,7 @@ cargarHistorialApartados();
 
 if(id==="reportes"){
 cargarReporteVentasDiarias();
-cargarReporteArticulosVendidos();
-}
+cargarReporteArticulosVendidos();}
 
 }
 
@@ -1997,8 +2009,7 @@ stock:nuevoStock,
 costo:costo
 
 })
-}
-);
+});
 
 if(!respuestaArticulo.ok){
 
@@ -2997,7 +3008,6 @@ ${escaparHTML(errorTexto)}
 return;
 
 }
-
 const respuestaArticulo=
 await fetch(
 SUPABASE_URL+
@@ -3998,7 +4008,6 @@ id:idApartado,
 
 cliente_id:
 clienteApartadoSeleccionado.id,
-
 articulo_id:
 articulo.id,
 
@@ -4997,8 +5006,7 @@ if(cantidad>stockActual){
 
 alert(
 "❌ No se puede cancelar esta compra.\n\n"+
-"El stock actual de uno de los artículos "+
-"es menor que la cantidad que se recibió."
+"El stock actual de uno de los artículos "+"es menor que la cantidad que se recibió."
 );
 
 return;
@@ -5998,7 +6006,6 @@ async function eliminarCliente(id){
     alert("Cliente eliminado correctamente.");
 
     await cargarClientes();
-
   }catch(error){
 
     console.error(
@@ -6211,6 +6218,100 @@ function editarCliente(id){
     block:"start"
   });
 }
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+proveedores=await r.json(); mostrarProveedores(proveedores);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
 </script>
 
 </body>
