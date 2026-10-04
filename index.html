@@ -910,8 +910,37 @@ Cargando artículos vendidos...
 
 <h2>⚙️ Administracion</h2>
 
+<div id="adminLogin" class="tarjeta">
+<h3>🔐 Acceso de administrador</h3>
+<div class="ayuda">Introduce el PIN para ver ventas, compras, gastos y ganancias.</div>
+<label>PIN</label>
+<input id="adminPin" type="password" inputmode="numeric" maxlength="12" placeholder="PIN">
+<button onclick="entrarAdministracion()">🔓 Entrar</button>
+<div id="mensajeAdminLogin"></div>
+</div>
+
+<div id="adminPanel" class="oculto">
+
 <div class="tarjeta">
-Proximamente: administracion y ganancias.
+<h3>📊 Resumen</h3>
+<div id="resumenAdministracion">Cargando resumen...</div>
+<button onclick="cargarResumenAdministracion()">🔄 Actualizar resumen</button>
+</div>
+
+<div class="tarjeta">
+<h3>🔑 Cambiar PIN</h3>
+<label>PIN actual</label>
+<input id="pinActual" type="password" inputmode="numeric" maxlength="12">
+<label>Nuevo PIN</label>
+<input id="pinNuevo" type="password" inputmode="numeric" maxlength="12">
+<label>Repetir nuevo PIN</label>
+<input id="pinNuevoConfirmacion" type="password" inputmode="numeric" maxlength="12">
+<button onclick="cambiarPinAdministracion()">💾 Cambiar PIN</button>
+<div id="mensajeCambioPin"></div>
+</div>
+
+<button class="secundario" onclick="salirAdministracion()">🔒 Cerrar sesión de administración</button>
+
 </div>
 
 </section>
@@ -6311,6 +6340,113 @@ const txt=await r.text(); if(!r.ok)throw new Error(txt);
 await cargarProveedores(); alert("Proveedor eliminado correctamente.");
 }catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
 }
+
+
+/* ================= ADMINISTRACION ================= */
+
+function obtenerPinAdmin(){
+  return localStorage.getItem("muebleria_pin_admin") || "1234";
+}
+
+function entrarAdministracion(){
+  const pin = (document.getElementById("adminPin")?.value || "").trim();
+  const mensaje = document.getElementById("mensajeAdminLogin");
+
+  if(pin !== obtenerPinAdmin()){
+    if(mensaje) mensaje.innerHTML = '<div class="mensaje-error">PIN incorrecto.</div>';
+    return;
+  }
+
+  if(mensaje) mensaje.innerHTML = "";
+  document.getElementById("adminLogin").style.display = "none";
+  document.getElementById("adminPanel").style.display = "block";
+  cargarResumenAdministracion();
+}
+
+function salirAdministracion(){
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLogin").style.display = "block";
+  const pin = document.getElementById("adminPin");
+  if(pin) pin.value = "";
+  const mensaje = document.getElementById("mensajeAdminLogin");
+  if(mensaje) mensaje.innerHTML = "";
+}
+
+function numeroAdmin(valor){
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function dineroAdmin(valor){
+  return numeroAdmin(valor).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+}
+
+async function cargarResumenAdministracion(){
+  const contenedor = document.getElementById("resumenAdministracion");
+  if(!contenedor) return;
+
+  contenedor.innerHTML = "Cargando resumen...";
+
+  try{
+    const [rv, rc, rg] = await Promise.all([
+      fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&estado=neq.cancelada",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/compras?select=*",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/gastos?select=*",{headers:headersSupabase,cache:"no-store"})
+    ]);
+
+    if(!rv.ok) throw new Error("Ventas: "+await rv.text());
+    if(!rc.ok) throw new Error("Compras: "+await rc.text());
+    if(!rg.ok) throw new Error("Gastos: "+await rg.text());
+
+    const ventas = await rv.json();
+    const compras = await rc.json();
+    const gastos = await rg.json();
+
+    const totalVentas = ventas.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.precio_total),0);
+    const totalCompras = compras.reduce((s,v)=>s+numeroAdmin(v.total ?? v.importe ?? v.monto),0);
+    const totalGastos = gastos.reduce((s,v)=>s+numeroAdmin(v.importe ?? v.total ?? v.monto),0);
+    const resultado = totalVentas-totalCompras-totalGastos;
+
+    contenedor.innerHTML = `
+      <div class="info-articulo"><strong>Ventas válidas</strong><div class="precio-venta">${dineroAdmin(totalVentas)}</div></div>
+      <div class="info-articulo"><strong>Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
+      <div class="info-articulo"><strong>Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
+      <div class="info-articulo"><strong>Resultado aproximado</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
+      <div class="ayuda">Resultado aproximado = ventas − compras − gastos. No sustituye una contabilidad formal.</div>
+    `;
+  }catch(error){
+    console.error("Error en administración:",error);
+    contenedor.innerHTML = '<div class="mensaje-error">No se pudo cargar el resumen.<br>'+escaparHTML(error.message||String(error))+'</div>';
+  }
+}
+
+function cambiarPinAdministracion(){
+  const actual = (document.getElementById("pinActual")?.value || "").trim();
+  const nuevo = (document.getElementById("pinNuevo")?.value || "").trim();
+  const confirmacion = (document.getElementById("pinNuevoConfirmacion")?.value || "").trim();
+  const mensaje = document.getElementById("mensajeCambioPin");
+
+  if(actual !== obtenerPinAdmin()){
+    mensaje.innerHTML = '<div class="mensaje-error">El PIN actual no es correcto.</div>';
+    return;
+  }
+  if(!/^\d{4,12}$/.test(nuevo)){
+    mensaje.innerHTML = '<div class="mensaje-error">El nuevo PIN debe tener entre 4 y 12 números.</div>';
+    return;
+  }
+  if(nuevo !== confirmacion){
+    mensaje.innerHTML = '<div class="mensaje-error">Los nuevos PIN no coinciden.</div>';
+    return;
+  }
+
+  localStorage.setItem("muebleria_pin_admin",nuevo);
+  document.getElementById("pinActual").value = "";
+  document.getElementById("pinNuevo").value = "";
+  document.getElementById("pinNuevoConfirmacion").value = "";
+  mensaje.innerHTML = '<div class="mensaje-exito">✓ PIN cambiado correctamente.</div>';
+}
+
+/* ================= FIN ADMINISTRACION ================= */
 
 </script>
 
