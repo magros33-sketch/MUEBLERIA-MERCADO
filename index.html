@@ -2256,6 +2256,69 @@ mensaje.innerHTML=
 
 /* ================= HISTORIAL COMPRAS ================= */
 
+
+async function editarCompra(id){
+
+try{
+  const rc=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+  if(!rc.ok)throw new Error("No se pudo consultar la compra.");
+  const compras=await rc.json();
+  if(!compras.length)throw new Error("No se encontró la compra.");
+  const compra=compras[0];
+  const estado=String(compra.estado||"").toLowerCase().trim();
+  if(estado==="cancelada"||estado==="cancelado"){alert("Esta compra está cancelada y no se puede editar.");return;}
+
+  const rd=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+  if(!rd.ok)throw new Error("No se pudo consultar el detalle de la compra.");
+  const detalles=await rd.json();
+  if(!detalles.length)throw new Error("La compra no tiene detalle para editar.");
+  if(detalles.length!==1){alert("Esta compra tiene varios artículos. La edición individual se habilitará después.");return;}
+
+  const d=detalles[0];
+  const cantidadAnterior=Number(d.cantidad||0);
+  const costoAnterior=Number(d.costo_unitario||d.precio_unitario||d.costo||0);
+  const nuevaCantidad=Number(prompt("Cantidad recibida:",String(cantidadAnterior)));
+  if(!Number.isFinite(nuevaCantidad)||nuevaCantidad<1||!Number.isInteger(nuevaCantidad)){alert("La cantidad debe ser un número entero mayor que 0.");return;}
+  const nuevoCosto=Number(prompt("Costo por unidad:",costoAnterior.toFixed(2)));
+  if(!Number.isFinite(nuevoCosto)||nuevoCosto<0){alert("El costo no es válido.");return;}
+
+  const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{headers:headersSupabase,cache:"no-store"});
+  if(!ra.ok)throw new Error("No se pudo consultar el artículo.");
+  const arts=await ra.json();
+  if(!arts.length)throw new Error("No se encontró el artículo.");
+  const articulo=arts[0];
+  const stockActual=Number(articulo.stock||0);
+  const diferencia=nuevaCantidad-cantidadAnterior;
+  if(diferencia<0 && stockActual<Math.abs(diferencia)){
+    alert("No se puede reducir esa cantidad porque el stock actual ya no contiene suficientes unidades para devolver.");
+    return;
+  }
+
+  const stockNuevo=stockActual+diferencia;
+  const totalNuevo=nuevaCantidad*nuevoCosto;
+  const stockAnterior=stockActual;
+
+  const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock:stockNuevo,costo:nuevoCosto})});
+  if(!rs.ok)throw new Error("No se pudo actualizar el stock.");
+
+  const rd2=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({cantidad:nuevaCantidad,costo_unitario:nuevoCosto,total:totalNuevo})});
+  if(!rd2.ok){
+    await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock:stockAnterior})});
+    throw new Error("No se pudo actualizar el detalle de la compra.");
+  }
+
+  const rt=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({total:totalNuevo})});
+  if(!rt.ok){
+    await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({cantidad:cantidadAnterior,costo_unitario:costoAnterior,total:cantidadAnterior*costoAnterior})});
+    await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock:stockAnterior})});
+    throw new Error("No se pudo actualizar el total de la compra.");
+  }
+
+  alert("✅ Compra editada correctamente. El stock fue ajustado.");
+  await cargarArticulos(); await cargarHistorialCompras();
+}catch(error){console.error(error);alert("❌ No se pudo editar la compra.\n\n"+(error.message||String(error)));}
+}
+
 async function cargarHistorialCompras(){
 
 const contenedor=
@@ -2343,6 +2406,10 @@ Total: <strong>$${Number(c.total||0).toFixed(2)}</strong>
 
 <div class="dato">
 Estado: ${escaparHTML(c.estado||"")}
+<div class="separador"></div>
+${String(c.estado||"").toLowerCase()!=="cancelada"&&String(c.estado||"").toLowerCase()!=="cancelado"
+?'<button onclick="editarCompra(\''+id+'\')">✏️ Editar compra</button><button class="eliminar" onclick="cancelarCompra(\''+id+'\')">🗑️ Eliminar compra y quitar del stock</button>'
+:'<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>'}
 </div>
 
 </div>
