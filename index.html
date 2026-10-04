@@ -356,6 +356,12 @@ Cancelar
 <div class="tarjeta">
 
 <h3>Registrar compra</h3>
+<label>Proveedor</label>
+<select id="compraProveedor">
+<option value="">Selecciona el proveedor</option>
+</select>
+<div id="estadoProveedorCompra"></div>
+
 
 <div class="ayuda">
 Puedes buscar el articulo por codigo o por nombre.
@@ -971,6 +977,7 @@ cargarArticulos();
 
 if(id==="compras"){
 cargarArticulos();
+cargarProveedoresParaCompra();
 cargarHistorialCompras();
 }
 
@@ -1874,7 +1881,7 @@ headers:{
 },
 body:JSON.stringify({
 
-id_proveedor:null,
+id_proveedor:document.getElementById("compraProveedor")?.value||null,
 
 fecha:new Date().toISOString(),
 
@@ -6310,6 +6317,21 @@ const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponen
 const txt=await r.text(); if(!r.ok)throw new Error(txt);
 await cargarProveedores(); alert("Proveedor eliminado correctamente.");
 }catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+/* ================= PROVEEDOR EN COMPRAS ================= */
+async function cargarProveedoresParaCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Selecciona el proveedor</option>'+lista.map(p=>'<option value="'+escaparHTML(p.id)+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>').join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
 }
 
 </script>
