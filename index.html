@@ -826,7 +826,7 @@ Cancelar
 <h2>🚚 Proveedores</h2>
 <button onclick="mostrarFormularioProveedor()">➕ Nuevo proveedor</button>
 
-<input id="buscarProveedor" type="text" placeholder="Buscar por nombre, contacto o telefono" autocomplete="off" oninput="filtrarProveedores">
+<input id="buscarProveedor" type="text" placeholder="Buscar por nombre, contacto o telefono" autocomplete="off" oninput="filtrarProveedores()">
 
 <div id="formProveedor" class="tarjeta oculto">
 <h3 id="tituloFormularioProveedor">Nuevo proveedor</h3>
@@ -6393,8 +6393,8 @@ grupos[clave].total+=importe;
 });
 contenedor.innerHTML=Object.values(grupos).map(grupo=>{
 let html='<div class="historial"><strong>'+escaparHTML(grupo.titulo)+'</strong><div class="dato">Total: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -6501,15 +6501,13 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+grupo.total.toFixed(2)+'</strong></div><div class="separador"></div>';
++grupo.total.toFixed(2)+'</strong></div><div class="separador"></div>';
 grupo.items.forEach(g=>{
 html+='<div class="dato"><strong>'+escaparHTML(g.concepto||"Sin concepto")+'</strong></div>';
 html+='<div class="dato">📅 '+escaparHTML(String(g.fecha||"").slice(0,10))+' · '+escaparHTML(g.categoria||"otros")+' · 
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -6616,10 +6614,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+(Number(g.importe)||0).toFixed(2)+'</div>';
++(Number(g.importe)||0).toFixed(2)+'</div>';
 if(g.metodo_pago)html+='<div class="dato">💳 '+escaparHTML(g.metodo_pago)+'</div>';
 if(g.notas)html+='<div class="dato">📝 '+escaparHTML(g.notas)+'</div>';
 html+='<button class="eliminar" onclick="eliminarGasto(\''+escaparHTML(g.id||"")+'\')">🗑️ Eliminar</button><div class="separador"></div>';
@@ -6770,8 +6766,8 @@ contenedor.innerHTML=dias.map(dia=>{
 const x=mapa[dia];
 const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
 const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -6878,13 +6874,11 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+t.toFixed(2)+'</strong></div>').join("");
++t.toFixed(2)+'</strong></div>').join("");
 return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -6991,10 +6985,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
++x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
 }).join("");
 }catch(e){
 console.error(e);
@@ -7031,8 +7023,8 @@ if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay art
 const mas=lista.slice(0,5);
 const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
 const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7139,10 +7131,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
++x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
 contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
 }catch(e){
 console.error(e);
@@ -7151,8 +7141,8 @@ contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de
 }
 
 /* ================= PROVEEDORES ================= */
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7259,10 +7249,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+totalVentas.toFixed(2)+'</strong></div>'+
++totalVentas.toFixed(2)+'</strong></div>'+
 '<div class="dato">🛒 Compras: <strong>
 
 function partesFechaMexico(fecha){
@@ -7303,8 +7291,8 @@ contenedor.innerHTML=dias.map(dia=>{
 const x=mapa[dia];
 const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
 const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7411,13 +7399,11 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+t.toFixed(2)+'</strong></div>').join("");
++t.toFixed(2)+'</strong></div>').join("");
 return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7524,10 +7510,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
++x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
 }).join("");
 }catch(e){
 console.error(e);
@@ -7564,8 +7548,8 @@ if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay art
 const mas=lista.slice(0,5);
 const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
 const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7672,10 +7656,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
++x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
 contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
 }catch(e){
 console.error(e);
@@ -7684,8 +7666,8 @@ contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de
 }
 
 /* ================= PROVEEDORES ================= */
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7792,10 +7774,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+totalCompras.toFixed(2)+'</strong></div>'+
++totalCompras.toFixed(2)+'</strong></div>'+
 '<div class="dato">💸 Gastos: <strong>
 
 function partesFechaMexico(fecha){
@@ -7836,8 +7816,8 @@ contenedor.innerHTML=dias.map(dia=>{
 const x=mapa[dia];
 const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
 const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -7944,13 +7924,11 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+t.toFixed(2)+'</strong></div>').join("");
++t.toFixed(2)+'</strong></div>').join("");
 return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8057,10 +8035,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
++x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
 }).join("");
 }catch(e){
 console.error(e);
@@ -8097,8 +8073,8 @@ if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay art
 const mas=lista.slice(0,5);
 const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
 const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8205,10 +8181,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
++x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
 contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
 }catch(e){
 console.error(e);
@@ -8217,8 +8191,8 @@ contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de
 }
 
 /* ================= PROVEEDORES ================= */
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8325,10 +8299,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+totalGastos.toFixed(2)+'</strong></div>'+
++totalGastos.toFixed(2)+'</strong></div>'+
 '<div class="separador"></div>'+
 '<div class="precio-venta">📈 Resultado: 
 
@@ -8370,8 +8342,8 @@ contenedor.innerHTML=dias.map(dia=>{
 const x=mapa[dia];
 const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
 const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8478,13 +8450,11 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+t.toFixed(2)+'</strong></div>').join("");
++t.toFixed(2)+'</strong></div>').join("");
 return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8591,10 +8561,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
++x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
 }).join("");
 }catch(e){
 console.error(e);
@@ -8631,8 +8599,8 @@ if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay art
 const mas=lista.slice(0,5);
 const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
 const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8739,10 +8707,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
++x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
 contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
 }catch(e){
 console.error(e);
@@ -8751,8 +8717,8 @@ contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de
 }
 
 /* ================= PROVEEDORES ================= */
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -8859,10 +8825,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+resultado.toFixed(2)+'</div>'+
++resultado.toFixed(2)+'</div>'+
 '<div class="ayuda">Resultado aproximado = ventas − compras − gastos. No sustituye una contabilidad fiscal.</div>';
 }catch(e){
 console.error(e);
@@ -8910,8 +8874,8 @@ contenedor.innerHTML=dias.map(dia=>{
 const x=mapa[dia];
 const fecha=new Date(dia+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
 const metodos=Object.entries(x.metodos).map(([m,t])=>'<div class="dato">💳 '+escaparHTML(m)+': <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -9018,13 +8982,11 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+t.toFixed(2)+'</strong></div>').join("");
++t.toFixed(2)+'</strong></div>').join("");
 return '<div class="historial"><h3>📅 '+escaparHTML(fecha)+'</h3><div class="dato"><strong>'+x.cantidad+'</strong> venta(s)</div><div class="precio-venta">
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -9131,10 +9093,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
++x.total.toFixed(2)+'</div><div class="separador"></div>'+metodos+'</div>';
 }).join("");
 }catch(e){
 console.error(e);
@@ -9171,8 +9131,8 @@ if(!lista.length){contenedor.innerHTML='<div class="tarjeta">Todavía no hay art
 const mas=lista.slice(0,5);
 const menos=[...lista].sort((a,b)=>a.unidades-b.unidades).slice(0,5);
 const bloque=(titulo,items)=>'<div class="tarjeta"><h3>'+titulo+'</h3>'+items.map(x=>'<div class="historial"><strong>'+escaparHTML(x.articulo.nombre||"Artículo")+'</strong><div class="dato">Código: '+escaparHTML(x.articulo.codigo||"")+'</div><div class="dato">Unidades: <strong>'+x.unidades+'</strong></div><div class="dato">Importe vendido: <strong>
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -9279,10 +9239,8 @@ select.innerHTML='<option value="">No se pudieron cargar los proveedores</option
 }
 }
 
-</script>
 
-</body>
-</html>+x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
++x.total.toFixed(2)+'</strong></div></div>').join("")+'</div>';
 contenedor.innerHTML=bloque("🏆 Más vendidos",mas)+bloque("📉 Menos vendidos",menos);
 }catch(e){
 console.error(e);
@@ -9291,8 +9249,8 @@ contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el reporte de
 }
 
 /* ================= PROVEEDORES ================= */
-let proveedores=[];
-let proveedorEditando=null;
+var proveedores=[];
+var proveedorEditando=null;
 
 async function cargarProveedores(){
 try{
@@ -9398,7 +9356,6 @@ console.error("Error cargando proveedores para compras:",e);
 select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
 }
 }
-
 </script>
 
 </body>
