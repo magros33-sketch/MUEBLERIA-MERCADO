@@ -3549,7 +3549,7 @@ return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"num
 
 function inicializarHistorialVentas(){
 const campo=document.getElementById("fechaHistorialVentas");
-if(campo && !campo.value) campo.value=fechaMexicoHoyVentas();
+if(campo) campo.value=fechaMexicoHoyVentas();
 }
 
 async function cargarHistorialVentas(fechaFiltro){
