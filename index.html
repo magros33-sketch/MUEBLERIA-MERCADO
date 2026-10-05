@@ -2242,6 +2242,8 @@ headers:{
 },
 body:JSON.stringify({
 
+proveedor_id:proveedorId,
+
 id_proveedor:proveedorId,
 
 fecha:new Date().toISOString(),
@@ -2315,7 +2317,7 @@ headers:{
 },
 body:JSON.stringify({
 
-uid:crypto.randomUUID(),
+id:crypto.randomUUID(),
 
 compra_id:compraGuardada.id,
 
