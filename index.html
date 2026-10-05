@@ -438,9 +438,10 @@ Cargando historial...
 <h2>💰 Ventas</h2>
 
 <div class="tarjeta">
-<h3>📊 Resumen de ventas del día</h3>
-<div id="resumenVentasDia">Cargando resumen...</div>
-<button onclick="cargarResumenVentasDia()">🔄 Actualizar resumen</button>
+<h3>📊 Resumen de ventas por día</h3>
+<label>Selecciona el día:</label>
+<input type="date" id="fechaResumenVentas" onchange="cargarResumenVentasDia()">
+<div id="resumenVentasDia">Selecciona un día...</div>
 </div>
 
 <div class="tarjeta">
@@ -3370,7 +3371,8 @@ fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&limit=1000",{headers:headersSupa
 if(!rv.ok)throw new Error("Ventas: "+await rv.text());
 if(!ra.ok)throw new Error("Apartados: "+await ra.text());
 const ventas=await rv.json(), apartados=await ra.json();
-const hoy=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const fechaSeleccionada=document.getElementById("fechaResumenVentas")?.value||hoy;
+const hoy=fechaSeleccionada;
 function esHoy(fecha){
 if(!fecha)return false;
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(fecha))===hoy;
