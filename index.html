@@ -7873,109 +7873,13 @@ async function registrarPagoProveedor(compraId){
 
 
 <!-- respaldo-navegacion-20261005 -->
-<script>
-(function(){
-  function abrir(id){
-    var pantallas=document.querySelectorAll(".pantalla");
-    for(var i=0;i<pantallas.length;i++) pantallas[i].classList.remove("activa");
-    var destino=document.getElementById(id);
-    if(destino) destino.classList.add("activa");
 
-    // Este respaldo debe conservar también la carga de datos de cada módulo.
-    try{
-      if(id==="inventario"){
-        Promise.all([cargarProveedores(),cargarArticulos()])
-          .then(function(){ if(typeof cargarResumenStockProveedores==="function") cargarResumenStockProveedores(); });
-      }else if(id==="proveedores"){
-        cargarProveedores();
-      }else if(id==="clientes"){
-        cargarClientes();
-      }else if(id==="compras"){
-        cargarArticulos();
-        cargarProveedoresEnCompra();
-        cargarHistorialCompras();
-      }else if(id==="ventas"){
-        cargarArticulos();
-        cargarClientes();
-        setTimeout(function(){
-          if(typeof inicializarHistorialVentas==="function") inicializarHistorialVentas();
-          cargarHistorialVentas();
-          cargarResumenVentasDia();
-        },100);
-      }else if(id==="apartados"){
-        cargarArticulos();
-        cargarClientes();
-        setTimeout(function(){ cargarHistorialApartados(); },100);
-      }else if(id==="gastos"){
-        inicializarGastos();
-        cargarHistorialGastos();
-      }else if(id==="reportes"){
-        cargarReporteVentasDiarias();
-        cargarReporteArticulosVendidos();
-      }
-    }catch(error){
-      console.error("Error cargando módulo "+id+":",error);
-    }
-  }
-  window.mostrarPantalla=abrir;
-  document.addEventListener("DOMContentLoaded",function(){
-    document.querySelectorAll(".menu button").forEach(function(b){
-      var m=(b.getAttribute("onclick")||"").match(/mostrarPantalla\(['"]([^'"]+)['"]\)/);
-      if(m){
-        b.onclick=function(e){e.preventDefault();abrir(m[1]);};
-      }
-    });
-  });
-})();
-</script>
 
 <!-- respaldo-nuevo-proveedor-20261005 -->
-<script>
-(function(){
-  function abrirNuevoProveedor(e){
-    if(e)e.preventDefault();
-    var f=document.getElementById("formProveedor");
-    if(!f)return;
-    f.classList.remove("oculto");
-    f.style.display="block";
-    var t=document.getElementById("tituloFormularioProveedor"); if(t)t.textContent="Nuevo proveedor";
-    var b=document.getElementById("botonGuardarProveedor"); if(b)b.textContent="💾 Guardar proveedor";
-    ["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){
-      var x=document.getElementById(id); if(x)x.value="";
-    });
-    var m=document.getElementById("mensajeProveedor"); if(m)m.innerHTML="";
-    f.scrollIntoView({behavior:"smooth",block:"start"});
-  }
-  window.abrirNuevoProveedor=abrirNuevoProveedor;
-  document.addEventListener("DOMContentLoaded",function(){
-    var b=document.querySelector('#proveedores button[onclick="mostrarFormularioProveedor()"]');
-    if(b)b.onclick=abrirNuevoProveedor;
-  });
-})();
-</script>
+
 
 <!-- respaldo-nuevo-articulo-20261005 -->
-<script>
-(function(){
-  function abrirNuevoArticulo(e){
-    if(e)e.preventDefault();
-    var f=document.getElementById("formArticulo");
-    if(!f)return;
-    f.classList.remove("oculto");
-    var t=document.getElementById("tituloFormulario"); if(t)t.textContent="Nuevo articulo";
-    var b=document.getElementById("botonGuardarArticulo"); if(b)b.textContent="💾 Guardar articulo";
-    ["codigoArticulo","nombreArticulo","costoArticulo","precioArticulo","stockArticulo","stockMinimoArticulo"].forEach(function(id){var x=document.getElementById(id);if(x)x.value="";});
-    var p=document.getElementById("proveedorArticulo"); if(p)p.value="";
-    var m=document.getElementById("mensajeArticulo"); if(m)m.innerHTML="";
-    f.scrollIntoView({behavior:"smooth",block:"start"});
-  }
-  window.abrirNuevoArticulo=abrirNuevoArticulo;
-  document.addEventListener("DOMContentLoaded",function(){
-    var b=document.querySelector('#inventario button[onclick="mostrarFormularioArticulo()"]');
-    if(b)b.onclick=abrirNuevoArticulo;
-  });
-})();
-</script>
+
 
 <!-- comprobacion-supabase-independiente-20261005 -->
 <script>
