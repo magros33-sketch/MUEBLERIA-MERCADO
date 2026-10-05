@@ -2496,6 +2496,9 @@ async function cargarDeudasProveedores(){
       grupos[pid].saldo+=Number(c.saldo||0);
     });
     box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: '+money(g.saldo)+'</div></div>').join("");
+  }catch(e){
+    console.error("Error cargando deudas de proveedores:",e);
+    box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.</div>';
   }
 }
 
