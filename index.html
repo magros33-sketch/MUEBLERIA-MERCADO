@@ -7388,6 +7388,7 @@ function cambiarPinAdministracion(){
 
       const detalles=ventaItems.map(function(x){
         return {
+          id:crypto.randomUUID(),
           venta_id:idVenta,
           articulo_id:x.articulo_id,
           cantidad:x.cantidad,
