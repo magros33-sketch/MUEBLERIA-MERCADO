@@ -347,6 +347,14 @@ Cancelar
 </div>
 
 <div id="listaArticulos"></div>
+<!-- stock-proveedores-20261005 -->
+<div class="tarjeta">
+<h3>📦 Stock por proveedor</h3>
+<div class="ayuda">Aquí puedes ver cuántos artículos distintos y cuántas unidades tienes de cada proveedor.</div>
+<button onclick="cargarResumenStockProveedores()">🔄 Actualizar stock por proveedor</button>
+<div id="reporteStockProveedores">Cargando...</div>
+</div>
+
 
 </section>
 
@@ -1233,8 +1241,9 @@ pantalla.classList.add("activa");
 }
 
 if(id==="inventario"){
-cargarArticulos();
-cargarProveedores();
+  Promise.all([cargarProveedores(),cargarArticulos()])
+    .then(function(){cargarResumenStockProveedores();})
+    .catch(function(e){console.error("Error cargando inventario:",e);});
 }
 
 if(id==="compras"){
@@ -1557,9 +1566,14 @@ mostrarArticulos([articulo]);
 }
 
 
-function mostrarFormularioArticulo(){
+async function mostrarFormularioArticulo(){
 
 articuloEditando=null;
+try{
+  await cargarProveedores();
+}catch(e){
+  console.error("No se pudieron cargar proveedores para el artículo:",e);
+}
 
 document.getElementById("formArticulo")
 .classList.remove("oculto");
@@ -7073,7 +7087,7 @@ function obtenerPinAdmin(){
   return localStorage.getItem("muebleria_pin_admin") || "1234";
 }
 
-function entrarAdministracion(){
+async function entrarAdministracion(){
   const pin = (document.getElementById("adminPin")?.value || "").trim();
   const mensaje = document.getElementById("mensajeAdminLogin");
 
@@ -7082,10 +7096,16 @@ function entrarAdministracion(){
     return;
   }
 
-  if(mensaje) mensaje.innerHTML = "";
-  document.getElementById("adminLogin").style.display = "none";
-  document.getElementById("adminPanel").style.display = "block";
-  cargarResumenAdministracion();
+  if(mensaje) mensaje.innerHTML = "🔄 Cargando administración...";
+  try{
+    await cargarResumenAdministracion();
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+    if(mensaje) mensaje.innerHTML = "";
+  }catch(e){
+    console.error("Error entrando en administración:",e);
+    if(mensaje) mensaje.innerHTML = '<div class="mensaje-error">❌ No se pudo cargar Administración.<br>'+escaparHTML(e.message||String(e))+'</div>';
+  }
 }
 
 function salirAdministracion(){
@@ -7161,7 +7181,8 @@ async function cargarResumenAdministracion(){
     `;
   }catch(error){
     console.error("Error en administración:",error);
-    contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el resumen.<br>'+escaparHTML(error.message||String(error))+'</div>';
+    contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen de Administración.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+    throw error;
   }
 }
 
@@ -8379,5 +8400,33 @@ async function registrarPagoProveedor(compraId){
 })();
 </script>
 
+
+<script>
+async function cargarResumenStockProveedores(){
+ const cont=document.getElementById("reporteStockProveedores");
+ if(!cont)return;
+ cont.innerHTML="🔄 Cargando stock por proveedor...";
+ try{
+  const [ra,rp]=await Promise.all([
+   fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo,stock,proveedor_id&activo=eq.true",{headers:headersSupabase,cache:"no-store"}),
+   fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"})
+  ]);
+  if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+  if(!rp.ok)throw new Error("Proveedores: "+await rp.text());
+  const arts=await ra.json(), provs=await rp.json();
+  const mapa={};
+  provs.forEach(p=>mapa[String(p.id)]={nombre:p.nombre||"Sin nombre",articulos:0,unidades:0});
+  let sin=0, sinUnidades=0;
+  arts.forEach(a=>{
+   const id=String(a.proveedor_id||"");
+   if(mapa[id]){mapa[id].articulos++;mapa[id].unidades+=Number(a.stock||0);}
+   else{sin++;sinUnidades+=Number(a.stock||0);}
+  });
+  const filas=provs.map(p=>{const x=mapa[String(p.id)];return '<div class="historial"><strong>🚚 '+escaparHTML(x.nombre)+'</strong><div class="dato">Artículos distintos: <strong>'+x.articulos+'</strong></div><div class="dato">Unidades en stock: <strong>'+x.unidades+'</strong></div></div>';}).join("");
+  const sinFila=sin?'<div class="historial"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos distintos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
+  cont.innerHTML=(filas||'<div class="ayuda">No hay proveedores registrados.</div>')+sinFila;
+ }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+</script>
 </body>
 </html>
