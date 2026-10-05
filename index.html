@@ -440,7 +440,7 @@ Cargando historial...
 <div class="tarjeta">
 <h3>📊 Resumen de ventas por día</h3>
 <label>Selecciona el día:</label>
-<input type="date" id="fechaResumenVentas" onchange="cargarResumenVentasDia()">
+<input type="date" id="fechaResumenVentas" onchange="cargarResumenVentasDia();mostrarHistorialSegunFecha()">
 <div id="resumenVentasDia">Selecciona un día...</div>
 </div>
 
@@ -582,7 +582,6 @@ Puedes consultar las ventas organizadas por día, semana o mes.
 </button>
 
 <div id="historialVentas">
-Cargando historial...
 </div>
 
 </div>
@@ -3401,9 +3400,24 @@ console.error("Error resumen ventas del día:",error);
 contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
 }
 }
+
+function mostrarHistorialSegunFecha(){
+const fecha=document.getElementById("fechaResumenVentas")?.value||"";
+const historial=document.getElementById("historialVentas");
+if(!historial)return;
+const hoy=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const tarjeta=historial.closest(".tarjeta");
+if(fecha&&fecha<hoy){
+if(tarjeta)tarjeta.style.display="";
+cargarHistorialVentas(fecha);
+}else{
+if(tarjeta)tarjeta.style.display="none";
+}
+}
+
 /* ================= HISTORIAL VENTAS ================= */
 
-async function cargarHistorialVentas(){
+async function cargarHistorialVentas(fechaFiltro){
 
 const contenedor=document.getElementById("historialVentas");
 if(!contenedor)return;
@@ -3438,6 +3452,12 @@ return;
 }
 
 const ventas=await respuesta.json();
+if(fechaFiltro){
+ventas.splice(0,ventas.length,...ventas.filter(v=>{
+const d=new Date(v.fecha||"");
+return !Number.isNaN(d.getTime())&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaFiltro;
+}));
+}
 
 if(!Array.isArray(ventas)||!ventas.length){
 contenedor.innerHTML=`
