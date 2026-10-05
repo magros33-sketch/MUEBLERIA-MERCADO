@@ -431,6 +431,16 @@ placeholder="Ejemplo: 3500"
 <option value="credito">Crédito</option>
 </select>
 <div id="compraCreditoInfo" class="ayuda">La compra se registrará pagada de contado y no generará deuda.</div>
+<div id="compraPlazoBox" class="oculto">
+<label>Plazo de pago del crédito</label>
+<select id="compraPlazoDias">
+<option value="7">7 días</option>
+<option value="15">15 días</option>
+<option value="30" selected>30 días</option>
+<option value="60">60 días</option>
+<option value="90">90 días</option>
+</select>
+</div>
 
 <button onclick="registrarCompra()">
 💾 Registrar compra
@@ -8405,5 +8415,179 @@ async function cargarResumenStockProveedores(){
  }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
 }
 </script>
+
+<script id="compras-agrupacion-credito-20261006">
+(function(){
+  function hoyMexicoCompra(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function sumarDiasCompra(fecha,dias){
+    const d=new Date(fecha+"T12:00:00-06:00");
+    d.setDate(d.getDate()+Number(dias||0));
+    return new Intl.DateTimeFormat("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
+  }
+  function actualizarFormaPagoCompraNueva(){
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const info=document.getElementById("compraCreditoInfo");
+    const box=document.getElementById("compraPlazoBox");
+    if(info) info.innerHTML=forma==="credito"
+      ?"La compra quedará como deuda pendiente con el proveedor. Se registrará por separado de las compras de contado."
+      :"La compra se registrará pagada de contado y se agrupará con las demás compras de contado del mismo proveedor y día.";
+    if(box) box.classList.toggle("oculto",forma!=="credito");
+  }
+  window.actualizarFormaPagoCompra=actualizarFormaPagoCompraNueva;
+
+  window.registrarCompra=async function(){
+    const mensaje=document.getElementById("mensajeCompra");
+    const proveedorId=(document.getElementById("compraProveedorId")?.value||"").trim();
+    if(!proveedorId){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';
+      return;
+    }
+
+    let articulo=articuloCompraSeleccionado;
+    const codigo=(document.getElementById("compraCodigo")?.value||"").trim();
+    const nombre=(document.getElementById("compraNombre")?.value||"").trim();
+    const cantidad=Number(document.getElementById("compraCantidad")?.value||0);
+    const costo=Number(document.getElementById("compraCosto")?.value||0);
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const plazo=Number(document.getElementById("compraPlazoDias")?.value||30);
+
+    if(!articulo&&codigo) articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
+    if(!articulo&&nombre) articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo){mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos ese articulo.</div>';return;}
+    if(!Number.isInteger(cantidad)||cantidad<1){mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad recibida válida.</div>';return;}
+    if(!Number.isFinite(costo)||costo<0){mensaje.innerHTML='<div class="mensaje-error">❌ El costo no puede ser negativo.</div>';return;}
+    if(!["contado","credito"].includes(forma)){mensaje.innerHTML='<div class="mensaje-error">❌ Forma de pago no válida.</div>';return;}
+    if(forma==="credito" && ![7,15,30,60,90].includes(plazo)){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un plazo de crédito válido.</div>';return;}
+
+    const subtotal=cantidad*costo;
+    const fechaActual=new Date();
+    const fechaMexico=hoyMexicoCompra();
+    const inicio=fechaMexico+"T00:00:00-06:00";
+    const siguiente=new Date(new Date(fechaMexico+"T12:00:00-06:00").getTime()+86400000);
+    const finFecha=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(siguiente);
+    const fin=finFecha+"T00:00:00-06:00";
+
+    try{
+      mensaje.innerHTML="🔄 Guardando compra...";
+
+      let compraId=null;
+      let compraGuardada=null;
+      let agrupada=false;
+
+      if(forma==="contado"){
+        const q=await fetch(
+          SUPABASE_URL+"/rest/v1/compras?select=*&proveedor_id=eq."+encodeURIComponent(proveedorId)+"&metodo_pago=eq.contado&fecha=gte."+encodeURIComponent(inicio)+"&fecha=lt."+encodeURIComponent(fin)+"&estado=neq.cancelada&estado=neq.cancelado&order=fecha.asc&limit=1",
+          {headers:headersSupabase,cache:"no-store"}
+        );
+        if(!q.ok)throw new Error("No se pudieron consultar las compras de contado del día: "+await q.text());
+        const existentes=await q.json();
+
+        if(existentes.length){
+          compraGuardada=existentes[0];
+          compraId=compraGuardada.id;
+          const nuevoTotal=Number(compraGuardada.total||0)+subtotal;
+          const nuevoPagado=Number(compraGuardada.pagado||0)+subtotal;
+          const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{
+            method:"PATCH",
+            headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({total:nuevoTotal,pagado:nuevoPagado,saldo:0,metodo_pago:"contado"})
+          });
+          if(!ru.ok)throw new Error("No se pudo actualizar la compra agrupada: "+await ru.text());
+          agrupada=true;
+        }
+      }
+
+      if(!compraId){
+        const datosCompra={
+          proveedor_id:proveedorId,
+          id_proveedor:proveedorId,
+          fecha:fechaActual.toISOString(),
+          total:subtotal,
+          estado:"completada",
+          metodo_pago:forma,
+          pagado:forma==="contado"?subtotal:0,
+          saldo:forma==="contado"?0:subtotal,
+          notas:forma==="credito"
+            ?("Crédito a "+plazo+" días | Vence: "+sumarDiasCompra(fechaMexico,plazo))
+            :"Compra registrada desde la aplicacion"
+        };
+        const rc=await fetch(SUPABASE_URL+"/rest/v1/compras",{
+          method:"POST",
+          headers:{...headersSupabase,"Prefer":"return=representation"},
+          body:JSON.stringify(datosCompra)
+        });
+        if(!rc.ok)throw new Error("No se pudo guardar la compra: "+await rc.text());
+        const arr=await rc.json();
+        compraGuardada=arr[0];
+        compraId=compraGuardada?.id;
+        if(!compraId)throw new Error("La compra no devolvió un identificador válido.");
+      }
+
+      const rd=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({
+          id:crypto.randomUUID(),
+          compra_id:compraId,
+          articulo_id:articulo.id,
+          cantidad:cantidad,
+          costo_unitario:costo,
+          subtotal:subtotal
+        })
+      });
+      if(!rd.ok)throw new Error("La compra se guardó, pero no se pudo guardar el detalle: "+await rd.text());
+
+      const nuevoStock=Number(articulo.stock||0)+cantidad;
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+        method:"PATCH",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:nuevoStock,costo:costo})
+      });
+      if(!ra.ok)throw new Error("La compra se guardó, pero no se pudo actualizar el stock: "+await ra.text());
+
+      const totalFinal=Number(compraGuardada?.total||subtotal);
+      mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Compra registrada correctamente.</strong><br><br>'+
+        (agrupada
+          ?'Se agregó a la compra de contado del mismo proveedor y día.<br>'
+          :(forma==="credito"?'Compra a crédito separada.<br>':'Nueva compra de contado.<br>'))+
+        (forma==="credito"?'Plazo: <strong>'+plazo+' días</strong><br>Vence: <strong>'+sumarDiasCompra(fechaMexico,plazo)+'</strong><br>':'')+
+        'Artículo: <strong>'+escaparHTML(articulo.nombre||"")+'</strong><br>'+
+        'Cantidad: <strong>'+cantidad+'</strong><br>'+
+        'Nuevo stock: <strong>'+nuevoStock+'</strong><br>'+
+        'Importe agregado: <strong>
+</html>
++subtotal.toFixed(2)+'</strong><br>'+
+        'Total de la compra: <strong>
+</html>
++totalFinal.toFixed(2)+'</strong></div>';
+
+      articuloCompraSeleccionado=null;
+      if(document.getElementById("compraCodigo"))document.getElementById("compraCodigo").value="";
+      if(document.getElementById("compraNombre"))document.getElementById("compraNombre").value="";
+      if(document.getElementById("compraCantidad"))document.getElementById("compraCantidad").value="";
+      if(document.getElementById("compraCosto"))document.getElementById("compraCosto").value="";
+      if(document.getElementById("compraFormaPago"))document.getElementById("compraFormaPago").value="contado";
+      if(document.getElementById("compraPlazoDias"))document.getElementById("compraPlazoDias").value="30";
+      actualizarFormaPagoCompraNueva();
+      ["estadoCodigo","estadoNombre","resultadoCompra","estadoProveedorCompra","resultadoProveedorCompra"].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML="";});
+      const cp=document.getElementById("compraProveedor"), cpi=document.getElementById("compraProveedorId");
+      if(cp)cp.value="";
+      if(cpi)cpi.value="";
+      await cargarArticulos();
+      await cargarHistorialCompras();
+      if(typeof cargarDeudasProveedores==="function")await cargarDeudasProveedores();
+    }catch(error){
+      console.error("Error registrando compra:",error);
+      mensaje.innerHTML='<div class="mensaje-error">❌ No se pudo registrar la compra.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+    }
+  };
+
+  document.addEventListener("DOMContentLoaded",actualizarFormaPagoCompraNueva);
+  actualizarFormaPagoCompraNueva();
+})();
+</script>
+
 </body>
 </html>
