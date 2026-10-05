@@ -8681,6 +8681,67 @@ async function cargarResumenStockProveedores(){
     };
   }
 })();
+
+<script id="administracion-periodos-20261006">
+(function(){
+  function fechaMexicoAdmin(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function rango(periodo,fecha){
+    const d=new Date((fecha||fechaMexicoAdmin())+"T12:00:00-06:00");
+    let inicio=new Date(d), fin=new Date(d);
+    if(periodo==="dia"){ }
+    else if(periodo==="semana"){
+      const dia=d.getDay();
+      const diff=(dia+6)%7;
+      inicio.setDate(d.getDate()-diff);
+      fin=new Date(inicio); fin.setDate(inicio.getDate()+7);
+    }else{
+      inicio=new Date(d.getFullYear(),d.getMonth(),1,12);
+      fin=new Date(d.getFullYear(),d.getMonth()+1,1,12);
+    }
+    const fmt=x=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(x);
+    return {inicio:fmt(inicio),fin:fmt(fin),etiqueta:periodo==="dia"?fmt(inicio):periodo==="semana"?fmt(inicio)+" al "+fmt(new Date(fin.getTime()-86400000)):inicio.toLocaleDateString("es-MX",{month:"long",year:"numeric"})};
+  }
+  async function cargarNumerosAdministracion(){
+    const box=document.getElementById("resumenAdministracion"); if(!box)return;
+    const periodo=document.getElementById("adminPeriodo")?.value||"dia";
+    const fecha=document.getElementById("adminFecha")?.value||fechaMexicoAdmin();
+    const r=rango(periodo,fecha);
+    box.innerHTML="🔄 Cargando...";
+    try{
+      const q="&fecha=gte."+encodeURIComponent(r.inicio+"T00:00:00-06:00")+"&fecha=lt."+encodeURIComponent(r.fin+"T00:00:00-06:00");
+      const [rv,rg,rc]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=total,fecha,estado&estado=neq.cancelada"+q,{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/gastos?select=importe,fecha"+q,{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/compras?select=total,fecha,estado"+q+"&estado=neq.cancelada",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+      if(!rc.ok)throw new Error("Compras: "+await rc.text());
+      const ventas=await rv.json(), gastos=await rg.json(), compras=await rc.json();
+      const totalVentas=ventas.reduce((s,x)=>s+Number(x.total||0),0);
+      const totalGastos=gastos.reduce((s,x)=>s+Number(x.importe||0),0);
+      const totalCompras=compras.reduce((s,x)=>s+Number(x.total||0),0);
+      const resultado=totalVentas-totalGastos-totalCompras;
+      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(2)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(2)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(2)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(2)+"</strong></div></div>";
+    }catch(e){box.innerHTML="<div class='mensaje-error'>❌ No se pudo cargar el resumen.<br><br>"+escaparHTML(e.message||String(e))+"</div>";}
+  }
+  window.cargarResumenAdministracion=async function(){
+    const box=document.getElementById("resumenAdministracion");
+    if(!box)return;
+    const panel=box.parentElement;
+    if(panel && !document.getElementById("adminPeriodo")){
+      const controles=document.createElement("div");
+      controles.innerHTML="<label>Periodo</label><select id='adminPeriodo'><option value='dia'>Día</option><option value='semana'>Semana</option><option value='mes'>Mes</option></select><label>Selecciona la fecha</label><input id='adminFecha' type='date' value='"+fechaMexicoAdmin()+"'>";
+      panel.insertBefore(controles,box);
+      document.getElementById("adminPeriodo").addEventListener("change",cargarNumerosAdministracion);
+      document.getElementById("adminFecha").addEventListener("change",cargarNumerosAdministracion);
+    }
+    await cargarNumerosAdministracion();
+  };
+})();
+</script>
 </script>
 \n</body>
 </html>
