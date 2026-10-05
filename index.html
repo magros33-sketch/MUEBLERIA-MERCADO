@@ -7398,17 +7398,34 @@ function cambiarPinAdministracion(){
         body:JSON.stringify(detalles)
       });
 
-      if(!rd.ok)throw new Error("No se pudo guardar el detalle: "+await rd.text());
+      if(!rd.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        throw new Error("No se pudo guardar el detalle: "+await rd.text());
+      }
 
-      for(const x of ventaItems){
-        const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
-        const nuevoStock=Number(actual.stock||0)-x.cantidad;
-        const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),{
-          method:"PATCH",
-          headers:{...headersSupabase,"Prefer":"return=minimal"},
-          body:JSON.stringify({stock:nuevoStock})
-        });
-        if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+      const stocksAplicados=[];
+      try{
+        for(const x of ventaItems){
+          const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
+          const nuevoStock=Number(actual.stock||0)-x.cantidad;
+          const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),{
+            method:"PATCH",
+            headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:nuevoStock})
+          });
+          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+          stocksAplicados.push({id:x.articulo_id,stockAnterior:Number(actual.stock||0)});
+        }
+      }catch(errorStock){
+        for(const s of stocksAplicados){
+          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
+            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:s.stockAnterior})
+          });
+        }
+        await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        throw errorStock;
       }
 
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
@@ -7682,29 +7699,37 @@ function cambiarPinAdministracion(){
       });
 
       if(!rd.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
         throw new Error("La compra se creó, pero no se pudo guardar el detalle: "+await rd.text());
       }
 
-      for(let i=0;i<compraItems.length;i++){
-        const x=compraItems[i];
-        const articulo=articulosActualizados[i];
-        const nuevoStock=Number(articulo.stock||0)+x.cantidad;
-
-        const ra=await fetch(
-          SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),
-          {
-            method:"PATCH",
-            headers:{...headersSupabase,"Prefer":"return=minimal"},
-            body:JSON.stringify({
-              stock:nuevoStock,
-              costo:x.costo
-            })
-          }
-        );
-
-        if(!ra.ok){
-          throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+      const stocksAplicadosCompra=[];
+      try{
+        for(let i=0;i<compraItems.length;i++){
+          const x=compraItems[i];
+          const articulo=articulosActualizados[i];
+          const nuevoStock=Number(articulo.stock||0)+x.cantidad;
+          const ra=await fetch(
+            SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),
+            {
+              method:"PATCH",
+              headers:{...headersSupabase,"Prefer":"return=minimal"},
+              body:JSON.stringify({stock:nuevoStock,costo:x.costo})
+            }
+          );
+          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+          stocksAplicadosCompra.push({id:x.articulo_id,stockAnterior:Number(articulo.stock||0),costoAnterior:articulo.costo});
         }
+      }catch(errorStock){
+        for(const s of stocksAplicadosCompra){
+          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
+            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:s.stockAnterior,costo:s.costoAnterior})
+          });
+        }
+        await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
+        await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
+        throw errorStock;
       }
 
       mensaje.innerHTML=
