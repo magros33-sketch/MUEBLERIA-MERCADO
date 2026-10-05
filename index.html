@@ -8589,5 +8589,97 @@ async function cargarResumenStockProveedores(){
 })();
 </script>
 
-</body>
+
+<script id="codigos-automaticos-20261006">
+(function(){
+  function quitarAcentos(t){
+    return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+
+  function prefijoArticulo(nombre){
+    const n=quitarAcentos(nombre).toLowerCase().trim();
+    if(n.includes("colchon")) return "COL";
+    if(n.includes("litera")) return "LIT";
+    if(n.includes("cama")) return "CAM";
+    return "";
+  }
+
+  async function siguienteCodigoArticulo(prefijo){
+    try{
+      const r=await fetch(
+        SUPABASE_URL+"/rest/v1/articulos?select=codigo&codigo=ilike."+encodeURIComponent(prefijo+"*"),
+        {headers:headersSupabase,cache:"no-store"}
+      );
+      if(r.ok){
+        const filas=await r.json();
+        let max=0;
+        filas.forEach(function(a){
+          const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"[\\s-]*(\\d+)$"));
+          if(m)max=Math.max(max,Number(m[1]));
+        });
+        return prefijo+String(max+1).padStart(3,"0");
+      }
+    }catch(e){
+      console.error("No se pudo consultar la secuencia de códigos:",e);
+    }
+
+    let max=0;
+    (Array.isArray(articulos)?articulos:[]).forEach(function(a){
+      const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"[\\s-]*(\\d+)$"));
+      if(m)max=Math.max(max,Number(m[1]));
+    });
+    return prefijo+String(max+1).padStart(3,"0");
+  }
+
+  async function actualizarCodigoAutomatico(){
+    if(typeof articuloEditando!=="undefined" && articuloEditando)return;
+    const nombre=document.getElementById("nombreArticulo");
+    const codigo=document.getElementById("codigoArticulo");
+    if(!nombre||!codigo)return;
+    const prefijo=prefijoArticulo(nombre.value);
+    if(!prefijo)return;
+
+    if(codigo.dataset.generadoNombre===nombre.value.trim())return;
+
+    codigo.dataset.generando="1";
+    const nuevo=await siguienteCodigoArticulo(prefijo);
+
+    if((document.getElementById("nombreArticulo")?.value||"").trim()===nombre.value.trim() &&
+       !(typeof articuloEditando!=="undefined" && articuloEditando)){
+      codigo.value=nuevo;
+      codigo.dataset.generadoNombre=nombre.value.trim();
+    }
+    codigo.dataset.generando="";
+  }
+
+  const nombre=document.getElementById("nombreArticulo");
+  if(nombre){
+    nombre.addEventListener("blur",actualizarCodigoAutomatico);
+  }
+
+  const formularioOriginal=window.mostrarFormularioArticulo;
+  if(formularioOriginal){
+    window.mostrarFormularioArticulo=async function(){
+      await formularioOriginal.apply(this,arguments);
+      const codigo=document.getElementById("codigoArticulo");
+      if(codigo){
+        codigo.removeAttribute("readonly");
+        delete codigo.dataset.generadoNombre;
+      }
+      await actualizarCodigoAutomatico();
+    };
+  }
+
+  const editarOriginal=window.editarArticulo;
+  if(editarOriginal){
+    window.editarArticulo=function(){
+      const r=editarOriginal.apply(this,arguments);
+      const codigo=document.getElementById("codigoArticulo");
+      if(codigo)codigo.removeAttribute("readonly");
+      return r;
+    };
+  }
+})();
+</script>
+\n</body>
 </html>
