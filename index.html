@@ -726,6 +726,13 @@ value="0"
 oninput="actualizarTotalApartado()"
 >
 
+<label>Fecha del anticipo</label>
+<input
+id="apartadoFechaAnticipo"
+type="date"
+>
+<div class="ayuda">Puedes poner la fecha real en que el cliente entregó el anticipo.</div>
+
 
 <div class="info-articulo">
 
@@ -1211,6 +1218,9 @@ if(id==="apartados"){
 
 cargarArticulos();
 cargarClientes();
+
+const fechaAnticipo=document.getElementById("apartadoFechaAnticipo");
+if(fechaAnticipo&&!fechaAnticipo.value)fechaAnticipo.value=fechaHoyMexicoApartado();
 
 setTimeout(function(){
 cargarHistorialApartados();
@@ -4362,6 +4372,9 @@ Number(
 document.getElementById("apartadoAnticipo").value||0
 );
 
+const fechaAnticipo=
+document.getElementById("apartadoFechaAnticipo")?.value||"";
+
 const metodoPago=
 document.getElementById("apartadoMetodoPago").value;
 
@@ -4624,7 +4637,9 @@ id:crypto.randomUUID(),
 
 apartado_id:idApartado,
 
-fecha:new Date().toISOString(),
+fecha:(anticipo>0&&fechaAnticipo)
+?new Date(fechaAnticipo+"T12:00:00Z").toISOString()
+:new Date().toISOString(),
 
 importe:anticipo,
 
@@ -4841,7 +4856,9 @@ campoApartadoCodigo.value="";
 campoApartadoNombre.value="";
 
 document.getElementById("apartadoCantidad").value="1";
-document.getElementById("apartadoPrecio").value="";document.getElementById("apartadoAnticipo").value="0";
+document.getElementById("apartadoPrecio").value="";
+document.getElementById("apartadoAnticipo").value="0";
+if(document.getElementById("apartadoFechaAnticipo"))document.getElementById("apartadoFechaAnticipo").value=fechaHoyMexicoApartado();
 document.getElementById("apartadoNotas").value="";
 
 document.getElementById("estadoClienteApartado").innerHTML="";
@@ -5040,7 +5057,7 @@ botones+=
 <button
 onclick="registrarAbonoApartado('${a.id}')"
 >
-💵 Registrar abono
+💵 Registrar adelanto
 </button>
 `;
 
@@ -5114,6 +5131,11 @@ ${escaparHTML(a.metodo_pago||"")}
 </div>
 
 <div class="dato">
+💳 Adelantos acumulados:
+<strong>${Number(a.pagado||0).toFixed(2)}</strong>
+</div>
+
+<div class="dato">
 Estado:
 ${estadoHTML}
 </div>
@@ -5159,6 +5181,44 @@ contenedor.innerHTML=
 }
 
 
+/* ================= ABONOS DE APARTADOS ================= */
+
+async function registrarAbonoApartado(id){
+  const importe=Number(prompt("Importe del nuevo adelanto:","0"));
+  if(!Number.isFinite(importe)||importe<=0)return;
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+    if(!r.ok)throw new Error(await r.text());
+    const datos=await r.json();
+    if(!datos.length)throw new Error("No se encontró el apartado.");
+    const apartado=datos[0];
+    const estado=String(apartado.estado||"").toLowerCase().trim();
+    if(["cancelada","cancelado"].includes(estado)){alert("Este apartado está cancelado.");return;}
+    if(["pagado","liquidado"].includes(estado)){alert("Este apartado ya está pagado.");return;}
+    const saldoActual=Number(apartado.saldo||0);
+    if(saldoActual<=0){alert("Este apartado ya no tiene deuda.");return;}
+    if(importe>saldoActual){alert("El adelanto no puede superar el saldo pendiente.");return;}
+    const fecha=prompt("Fecha en que el cliente entregó este adelanto (AAAA-MM-DD):",fechaHoyMexicoApartado());
+    if(!fecha||!/\d{4}-\d{2}-\d{2}$/.test(fecha)){alert("La fecha no es válida.");return;}
+    const fechaComprobada=new Date(fecha+"T12:00:00Z");
+    if(Number.isNaN(fechaComprobada.getTime())){alert("La fecha no es válida.");return;}
+    const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo)){alert("Método no válido.");return;}
+    const nuevoPagado=Number(apartado.pagado||0)+importe;
+    const nuevoSaldo=Math.max(0,Number(apartado.total||0)-nuevoPagado);
+    const nuevoEstado=nuevoSaldo<=0?"pagado":"pendiente";
+    const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({id:crypto.randomUUID(),apartado_id:apartado.id,fecha:fechaComprobada.toISOString(),importe:importe,metodo_pago:metodo,notas:"Adelanto posterior"})});
+    if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
+    const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})});
+    if(!ru.ok)throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
+    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(2)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(2));
+    await cargarHistorialApartados();
+    await cargarResumenVentasDia();
+  }catch(e){
+    console.error("Error registrando adelanto de apartado:",e);
+    alert("No se pudo registrar el adelanto.\n\n"+(e.message||String(e)));
+  }
+}
 /* ================= CANCELAR VENTA ================= */
 
 async function cancelarVenta(id){
@@ -6845,6 +6905,10 @@ await cargarProveedores(); alert("Proveedor eliminado correctamente.");
 
 
 /* ================= GASTOS ================= */
+
+function fechaHoyMexicoApartado(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
 
 function fechaMexicoHoy(){
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
