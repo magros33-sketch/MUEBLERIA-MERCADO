@@ -3812,6 +3812,10 @@ ${lista.map(function(v){
 const id=String(v.id||"");
 const operacion=id.substring(0,8);
 const tipoCliente=v.tipo_cliente==="cliente"?"Cliente":"Publico general";
+const clienteRelacionado=clientes.find(function(c){return String(c.id)===String(v.cliente_id||"");});
+const nombreClienteVenta=clienteRelacionado
+  ? ((clienteRelacionado.codigo_cliente?clienteRelacionado.codigo_cliente+" — ":"")+ (clienteRelacionado.nombre||"Cliente"))
+  : tipoCliente;
 
 return `
 <div class="historial">
@@ -3828,7 +3832,7 @@ Operacion: ${escaparHTML(operacion)}
 
 <div class="dato">
 Cliente:
-<strong>${escaparHTML(tipoCliente)}</strong>
+<strong>${escaparHTML(nombreClienteVenta)}</strong>
 </div>
 
 <div class="dato">
@@ -7148,12 +7152,12 @@ async function cargarResumenAdministracion(){
     const resultado=gananciaVentas-totalGastos;
 
     contenedor.innerHTML=`
-      <div class="info-articulo"><strong>💵 Ventas cobradas en su totalidad</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
+      <div class="info-articulo"><strong>💵 Ventas registradas</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
       <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
-      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas cobradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
       <div class="info-articulo"><strong>Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
       <div class="info-articulo"><strong>Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
-      <div class="ayuda">La ganancia se calcula sobre ventas cobradas, usando el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
+      <div class="ayuda">La ganancia se calcula sobre las ventas no canceladas, usando el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
     `;
   }catch(error){
     console.error("Error en administración:",error);
