@@ -6503,23 +6503,40 @@ async function eliminarCliente(id){
       {
         method:"DELETE",
         headers:{
-          "apikey":SUPABASE_KEY,
-          "Authorization":"Bearer "+SUPABASE_KEY,
-          "Content-Type":"application/json",
+          ...headersSupabase,
           "Prefer":"return=representation"
-        }
+        },
+        cache:"no-store"
       }
     );
 
-    const resultado = await respuesta.text();
-
-    console.log("RESPUESTA ELIMINAR:",respuesta.status,resultado);
+    const texto = await respuesta.text();
 
     if(!respuesta.ok){
-      throw new Error(resultado);
+      throw new Error(texto || ("HTTP " + respuesta.status));
     }
 
-    await cargarClientes();
+    let eliminados = [];
+    try{
+      eliminados = texto ? JSON.parse(texto) : [];
+    }catch(e){
+      eliminados = [];
+    }
+
+    // Supabase debe devolver el cliente eliminado.
+    // Si devuelve [] significa que la fila no fue eliminada
+    // (por ejemplo, por una política RLS).
+    if(!Array.isArray(eliminados) || eliminados.length === 0){
+      throw new Error(
+        "Supabase no eliminó ningún registro. Revisa la política RLS de la tabla clientes."
+      );
+    }
+
+    // Actualizar inmediatamente la lista visible.
+    clientes = clientes.filter(
+      c => String(c.id) !== String(cliente.id)
+    );
+    filtrarClientes();
 
     alert("Cliente eliminado correctamente.");
 
