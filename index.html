@@ -361,6 +361,14 @@ Cancelar
 Puedes buscar el articulo por codigo o por nombre.
 </div>
 
+<label>Proveedor</label>
+
+<select id="compraProveedor">
+<option value="">Seleccionar proveedor</option>
+</select>
+
+<div id="estadoProveedorCompra"></div>
+
 <label>Codigo del articulo</label>
 
 <input
@@ -1115,6 +1123,7 @@ cargarArticulos();
 
 if(id==="compras"){
 cargarArticulos();
+cargarProveedoresEnCompra();
 cargarHistorialCompras();
 }
 
@@ -1926,10 +1935,34 @@ $${Number(articulo.costo||0).toFixed(2)}
 
 /* ================= REGISTRAR COMPRA ================= */
 
+async function cargarProveedoresEnCompra(){
+const select=document.getElementById("compraProveedor");
+if(!select)return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const lista=await r.json();
+select.innerHTML='<option value="">Seleccionar proveedor</option>'+lista.map(function(p){
+return '<option value="'+escaparHTML(p.id||"")+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>';
+}).join("");
+}catch(e){
+console.error("Error cargando proveedores para compras:",e);
+select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+}
+}
+
 async function registrarCompra(){
 
 const mensaje=
 document.getElementById("mensajeCompra");
+
+const proveedorId=
+(document.getElementById("compraProveedor")?.value||"").trim();
+
+if(!proveedorId){
+mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';
+return;
+}
 
 let articulo=
 articuloCompraSeleccionado;
@@ -2033,7 +2066,7 @@ headers:{
 },
 body:JSON.stringify({
 
-id_proveedor:null,
+id_proveedor:proveedorId,
 
 fecha:new Date().toISOString(),
 
@@ -2251,6 +2284,9 @@ document.getElementById("compraCosto").value="";
 document.getElementById("estadoCodigo").innerHTML="";
 document.getElementById("estadoNombre").innerHTML="";
 document.getElementById("resultadoCompra").innerHTML="";
+document.getElementById("estadoProveedorCompra").innerHTML="";
+const selectProveedor=document.getElementById("compraProveedor");
+if(selectProveedor)selectProveedor.value="";
 
 await cargarArticulos();
 
@@ -2387,6 +2423,14 @@ return;
 const compras=
 await respuesta.json();
 
+const proveedoresRespuesta=await fetch(
+SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre",
+{headers:headersSupabase,cache:"no-store"}
+);
+const proveedoresHistorial=proveedoresRespuesta.ok?await proveedoresRespuesta.json():[];
+const mapaProveedores={};
+proveedoresHistorial.forEach(function(p){mapaProveedores[String(p.id)]=p.nombre||"Sin nombre";});
+
 if(!compras.length){
 
 contenedor.innerHTML=
@@ -2405,6 +2449,8 @@ compras.map(function(c){
 
 const operacion=
 String(c.id||"").substring(0,8);
+const nombreProveedor=
+mapaProveedores[String(c.id_proveedor)]||"Proveedor no identificado";
 
 return `
 <div class="historial">
@@ -2412,6 +2458,10 @@ return `
 <strong>
 🛒 Compra
 </strong>
+
+<div class="dato">
+🚚 Proveedor: <strong>${escaparHTML(nombreProveedor)}</strong>
+</div>
 
 <div class="fecha-operacion">
 📅 ${formatearFecha(c.fecha)}
