@@ -1553,7 +1553,7 @@ return String(a.codigo||"").toLowerCase().includes(texto)
 if(resultados){
 if(filtrados.length){
 resultados.innerHTML='<div class="info-articulo"><strong>🔎 Artículos encontrados:</strong>'+filtrados.slice(0,8).map(function(a){
-return '<button type="button" class="opcion" onclick="seleccionarArticuloDesdeBusqueda(\\''+a.id+'\\')">📦 '+escaparHTML(a.nombre||"Sin nombre")+'<br><strong>Código: '+escaparHTML(a.codigo||"Sin código")+'</strong></button>';
+return '<button type="button" class="opcion" onclick="seleccionarArticuloDesdeBusqueda(\''+a.id+'\')">📦 '+escaparHTML(a.nombre||"Sin nombre")+'<br><strong>Código: '+escaparHTML(a.codigo||"Sin código")+'</strong></button>';
 }).join("")+'</div>';
 }else{
 resultados.innerHTML='<div class="ayuda">No se encontró ese artículo.</div>';
