@@ -7743,6 +7743,18 @@ async function registrarPagoProveedor(compraId){
 </script>
 
 
+<!-- respaldo-navegacion-20261005 -->
+<script>
+(function(){
+  if(typeof window.mostrarPantalla === "function") return;
+  window.mostrarPantalla = function(id){
+    document.querySelectorAll(".pantalla").forEach(function(p){p.classList.remove("activa");});
+    var pantalla=document.getElementById(id);
+    if(pantalla) pantalla.classList.add("activa");
+  };
+})();
+</script>
+
 <!-- comprobacion-supabase-independiente-20261005 -->
 <script>
 (function(){
