@@ -7879,5 +7879,175 @@ async function registrarPagoProveedor(compraId){
   });
 })();
 </script>
+
+<script id="reportes-conectados-20261005">
+(function(){
+  function fechaMexico(fecha){
+    return new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",
+      year:"numeric",month:"2-digit",day:"2-digit"
+    }).format(new Date(fecha));
+  }
+
+  function diaComercial(fecha){
+    const d=new Date(fecha);
+    if(Number.isNaN(d.getTime()))return "";
+    const partes=new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",
+      year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",hour12:false
+    }).formatToParts(d);
+    const vals={};
+    partes.forEach(function(p){vals[p.type]=p.value;});
+    const base=vals.year+"-"+vals.month+"-"+vals.day;
+    let clave=base;
+    if(Number(vals.hour)>=20){
+      const utcBase=new Date(base+"T12:00:00Z");
+      utcBase.setUTCDate(utcBase.getUTCDate()+1);
+      clave=utcBase.toISOString().slice(0,10);
+    }
+    return clave;
+  }
+
+  function dinero(n){
+    return "$"+Number(n||0).toFixed(2);
+  }
+
+  window.cargarReporteVentasDiarias=async function(){
+    const box=document.getElementById("reporteVentasDiarias");
+    if(!box)return;
+    box.innerHTML="🔄 Cargando ventas por día...";
+    try{
+      const [rv,rg]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+      const ventas=await rv.json();
+      const gastos=await rg.json();
+      const mapa={};
+
+      ventas.forEach(function(v){
+        if(["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()))return;
+        const dia=diaComercial(v.fecha);
+        if(!dia)return;
+        if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,gastos:0};
+        mapa[dia].ventas+=Number(v.total||0);
+        mapa[dia].cantidad++;
+      });
+
+      gastos.forEach(function(g){
+        const dia=diaComercial(g.fecha);
+        if(!dia)return;
+        if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,gastos:0};
+        mapa[dia].gastos+=Number(g.importe||0);
+      });
+
+      const dias=Object.keys(mapa).sort().reverse();
+      if(!dias.length){
+        box.innerHTML='<div class="tarjeta">Todavía no hay operaciones para mostrar.</div>';
+        return;
+      }
+
+      box.innerHTML=dias.map(function(dia){
+        const x=mapa[dia];
+        const neto=x.ventas-x.gastos;
+        return '<div class="historial">'+
+          '<div class="fecha-operacion">📅 '+dia+'</div>'+
+          '<div class="dato">Operaciones de venta: <strong>'+x.cantidad+'</strong></div>'+
+          '<div class="dato">Ventas: <strong>'+dinero(x.ventas)+'</strong></div>'+
+          '<div class="dato">Gastos: <strong>-'+dinero(x.gastos)+'</strong></div>'+
+          '<div class="dato">Neto después de gastos: <strong>'+dinero(neto)+'</strong></div>'+
+          '<div class="ayuda">Día comercial: de 20:00 a 19:59 hora de México.</div>'+
+        '</div>';
+      }).join("");
+    }catch(e){
+      console.error("Error reporte ventas diarias:",e);
+      box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  window.cargarReporteArticulosVendidos=async function(){
+    const box=document.getElementById("reporteArticulosVendidos");
+    if(!box)return;
+    box.innerHTML="🔄 Cargando artículos vendidos...";
+    try{
+      const [rv,rd,ra]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=*&limit=10000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo&limit=5000",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rd.ok)throw new Error("Detalles de ventas: "+await rd.text());
+      if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+
+      const ventas=await rv.json();
+      const detalles=await rd.json();
+      const articulos=await ra.json();
+      const ventasValidas={};
+      ventas.forEach(function(v){
+        if(!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase())){
+          ventasValidas[String(v.id)]=true;
+        }
+      });
+
+      const mapaArticulos={};
+      articulos.forEach(function(a){
+        mapaArticulos[String(a.id)]=a;
+      });
+
+      const resumen={};
+      detalles.forEach(function(d){
+        if(!ventasValidas[String(d.venta_id)])return;
+        const id=String(d.articulo_id||"");
+        if(!resumen[id])resumen[id]={cantidad:0,importe:0};
+        resumen[id].cantidad+=Number(d.cantidad||0);
+        resumen[id].importe+=Number(d.subtotal||0);
+      });
+
+      const filas=Object.keys(resumen).map(function(id){
+        const a=mapaArticulos[id]||{};
+        return {
+          id:id,
+          nombre:a.nombre||"Artículo no disponible",
+          codigo:a.codigo||"",
+          cantidad:resumen[id].cantidad,
+          importe:resumen[id].importe
+        };
+      }).sort(function(a,b){return b.cantidad-a.cantidad||b.importe-a.importe;});
+
+      if(!filas.length){
+        box.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';
+        return;
+      }
+
+      const max=filas[0];
+      const min=filas[filas.length-1];
+
+      box.innerHTML=
+        '<div class="info-articulo"><strong>🏆 Más vendido</strong><br>'+
+        escaparHTML(max.nombre)+' '+(max.codigo?'('+escaparHTML(max.codigo)+')':'')+
+        '<br>Unidades: <strong>'+max.cantidad+'</strong>'+
+        '<br>Importe: <strong>'+dinero(max.importe)+'</strong></div>'+
+        '<div class="info-articulo"><strong>📉 Menos vendido</strong><br>'+
+        escaparHTML(min.nombre)+' '+(min.codigo?'('+escaparHTML(min.codigo)+')':'')+
+        '<br>Unidades: <strong>'+min.cantidad+'</strong>'+
+        '<br>Importe: <strong>'+dinero(min.importe)+'</strong></div>'+
+        filas.map(function(x){
+          return '<div class="historial"><strong>'+escaparHTML(x.nombre)+'</strong>'+
+            (x.codigo?'<div class="dato">Código: '+escaparHTML(x.codigo)+'</div>':'')+
+            '<div class="dato">Unidades vendidas: <strong>'+x.cantidad+'</strong></div>'+
+            '<div class="dato">Importe vendido: <strong>'+dinero(x.importe)+'</strong></div>'+
+          '</div>';
+        }).join("");
+    }catch(e){
+      console.error("Error reporte artículos vendidos:",e);
+      box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
