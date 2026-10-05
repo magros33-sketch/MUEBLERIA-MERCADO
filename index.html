@@ -860,7 +860,37 @@ Cancelar
 <h2>💸 Gastos</h2>
 
 <div class="tarjeta">
-Proximamente: gastos.
+<h3>➕ Registrar gasto</h3>
+
+<label>Fecha</label>
+<input id="gastoFecha" type="date">
+
+<label>Concepto</label>
+<input id="gastoConcepto" type="text" placeholder="Ejemplo: gasolina, sueldo, luz">
+
+<label>Categoria</label>
+<select id="gastoCategoria">
+<option value="sueldos">Sueldos</option>
+<option value="gasolina">Gasolina</option>
+<option value="otros">Otros</option>
+</select>
+
+<label>Importe</label>
+<input id="gastoImporte" type="number" min="0" step="0.01" placeholder="0.00">
+
+<label>Notas</label>
+<input id="gastoNotas" type="text" placeholder="Notas del gasto">
+
+<button onclick="guardarGasto()">💾 Guardar gasto</button>
+<div id="mensajeGasto"></div>
+</div>
+
+<div class="tarjeta">
+<h3>📋 Historial de gastos</h3>
+<label>Consultar día</label>
+<input id="fechaHistorialGastos" type="date" onchange="cargarHistorialGastos()">
+<button onclick="cargarHistorialGastos()">🔄 Actualizar gastos</button>
+<div id="historialGastos">Cargando gastos...</div>
 </div>
 
 </section>
@@ -1142,6 +1172,11 @@ cargarClientes();
 
 if(id==="proveedores"){
 cargarProveedores();
+}
+
+if(id==="gastos"){
+inicializarGastos();
+cargarHistorialGastos();
 }
 
 
@@ -3428,38 +3463,59 @@ const contenedor=document.getElementById("resumenVentasDia");
 if(!contenedor)return;
 contenedor.innerHTML="🔄 Cargando resumen...";
 try{
-const [rv,rp]=await Promise.all([
+const [rv,rp,rg]=await Promise.all([
 fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
-fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
 ]);
 if(!rv.ok)throw new Error("Ventas: "+await rv.text());
 if(!rp.ok)throw new Error("Pagos de apartados: "+await rp.text());
+if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+
 const ventas=await rv.json();
 const pagosApartados=await rp.json();
+const gastos=await rg.json();
+
 const fechaSeleccionada=document.getElementById("fechaResumenVentas")?.value||new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+
 function esFechaMexico(fecha){
 if(!fecha)return false;
 const d=new Date(fecha);
 if(Number.isNaN(d.getTime()))return false;
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaSeleccionada;
 }
+
 const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()));
-const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha)&&String(p.notas||"").toLowerCase().includes("anticipo"));
+const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha));
+const gh=gastos.filter(g=>esFechaMexico(g.fecha));
+
 function sumarMetodo(lista,metodo){
-return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo).reduce((s,v)=>s+Number(v.total??v.importe??0),0);
+return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo)
+.reduce((s,v)=>s+Number(v.total??v.importe??0),0);
 }
+
 const contado=sumarMetodo(vh,"efectivo")+sumarMetodo(ph,"efectivo");
 const tarjeta=sumarMetodo(vh,"tarjeta")+sumarMetodo(ph,"tarjeta");
 const transferencia=sumarMetodo(vh,"transferencia")+sumarMetodo(ph,"transferencia");
 const aplazo=sumarMetodo(vh,"aplazo")+sumarMetodo(ph,"aplazo");
-const otros=vh.filter(v=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(v.metodo_pago||"").trim().toLowerCase())).reduce((s,v)=>s+Number(v.total||0),0)+ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().toLowerCase())).reduce((s,p)=>s+Number(p.importe||0),0);
+const otros=vh.filter(v=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(v.metodo_pago||"").trim().toLowerCase()))
+.reduce((s,v)=>s+Number(v.total||0),0)+
+ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().toLowerCase()))
+.reduce((s,p)=>s+Number(p.importe||0),0);
+
 const total=contado+tarjeta+transferencia+aplazo+otros;
-contenedor.innerHTML='<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
+const totalGastos=gh.reduce((s,g)=>s+Number(g.importe||0),0);
+const neto=total-totalGastos;
+
+contenedor.innerHTML=
+'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>📋 Apartados / Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>💰 Total del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
-'<div class="ayuda">Importes cobrados del día en hora de México. Incluye ventas y cobros de apartados. Los movimientos cancelados de ventas no se incluyen.</div>';
+'<div class="info-articulo"><strong>💰 Total cobrado del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(2)+'</div></div>'+
+'<div class="ayuda">Importes del día en hora de México. Los gastos se descuentan del total cobrado para obtener el neto del día.</div>';
 }catch(error){
 console.error("Error resumen ventas del día:",error);
 contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
@@ -3492,7 +3548,8 @@ contenedor.innerHTML="🔄 Cargando historial de ventas...";
 
 try{
 
-const respuesta=await fetch(
+const [respuesta, respuestaGastos]=await Promise.all([
+fetch(
 SUPABASE_URL+
 "/rest/v1/ventas?select=*&limit=1000",
 {
@@ -3504,7 +3561,9 @@ headers:{
 },
 cache:"no-store"
 }
-);
+),
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+]);
 
 if(!respuesta.ok){
 const errorTexto=await respuesta.text();
@@ -3518,6 +3577,8 @@ return;
 }
 
 const ventas=await respuesta.json();
+if(!respuestaGastos.ok)throw new Error("Gastos: "+await respuestaGastos.text());
+const gastos=await respuestaGastos.json();
 if(fechaFiltro){
 ventas.splice(0,ventas.length,...ventas.filter(v=>{
 const d=new Date(v.fecha||"");
@@ -3584,12 +3645,26 @@ const totalGrupo=ventasValidasGrupo.reduce(function(s,v){
 return s+Number(v.total||0);
 },0);
 
+const gastosGrupo=gastos.filter(function(g){
+return claveGrupo(g.fecha)===grupo;
+});
+const totalGastosGrupo=gastosGrupo.reduce(function(s,g){
+return s+Number(g.importe||0);
+},0);
+const netoGrupo=totalGrupo-totalGastosGrupo;
+
 return `
 <div class="tarjeta">
 <h3>📅 ${escaparHTML(grupo)}</h3>
 <div class="dato">
 <strong>${lista.length}</strong> venta(s) ·
-<strong>$${totalGrupo.toFixed(2)}</strong>
+<strong>${totalGrupo.toFixed(2)}</strong> ventas
+</div>
+<div class="dato">
+💸 Gastos: <strong>-${totalGastosGrupo.toFixed(2)}</strong>
+</div>
+<div class="dato">
+🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(2)}</strong>
 </div>
 </div>
 
@@ -6711,6 +6786,108 @@ await cargarProveedores(); alert("Proveedor eliminado correctamente.");
 }catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
 }
 
+
+/* ================= GASTOS ================= */
+
+function fechaMexicoHoy(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+function inicializarGastos(){
+const fecha=document.getElementById("gastoFecha");
+const fechaHist=document.getElementById("fechaHistorialGastos");
+const hoy=fechaMexicoHoy();
+if(fecha && !fecha.value)fecha.value=hoy;
+if(fechaHist && !fechaHist.value)fechaHist.value=hoy;
+}
+
+async function guardarGasto(){
+const mensaje=document.getElementById("mensajeGasto");
+const fecha=document.getElementById("gastoFecha")?.value||"";
+const concepto=document.getElementById("gastoConcepto")?.value.trim()||"";
+const categoria=document.getElementById("gastoCategoria")?.value||"otros";
+const importe=Number(document.getElementById("gastoImporte")?.value||0);
+const notas=document.getElementById("gastoNotas")?.value.trim()||"";
+
+if(!fecha){mensaje.innerHTML='<div class="mensaje-error">Selecciona la fecha del gasto.</div>';return;}
+if(!concepto){mensaje.innerHTML='<div class="mensaje-error">Escribe el concepto del gasto.</div>';return;}
+if(!Number.isFinite(importe)||importe<=0){mensaje.innerHTML='<div class="mensaje-error">Indica un importe mayor que 0.</div>';return;}
+
+try{
+mensaje.innerHTML="Guardando gasto...";
+const fechaISO=new Date(fecha+"T12:00:00").toISOString();
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos",{
+method:"POST",
+headers:{...headersSupabase,"Prefer":"return=representation"},
+body:JSON.stringify({fecha:fechaISO,concepto:concepto,categoria:categoria,importe:importe,notas:notas})
+});
+if(!r.ok)throw new Error(await r.text());
+
+document.getElementById("gastoConcepto").value="";
+document.getElementById("gastoImporte").value="";
+document.getElementById("gastoNotas").value="";
+mensaje.innerHTML='<div class="mensaje-exito">✅ Gasto registrado correctamente.</div>';
+await cargarHistorialGastos();
+await cargarResumenVentasDia();
+}catch(e){
+console.error("Error guardando gasto:",e);
+mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el gasto.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarHistorialGastos(){
+const contenedor=document.getElementById("historialGastos");
+if(!contenedor)return;
+const fechaFiltro=document.getElementById("fechaHistorialGastos")?.value||fechaMexicoHoy();
+contenedor.innerHTML="🔄 Cargando gastos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&order=fecha.desc&limit=1000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const gastos=await r.json();
+const filtrados=gastos.filter(function(g){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(g.fecha))===fechaFiltro;
+});
+if(!filtrados.length){
+contenedor.innerHTML='<div class="tarjeta">No hay gastos registrados para este día.</div>';
+return;
+}
+const total=filtrados.reduce((s,g)=>s+Number(g.importe||0),0);
+contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+filtrados.map(function(g){
+return '<div class="historial">'+
+'<strong>💸 '+escaparHTML(g.concepto||"Sin concepto")+'</strong>'+
+'<div class="fecha-operacion">📅 '+formatearFecha(g.fecha)+'</div>'+
+'<div class="dato">Categoría: '+escaparHTML(g.categoria||"otros")+'</div>'+
+'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(2)+'</strong></div>'+
+(g.notas?'<div class="dato">📝 '+escaparHTML(g.notas)+'</div>':"")+
+'<div class="separador"></div>'+
+'<button class="eliminar" onclick="eliminarGasto(\''+g.id+'\')">🗑️ Eliminar gasto</button>'+
+'</div>';
+}).join("");
+}catch(e){
+console.error("Error historial gastos:",e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el historial de gastos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function eliminarGasto(id){
+if(!confirm("¿Quieres eliminar este gasto?"))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?id=eq."+encodeURIComponent(id),{
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
+});
+if(!r.ok)throw new Error(await r.text());
+await cargarHistorialGastos();
+await cargarResumenVentasDia();
+}catch(e){
+console.error("Error eliminando gasto:",e);
+alert("No se pudo eliminar el gasto.\n\n"+(e.message||String(e)));
+}
+}
+
+
+/* ================= FIN GASTOS ================= */
 
 /* ================= ADMINISTRACION ================= */
 
