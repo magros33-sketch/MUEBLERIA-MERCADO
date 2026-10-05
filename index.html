@@ -1215,87 +1215,32 @@ const conexion=document.getElementById("conexion");
 
 if(!conexion)return;
 
-conexion.innerHTML=
-"🔄 Comprobando conexión con Supabase...";
+conexion.innerHTML="🔄 Comprobando conexión con Supabase...";
 
 try{
-
-const controlador=new AbortController();
-
-const temporizador=setTimeout(function(){
-
-controlador.abort();
-
-},5000);
-
 const respuesta=await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?select=id&limit=1",
+SUPABASE_URL+"/rest/v1/articulos?select=id&limit=1",
 {
 method:"GET",
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY
-},
-cache:"no-store",
-signal:controlador.signal
+headers:headersSupabase,
+cache:"no-store"
 }
 );
-
-clearTimeout(temporizador);
 
 if(respuesta.ok){
-
-conexion.innerHTML=
-"✅ Conectado correctamente con Supabase.";
-
+conexion.innerHTML="✅ Conectado correctamente con Supabase.";
 return;
-
 }
 
-const errorTexto=await respuesta.text();
-
-console.error(
-"Error Supabase:",
-respuesta.status,
-errorTexto
-);
-
-conexion.innerHTML=
-"❌ Error de conexión con Supabase: "+
-respuesta.status+
-"<br><small>"+
-escaparHTML(errorTexto)+
-"</small>";
+const texto=await respuesta.text();
+console.error("Error Supabase:",respuesta.status,texto);
+conexion.innerHTML="❌ Error de conexión con Supabase: "+respuesta.status+"<br><small>"+escaparHTML(texto)+"</small>";
 
 }catch(error){
-
-console.error(
-"Error de conexión con Supabase:",
-error
-);
-
-if(error.name==="AbortError"){
-
-conexion.innerHTML=
-"❌ Supabase no respondió en 5 segundos.";
-
-}else{
-
-conexion.innerHTML=
-"❌ No se pudo conectar con Supabase."+
-"<br><small>"+
-escaparHTML(
-error.message||String(error)
-)+
-"</small>";
-
+console.error("Error de conexión con Supabase:",error);
+conexion.innerHTML="❌ No se pudo conectar con Supabase.<br><small>"+escaparHTML(error.message||String(error))+"</small>";
 }
-
 }
-
-}
-
 
 /* ================= ARTICULOS ================= */
 
