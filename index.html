@@ -350,7 +350,7 @@ Cancelar
 <!-- stock-proveedores-20261005 -->
 <div class="tarjeta">
 <h3>📦 Stock por proveedor</h3>
-<div class="ayuda">Aquí puedes ver cuántos artículos distintos y cuántas unidades tienes de cada proveedor.</div>
+<div class="ayuda">Aquí puedes ver los artículos de cada proveedor y cuántas unidades tienes de cada uno.</div>
 <button onclick="cargarResumenStockProveedores()">🔄 Actualizar stock por proveedor</button>
 <div id="reporteStockProveedores">Cargando...</div>
 </div>
@@ -8399,8 +8399,8 @@ async function cargarResumenStockProveedores(){
    if(mapa[id]){mapa[id].articulos++;mapa[id].unidades+=Number(a.stock||0);}
    else{sin++;sinUnidades+=Number(a.stock||0);}
   });
-  const filas=provs.map(p=>{const x=mapa[String(p.id)];return '<div class="historial"><strong>🚚 '+escaparHTML(x.nombre)+'</strong><div class="dato">Artículos distintos: <strong>'+x.articulos+'</strong></div><div class="dato">Unidades en stock: <strong>'+x.unidades+'</strong></div></div>';}).join("");
-  const sinFila=sin?'<div class="historial"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos distintos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
+  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>'<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong> — Stock: <strong>'+Number(a.stock||0)+'</strong></div>').join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
+  const sinFila=sin?'<div class="historial"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
   cont.innerHTML=(filas||'<div class="ayuda">No hay proveedores registrados.</div>')+sinFila;
  }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
 }
