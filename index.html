@@ -5032,7 +5032,7 @@ estado!=="liquidado"&&
 estado!=="pagado";
 
 
-let botones="";
+let botones='<button type="button" onclick="mostrarHistorialAbonosApartado(\''+a.id+'\')">📜 Ver historial de adelantos</button>';
 
 
 if(puedeCancelar){
@@ -5180,6 +5180,25 @@ contenedor.innerHTML=
 
 }
 
+
+/* ================= HISTORIAL DE ABONOS DE APARTADOS ================= */
+async function mostrarHistorialAbonosApartado(id){
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&apartado_id=eq."+encodeURIComponent(id)+"&order=fecha.asc",{headers:headersSupabase,cache:"no-store"});
+    if(!r.ok)throw new Error(await r.text());
+    const pagos=await r.json();
+    if(!Array.isArray(pagos)||!pagos.length){alert("Este apartado no tiene adelantos registrados.");return;}
+    let total=0;
+    const lineas=pagos.map(function(p,i){
+      const importe=Number(p.importe||0); total+=importe;
+      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(2)+" — "+(p.metodo_pago||"Sin método");
+    });
+    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(2));
+  }catch(e){
+    console.error("Error consultando historial de adelantos:",e);
+    alert("❌ No se pudo consultar el historial de adelantos.\n\n"+(e.message||String(e)));
+  }
+}
 
 /* ================= ABONOS DE APARTADOS ================= */
 
