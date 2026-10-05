@@ -7742,5 +7742,32 @@ async function registrarPagoProveedor(compraId){
 
 </script>
 
+
+<!-- comprobacion-supabase-independiente-20261005 -->
+<script>
+(function(){
+  var el=document.getElementById("conexion");
+  if(!el)return;
+  el.innerHTML="🔄 Comprobando conexión con Supabase...";
+  var ctl=new AbortController();
+  var timer=setTimeout(function(){ctl.abort();},6000);
+  fetch("https://ggaqknpwlohpbyxeyque.supabase.co/rest/v1/articulos?select=id&limit=1",{
+    method:"GET",
+    headers:{
+      "apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnYXFrbnB3bG9ocGJ5eGV5cXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MTU3MDEsImV4cCI6MjEwNTQ5MTcwMX0.Og4ty1LVNUSABJeUK-VdxP1C24nTbYrqzBxvn12kAsQ",
+      "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnYXFrbnB3bG9ocGJ5eGV5cXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MTU3MDEsImV4cCI6MjEwNTQ5MTcwMX0.Og4ty1LVNUSABJeUK-VdxP1C24nTbYrqzBxvn12kAsQ",
+      "Content-Type":"application/json"
+    },
+    cache:"no-store",signal:ctl.signal
+  }).then(function(r){
+    clearTimeout(timer);
+    if(r.ok){el.innerHTML="✅ Conectado correctamente con Supabase.";return;}
+    return r.text().then(function(t){el.innerHTML="❌ Supabase HTTP "+r.status+"<br><small>"+String(t).replace(/</g,"&lt;")+"</small>";});
+  }).catch(function(e){
+    clearTimeout(timer);
+    el.innerHTML="❌ Error de conexión: "+String(e.message||e);
+  });
+})();
+</script>
 </body>
 </html>
