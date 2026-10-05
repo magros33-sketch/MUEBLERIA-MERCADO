@@ -330,8 +330,8 @@ Nuevo articulo
 <input id="stockMinimoArticulo" type="number">
 
 <label>Proveedor</label>
-<select id="proveedorArticulo">
-<option value="">Sin proveedor</option>
+<select id="proveedorArticulo" required>
+<option value="">Selecciona un proveedor</option>
 </select>
 
 <button id="botonGuardarArticulo" onclick="guardarArticulo()">
@@ -1429,7 +1429,7 @@ function actualizarSelectorProveedoresArticulo(){
 const select=document.getElementById("proveedorArticulo");
 if(!select)return;
 const actual=select.value;
-select.innerHTML='<option value="">Sin proveedor</option>'+proveedores.map(function(p){
+select.innerHTML='<option value="">Selecciona un proveedor</option>'+proveedores.map(function(p){
 return '<option value="'+p.id+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>';
 }).join("");
 if(actual)select.value=actual;
@@ -1653,6 +1653,18 @@ Number(document.getElementById("stockMinimoArticulo").value||0);
 
 const proveedorId=
 document.getElementById("proveedorArticulo").value||null;
+
+const mensaje=
+document.getElementById("mensajeArticulo");
+
+if(!proveedorId){
+mensaje.innerHTML=
+`<div class="mensaje-error">
+El proveedor es obligatorio. Selecciona un proveedor antes de guardar el artículo.
+</div>`;
+document.getElementById("proveedorArticulo").focus();
+return;
+}
 
 const mensaje=
 document.getElementById("mensajeArticulo");
