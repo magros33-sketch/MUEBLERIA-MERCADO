@@ -3382,8 +3382,9 @@ const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].inc
 const contado=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="efectivo").reduce((s,v)=>s+Number(v.total||0),0);
 const tarjeta=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="tarjeta").reduce((s,v)=>s+Number(v.total||0),0);
 const transferencia=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="transferencia").reduce((s,v)=>s+Number(v.total||0),0);
-const totalApartados=apartados.filter(a=>esFechaMexico(a.fecha)&&!["cancelada","cancelado"].includes(String(a.estado||"").toLowerCase())).reduce((s,a)=>s+Number(a.total||0),0);
-const total=contado+tarjeta+transferencia+totalApartados;
+const aplazo=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="aplazo").reduce((s,v)=>s+Number(v.total||0),0);
+const otros=vh.filter(v=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(v.metodo_pago||"").toLowerCase())).reduce((s,v)=>s+Number(v.total||0),0);
+const total=contado+tarjeta+transferencia+aplazo+otros;
 contenedor.innerHTML='<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
