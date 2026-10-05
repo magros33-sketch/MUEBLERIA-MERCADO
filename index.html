@@ -7764,6 +7764,29 @@ async function registrarPagoProveedor(compraId){
 })();
 </script>
 
+<!-- respaldo-nuevo-articulo-20261005 -->
+<script>
+(function(){
+  function abrirNuevoArticulo(e){
+    if(e)e.preventDefault();
+    var f=document.getElementById("formArticulo");
+    if(!f)return;
+    f.classList.remove("oculto");
+    var t=document.getElementById("tituloFormulario"); if(t)t.textContent="Nuevo articulo";
+    var b=document.getElementById("botonGuardarArticulo"); if(b)b.textContent="💾 Guardar articulo";
+    ["codigoArticulo","nombreArticulo","costoArticulo","precioArticulo","stockArticulo","stockMinimoArticulo"].forEach(function(id){var x=document.getElementById(id);if(x)x.value="";});
+    var p=document.getElementById("proveedorArticulo"); if(p)p.value="";
+    var m=document.getElementById("mensajeArticulo"); if(m)m.innerHTML="";
+    f.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  window.abrirNuevoArticulo=abrirNuevoArticulo;
+  document.addEventListener("DOMContentLoaded",function(){
+    var b=document.querySelector('#inventario button[onclick="mostrarFormularioArticulo()"]');
+    if(b)b.onclick=abrirNuevoArticulo;
+  });
+})();
+</script>
+
 <!-- comprobacion-supabase-independiente-20261005 -->
 <script>
 (function(){
