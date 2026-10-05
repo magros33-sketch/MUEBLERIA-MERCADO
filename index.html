@@ -3380,7 +3380,7 @@ if(Number.isNaN(d.getTime()))return false;
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaSeleccionada;
 }
 const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()));
-const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha));
+const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha)&&String(p.notas||"").toLowerCase().includes("anticipo"));
 function sumarMetodo(lista,metodo){
 return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo).reduce((s,v)=>s+Number(v.total??v.importe??0),0);
 }
