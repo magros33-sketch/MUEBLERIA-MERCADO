@@ -1028,10 +1028,11 @@ const SUPABASE_URL =
 "https://ggaqknpwlohpbyxeyque.supabase.co";
 
 const SUPABASE_KEY =
-"sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnYXFrbnB3bG9ocGJ5eXlxdWUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4OTkxNTcwMSwiZXhwIjoyMTA1NDkxNzAxfQ.Og4ty1LVNUSABJeUK-VdxP1C24nTbYrqzBxvn12kAsQ";
 
 const headersSupabase = {
 "apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
 "Content-Type":"application/json"
 };
 
