@@ -571,11 +571,14 @@ $0.00
 
 <div class="tarjeta">
 
-<h3>📋 Historial de ventas</h3>
+<h3>📋 Ventas del día</h3>
 
 <div class="ayuda">
-Puedes consultar las ventas organizadas por día, semana o mes.
+Las ventas de hoy aparecen directamente. Las ventas antiguas quedan ocultas y solo se muestran cuando consultes una fecha.
 </div>
+
+<label>Consultar ventas de otro día</label>
+<input type="date" id="fechaHistorialVentas" onchange="cargarHistorialVentas(this.value)">
 
 <label>Organizar por</label>
 <select id="ventasAgrupacion" onchange="cargarHistorialVentas()">
@@ -585,7 +588,7 @@ Puedes consultar las ventas organizadas por día, semana o mes.
 </select>
 
 <button onclick="cargarHistorialVentas()">
-🔄 Actualizar historial
+🔄 Actualizar ventas
 </button>
 
 <div id="historialVentas">
@@ -1161,6 +1164,7 @@ cargarArticulos();
 cargarClientes();
 
 setTimeout(function(){
+inicializarHistorialVentas();
 cargarHistorialVentas();
 cargarResumenVentasDia();
 },100);
@@ -3539,10 +3543,26 @@ cargarHistorialVentas();
 
 /* ================= HISTORIAL VENTAS ================= */
 
+function fechaMexicoHoyVentas(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+function inicializarHistorialVentas(){
+const campo=document.getElementById("fechaHistorialVentas");
+if(campo && !campo.value) campo.value=fechaMexicoHoyVentas();
+}
+
 async function cargarHistorialVentas(fechaFiltro){
 
 const contenedor=document.getElementById("historialVentas");
 if(!contenedor)return;
+
+if(!fechaFiltro){
+fechaFiltro=document.getElementById("fechaHistorialVentas")?.value||fechaMexicoHoyVentas();
+}
+
+const campoFecha=document.getElementById("fechaHistorialVentas");
+if(campoFecha && !campoFecha.value) campoFecha.value=fechaFiltro;
 
 contenedor.innerHTML="🔄 Cargando historial de ventas...";
 
