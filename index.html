@@ -5765,7 +5765,14 @@ async function cargarClientes(){
   try{
     const respuesta = await fetch(
       SUPABASE_URL + "/rest/v1/clientes?select=*&order=nombre.asc",
-      { headers: headersSupabase }
+      {
+        headers: {
+          ...headersSupabase,
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        },
+        cache: "no-store"
+      }
     );
 
     if(!respuesta.ok){
@@ -6371,8 +6378,14 @@ async function eliminarCliente(id){
       throw new Error(error);
     }
 
+    // Quitarlo también del estado local evita que permanezca visible
+    // mientras se vuelve a consultar Supabase.
+    clientes = clientes.filter(c => String(c.id) !== String(cliente.id));
+    filtrarClientes();
+
     alert("Cliente eliminado correctamente.");
 
+    // Recargar desde Supabase sin usar caché.
     await cargarClientes();
   }catch(error){
 
