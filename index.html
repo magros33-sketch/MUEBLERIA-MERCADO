@@ -7929,6 +7929,31 @@ async function registrarPagoProveedor(compraId){
 })();
 </script>
 
+<!-- respaldo-nuevo-proveedor-20261005 -->
+<script>
+(function(){
+  function abrirNuevoProveedor(e){
+    if(e)e.preventDefault();
+    var f=document.getElementById("formProveedor");
+    if(!f)return;
+    f.classList.remove("oculto");
+    f.style.display="block";
+    var t=document.getElementById("tituloFormularioProveedor"); if(t)t.textContent="Nuevo proveedor";
+    var b=document.getElementById("botonGuardarProveedor"); if(b)b.textContent="💾 Guardar proveedor";
+    ["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){
+      var x=document.getElementById(id); if(x)x.value="";
+    });
+    var m=document.getElementById("mensajeProveedor"); if(m)m.innerHTML="";
+    f.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  window.abrirNuevoProveedor=abrirNuevoProveedor;
+  document.addEventListener("DOMContentLoaded",function(){
+    var b=document.querySelector('#proveedores button[onclick="mostrarFormularioProveedor()"]');
+    if(b)b.onclick=abrirNuevoProveedor;
+  });
+})();
+</script>
+
 <!-- respaldo-nuevo-articulo-20261005 -->
 <script>
 (function(){
