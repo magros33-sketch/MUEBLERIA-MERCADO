@@ -3388,7 +3388,7 @@ const total=contado+tarjeta+transferencia+aplazo+otros;
 contenedor.innerHTML='<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>📋 Apartados</strong><div class="precio-venta">$'+totalApartados.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Apartados / Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(2)+'</div></div>'+
 '<div class="info-articulo"><strong>💰 Total del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
 '<div class="ayuda">Importes del día actual en hora de México. Los movimientos cancelados no se incluyen.</div>';
 }catch(error){
