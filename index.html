@@ -2636,7 +2636,7 @@ Estado: ${escaparHTML(c.estado||"")}
 <div class="dato">Pagado: <strong>${Number(c.pagado||0).toFixed(2)}</strong></div>
 <div class="dato">Saldo pendiente: <strong>${Number(c.saldo||0).toFixed(2)}</strong></div>
 <div class="separador"></div>
-${(function(){const estadoCompra=String(c.estado||"").toLowerCase();if(estadoCompra==="cancelada"||estadoCompra==="cancelado")return '<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';let botonesCompra='<button type="button" class="editar" onclick="editarCompra(\\\''+c.id+'\\\')">✏️ Editar compra</button>';if(Number(c.saldo||0)>0)botonesCompra+='<button type="button" onclick="registrarPagoProveedor(\\\''+c.id+'\\\')">💳 Registrar abono</button>';botonesCompra+='<button type="button" class="eliminar" onclick="cancelarCompra(\\\''+c.id+'\\\')">🗑️ Eliminar compra y quitar del stock</button>';return botonesCompra;})()}
+${(function(){const estadoCompra=String(c.estado||"").toLowerCase();if(estadoCompra==="cancelada"||estadoCompra==="cancelado")return '<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';let botonesCompra='<button type="button" class="editar" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>';if(Number(c.saldo||0)>0)botonesCompra+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';botonesCompra+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';return botonesCompra;})()}}
 </div>
 
 </div>
@@ -7734,7 +7734,7 @@ function cambiarPinAdministracion(){
       }
     }
 
-    if(!el("botonAgregarArticuloCompra")&&el("compraCosto")){
+    if(false&&el("compraCosto")){
       const b=document.createElement("button");
       b.id="botonAgregarArticuloCompra";
       b.type="button";
