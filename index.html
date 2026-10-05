@@ -7151,15 +7151,70 @@ function dineroAdmin(valor){
 async function cargarResumenAdministracion(){
   const contenedor=document.getElementById("resumenAdministracion");
   if(!contenedor)return;
-  contenedor.innerHTML="Cargando ganancias sobre ventas cobradas en su totalidad...";
+
+  let controles=document.getElementById("adminControlesPeriodo");
+  if(!controles){
+    controles=document.createElement("div");
+    controles.id="adminControlesPeriodo";
+    controles.className="tarjeta";
+    controles.innerHTML=`
+      <h3>📅 Consultar periodo</h3>
+      <label>Periodo</label>
+      <select id="adminPeriodo">
+        <option value="dia">Día</option>
+        <option value="semana">Semana</option>
+        <option value="mes">Mes</option>
+      </select>
+      <label>Selecciona la fecha</label>
+      <input id="adminFecha" type="date">
+    `;
+    contenedor.parentElement.insertBefore(controles,contenedor);
+    document.getElementById("adminFecha").value=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City"}).format(new Date());
+    document.getElementById("adminPeriodo").addEventListener("change",cargarResumenAdministracion);
+    document.getElementById("adminFecha").addEventListener("change",cargarResumenAdministracion);
+  }
+
+  const periodo=document.getElementById("adminPeriodo")?.value||"dia";
+  const fechaSeleccionada=document.getElementById("adminFecha")?.value;
+  const base=new Date((fechaSeleccionada||new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City"}).format(new Date()))+"T12:00:00-06:00");
+  let inicio=new Date(base);
+  let fin=new Date(base);
+
+  if(periodo==="semana"){
+    const dia=base.getDay();
+    const diferencia=(dia+6)%7;
+    inicio.setDate(base.getDate()-diferencia);
+    fin=new Date(inicio);
+    fin.setDate(inicio.getDate()+7);
+  }else if(periodo==="mes"){
+    inicio=new Date(base.getFullYear(),base.getMonth(),1,12);
+    fin=new Date(base.getFullYear(),base.getMonth()+1,1,12);
+  }else{
+    fin.setDate(fin.getDate()+1);
+  }
+
+  const formatoFecha=x=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(x);
+  const desde=formatoFecha(inicio);
+  const hasta=formatoFecha(fin);
+  const etiqueta=periodo==="dia"
+    ? desde
+    : periodo==="semana"
+      ? desde+" al "+formatoFecha(new Date(fin.getTime()-86400000))
+      : inicio.toLocaleDateString("es-MX",{month:"long",year:"numeric"});
+
+  contenedor.innerHTML="🔄 Cargando resumen de "+etiqueta+"...";
 
   try{
+    const filtroVentas="&fecha=gte."+encodeURIComponent(desde+"T00:00:00-06:00")+"&fecha=lt."+encodeURIComponent(hasta+"T00:00:00-06:00");
+    const filtroGastos=filtroVentas;
+    const filtroCompras=filtroVentas;
+
     const [rv,rd,ra,rc,rg]=await Promise.all([
-      fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&estado=neq.cancelada",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&estado=neq.cancelada"+filtroVentas,{headers:headersSupabase,cache:"no-store"}),
       fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
       fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,costo",{headers:headersSupabase,cache:"no-store"}),
-      fetch(SUPABASE_URL+"/rest/v1/compras?select=*",{headers:headersSupabase,cache:"no-store"}),
-      fetch(SUPABASE_URL+"/rest/v1/gastos?select=*",{headers:headersSupabase,cache:"no-store"})
+      fetch(SUPABASE_URL+"/rest/v1/compras?select=*&estado=neq.cancelada"+filtroCompras,{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/gastos?select=*"+filtroGastos,{headers:headersSupabase,cache:"no-store"})
     ]);
 
     if(!rv.ok)throw new Error("Ventas: "+await rv.text());
@@ -7194,12 +7249,14 @@ async function cargarResumenAdministracion(){
     const resultado=gananciaVentas-totalGastos;
 
     contenedor.innerHTML=`
+      <div class="info-articulo"><strong>📅 Periodo: ${escaparHTML(etiqueta)}</strong></div>
       <div class="info-articulo"><strong>💵 Ventas registradas</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
       <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
       <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
-      <div class="info-articulo"><strong>Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
-      <div class="info-articulo"><strong>Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
-      <div class="ayuda">La ganancia se calcula sobre las ventas no canceladas, usando el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
+      <div class="info-articulo"><strong>🛒 Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
+      <div class="info-articulo"><strong>💸 Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
+      <div class="info-articulo"><strong>📊 Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
+      <div class="ayuda">La fecha seleccionada determina el día, la semana o el mes que se consulta. La ganancia usa el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
     `;
   }catch(error){
     console.error("Error en administración:",error);
@@ -7207,7 +7264,6 @@ async function cargarResumenAdministracion(){
     throw error;
   }
 }
-
 function cambiarPinAdministracion(){
   const actual = (document.getElementById("pinActual")?.value || "").trim();
   const nuevo = (document.getElementById("pinNuevo")?.value || "").trim();
