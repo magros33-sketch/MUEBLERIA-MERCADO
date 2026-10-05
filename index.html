@@ -1031,7 +1031,6 @@ const SUPABASE_KEY =
 
 const headersSupabase = {
 "apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY,
 "Content-Type":"application/json"
 };
 
@@ -1264,10 +1263,7 @@ SUPABASE_URL+
 "/rest/v1/articulos?select=id&limit=1",
 {
 method:"GET",
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY
-},
+headers:headersSupabase,
 cache:"no-store",
 signal:controlador.signal
 }
