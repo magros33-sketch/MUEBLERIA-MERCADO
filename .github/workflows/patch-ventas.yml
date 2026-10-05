@@ -1,0 +1,138 @@
+name: Aplicar corrección temporal de ventas
+
+on:
+  push:
+    paths:
+      - '__patch_trigger__'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar corrección
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<script id="ventas-multiples-correction">'
+          if marker in s:
+              print('La corrección ya estaba aplicada')
+              raise SystemExit(0)
+          js = r'''<script id="ventas-multiples-correction">
+          (function(){
+            let ventaItems=[];
+            function $(id){return document.getElementById(id);}
+            function money(n){return '$'+Number(n||0).toFixed(2);}
+            function limpiarArticuloVenta(){
+              articuloVentaSeleccionado=null;
+              $('ventaCodigo').value=''; $('ventaNombre').value=''; $('ventaCantidad').value='1'; $('ventaPrecio').value='';
+              $('estadoVentaCodigo').innerHTML=''; $('estadoVentaNombre').innerHTML=''; $('resultadoVenta').innerHTML=''; $('infoPrecioVenta').innerHTML='';
+              actualizarTotalVentaMultiple();
+            }
+            function renderItems(){
+              const box=$('ventaItems');
+              if(!box)return;
+              if(!ventaItems.length){box.innerHTML='<div class="ayuda">Todavía no hay artículos añadidos a esta venta.</div>';}
+              else box.innerHTML=ventaItems.map((x,i)=>'<div class="info-articulo"><strong>'+escaparHTML(x.nombre||'')+'</strong><br>Código: '+escaparHTML(x.codigo||'')+'<br>Cantidad: '+x.cantidad+' × '+money(x.precio)+' = <strong>'+money(x.subtotal)+'</strong><button type="button" class="eliminar" onclick="window.quitarArticuloVenta('+i+')">🗑️ Quitar</button></div>').join('');
+              const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+              $('totalVenta').innerHTML=money(total);
+            }
+            function actualizarTotalVentaMultiple(){
+              const actual=Number($('ventaCantidad')?.value||0)*Number($('ventaPrecio')?.value||0);
+              const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0)+actual;
+              if($('totalVenta'))$('totalVenta').innerHTML=money(total);
+            }
+            window.quitarArticuloVenta=function(i){ventaItems.splice(i,1);renderItems();};
+            window.agregarArticuloVenta=function(){
+              const a=articuloVentaSeleccionado;
+              const cantidad=Number($('ventaCantidad').value||0);
+              const precio=Number($('ventaPrecio').value||0);
+              if(!a){$('mensajeVenta').innerHTML='<div class="mensaje-error">❌ Selecciona un artículo antes de añadirlo.</div>';return;}
+              if(!Number.isInteger(cantidad)||cantidad<1){$('mensajeVenta').innerHTML='<div class="mensaje-error">❌ La cantidad debe ser un número entero mayor que 0.</div>';return;}
+              const existente=ventaItems.find(x=>x.articulo_id===a.id);
+              const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
+              if(nuevaCantidad>Number(a.stock||0)){$('mensajeVenta').innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||'')+'. Disponible: '+Number(a.stock||0)+'</div>';return;}
+              if(precio<0){$('mensajeVenta').innerHTML='<div class="mensaje-error">❌ El precio no puede ser negativo.</div>';return;}
+              if(existente){existente.cantidad=nuevaCantidad;existente.precio=precio;existente.subtotal=nuevaCantidad*precio;}
+              else ventaItems.push({articulo_id:a.id,nombre:a.nombre,codigo:a.codigo,cantidad:cantidad,precio:precio,stock:Number(a.stock||0),subtotal:cantidad*precio});
+              $('mensajeVenta').innerHTML=''; renderItems(); limpiarArticuloVenta();
+            };
+            window.registrarVentaMultiple=async function(){
+              const mensaje=$('mensajeVenta');
+              const tipoCliente=$('ventaTipoCliente').value;
+              const clienteTexto=$('ventaCliente').value.trim();
+              const metodoPago=$('ventaMetodoPago').value;
+              if(!ventaItems.length){mensaje.innerHTML='<div class="mensaje-error">❌ Añade al menos un artículo a la venta.</div>';return;}
+              if(tipoCliente==='cliente'&&!clienteVentaSeleccionado&&clienteTexto){
+                const c=clientes.find(c=>String(c.codigo_cliente||'').toLowerCase()===clienteTexto.toLowerCase()||String(c.nombre||'').toLowerCase()===clienteTexto.toLowerCase()||String(c.telefono||'').toLowerCase()===clienteTexto.toLowerCase());
+                if(c)clienteVentaSeleccionado=c;
+              }
+              if(tipoCliente==='cliente'&&!clienteVentaSeleccionado){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un cliente.</div>';return;}
+              for(const x of ventaItems){
+                const actual=articulos.find(a=>a.id===x.articulo_id);
+                if(!actual || Number(actual.stock||0)<x.cantidad){mensaje.innerHTML='<div class="mensaje-error">❌ El stock cambió para '+escaparHTML(x.nombre||'')+'. Actualiza el inventario e inténtalo de nuevo.</div>';return;}
+              }
+              const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+              const idVenta=crypto.randomUUID();
+              try{
+                const rv=await fetch(SUPABASE_URL+'/rest/v1/ventas',{method:'POST',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify({id:idVenta,cliente_id:tipoCliente==='cliente'?clienteVentaSeleccionado.id:null,fecha:new Date().toISOString(),tipo_cliente:tipoCliente,metodo_pago:metodoPago,total:total,estado:'completada',notas:'Venta registrada desde la aplicacion'})});
+                if(!rv.ok)throw new Error('No se pudo guardar la venta: '+await rv.text());
+                const detalles=ventaItems.map(x=>({venta_id:idVenta,articulo_id:x.articulo_id,cantidad:x.cantidad,precio_unitario:x.precio,subtotal:x.subtotal}));
+                const rd=await fetch(SUPABASE_URL+'/rest/v1/ventas_detalle',{method:'POST',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify(detalles)});
+                if(!rd.ok)throw new Error('No se pudo guardar el detalle: '+await rd.text());
+                const actualizados=[];
+                for(const x of ventaItems){
+                  const a=articulos.find(a=>a.id===x.articulo_id); const nuevoStock=Number(a.stock||0)-x.cantidad;
+                  const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(x.articulo_id),{method:'PATCH',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify({stock:nuevoStock})});
+                  if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+(x.nombre||'')+': '+await ra.text());
+                  actualizados.push({id:x.articulo_id,stock:Number(a.stock||0)});
+                }
+                mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>Artículos: <strong>'+ventaItems.length+'</strong><br>Total: <strong>'+money(total)+'</strong><br>Método de pago: '+escaparHTML(metodoPago)+'</div>';
+                ventaItems=[]; clienteVentaSeleccionado=null; $('ventaCliente').value=''; $('estadoClienteVenta').innerHTML=''; $('resultadoClienteVenta').innerHTML=''; renderItems();
+                await cargarArticulos(); await cargarHistorialVentas();
+              }catch(e){
+                console.error(e); mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
+              }
+            };
+            const oldInit=window.actualizarTotalVenta;
+            window.actualizarTotalVenta=actualizarTotalVentaMultiple;
+            document.addEventListener('DOMContentLoaded',function(){});
+            const totalBox=$('totalVenta');
+            if(totalBox){
+              const info=totalBox.parentElement;
+              const wrap=document.createElement('div'); wrap.id='ventaItems'; wrap.className='tarjeta';
+              wrap.innerHTML='<strong>🧾 Artículos de esta venta</strong><div class="ayuda">Puedes añadir varios artículos al mismo ticket.</div><div id="ventaItemsLista"><div class="ayuda">Todavía no hay artículos añadidos a esta venta.</div></div>';
+              info.parentNode.insertBefore(wrap,info);
+              const real=wrap.querySelector('#ventaItemsLista'); real.id='ventaItems';
+              const b=document.createElement('button'); b.type='button'; b.textContent='➕ Añadir artículo a la venta'; b.onclick=window.agregarArticuloVenta;
+              $('infoPrecioVenta').parentNode.insertBefore(b,$('infoPrecioVenta').nextSibling);
+              const guardar=document.querySelector('#ventas button[onclick="registrarVenta()"]');
+              if(guardar){guardar.onclick=window.registrarVentaMultiple;guardar.textContent='💾 Registrar venta completa';}
+              ['ventaCantidad','ventaPrecio'].forEach(id=>$(id)?.addEventListener('input',actualizarTotalVentaMultiple));
+              renderItems();
+            }
+          })();
+          </script>
+          '''
+          s=s.replace('</body>', js+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Guardar cambios
+        run: |
+          git config user.name 'ChatGPT'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Permitir varios artículos en una venta' || exit 0
+          git push
+      - name: Eliminar corrección temporal
+        if: always()
+        run: |
+          rm -f .github/workflows/patch-ventas.yml
+          git add -A
+          git commit -m 'Eliminar parche temporal de ventas' || true
+          git push || true
