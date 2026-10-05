@@ -569,7 +569,7 @@ $0.00
 
 </div>
 
-<div class="tarjeta" style="display:none">
+<div class="tarjeta">
 
 <h3>📋 Historial de ventas</h3>
 
@@ -3472,11 +3472,12 @@ const historial=document.getElementById("historialVentas");
 if(!historial)return;
 const hoy=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const tarjeta=historial.closest(".tarjeta");
-if(fecha&&fecha<hoy){
+if(fecha){
 if(tarjeta)tarjeta.style.display="";
 cargarHistorialVentas(fecha);
 }else{
-if(tarjeta)tarjeta.style.display="none";
+if(tarjeta)tarjeta.style.display="";
+cargarHistorialVentas();
 }
 }
 
