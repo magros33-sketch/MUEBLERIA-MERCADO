@@ -438,6 +438,12 @@ Cargando historial...
 <h2>💰 Ventas</h2>
 
 <div class="tarjeta">
+<h3>📊 Resumen de ventas del día</h3>
+<div id="resumenVentasDia">Cargando resumen...</div>
+<button onclick="cargarResumenVentasDia()">🔄 Actualizar resumen</button>
+</div>
+
+<div class="tarjeta">
 
 <h3>Registrar venta</h3>
 
@@ -1118,6 +1124,7 @@ cargarClientes();
 
 setTimeout(function(){
 cargarHistorialVentas();
+cargarResumenVentasDia();
 },100);
 }
 
@@ -3350,6 +3357,41 @@ mensaje.innerHTML=
 }
 
 
+/* ================= RESUMEN VENTAS DEL DIA ================= */
+async function cargarResumenVentasDia(){
+const contenedor=document.getElementById("resumenVentasDia");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando resumen...";
+try{
+const [rv,ra]=await Promise.all([
+fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+]);
+if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+if(!ra.ok)throw new Error("Apartados: "+await ra.text());
+const ventas=await rv.json(), apartados=await ra.json();
+const hoy=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+function esHoy(fecha){
+if(!fecha)return false;
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(fecha))===hoy;
+}
+const vh=ventas.filter(v=>esHoy(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()));
+const contado=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="efectivo").reduce((s,v)=>s+Number(v.total||0),0);
+const tarjeta=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="tarjeta").reduce((s,v)=>s+Number(v.total||0),0);
+const transferencia=vh.filter(v=>String(v.metodo_pago||"").toLowerCase()==="transferencia").reduce((s,v)=>s+Number(v.total||0),0);
+const totalApartados=apartados.filter(a=>esHoy(a.fecha)&&!["cancelada","cancelado"].includes(String(a.estado||"").toLowerCase())).reduce((s,a)=>s+Number(a.total||0),0);
+const total=contado+tarjeta+transferencia+totalApartados;
+contenedor.innerHTML='<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Apartados</strong><div class="precio-venta">$'+totalApartados.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💰 Total del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+'<div class="ayuda">Importes del día actual en hora de México. Los movimientos cancelados no se incluyen.</div>';
+}catch(error){
+console.error("Error resumen ventas del día:",error);
+contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+}
+}
 /* ================= HISTORIAL VENTAS ================= */
 
 async function cargarHistorialVentas(){
