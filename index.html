@@ -233,24 +233,7 @@ word-break:break-all
 <p>Para tu hogar</p>
 </header>
 
-<div id="conexion">
-🔄 Comprobando conexión con la base de datos...
-</div>
-<script>
-(function(){
-  var caja=document.getElementById("conexion");
-  var url="https://ggaqknpwlohpbyxeyque.supabase.co/rest/v1/articulos?select=id&limit=1";
-  var key="sb_publishable_v3Tx1jkhW4FIPjpRpZyjvA_vGjO_iiU";
-  window.setTimeout(function(){
-    fetch(url,{method:"GET",headers:{"apikey":key,"Content-Type":"application/json"},cache:"no-store"})
-      .then(function(res){
-        if(res.ok){ caja.innerHTML="✅ Conectado correctamente con Supabase."; }
-        else { caja.innerHTML="❌ Error de conexión con Supabase: "+res.status; }
-      })
-      .catch(function(){ caja.innerHTML="❌ No se pudo conectar con Supabase."; });
-  },0);
-})();
-</script>
+<div id="conexion">Comprobando conexión con la base de datos...</div>
 
 <main>
 
