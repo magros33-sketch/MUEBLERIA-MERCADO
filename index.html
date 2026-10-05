@@ -8074,5 +8074,305 @@ async function registrarPagoProveedor(compraId){
 })();
 </script>
 
+
+<!-- auditoria-apartados-conectados-20261005 -->
+<script>
+(function(){
+  function msg(id,html){
+    const e=document.getElementById(id);
+    if(e)e.innerHTML=html;
+  }
+  function hoyMexico(){
+    return new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"
+    }).format(new Date());
+  }
+  function dinero(n){return "$"+Number(n||0).toFixed(2);}
+  function estadoNormal(v){return String(v||"").toLowerCase().trim();}
+
+  /*
+   * APARTADOS: creación transaccional por etapas.
+   * Si falla el pago o el stock, se limpian todos los registros creados.
+   */
+  window.registrarApartado=async function(){
+    const mensaje=document.getElementById("mensajeApartado");
+    const cliente=clienteApartadoSeleccionado;
+    let articulo=articuloApartadoSeleccionado;
+    const codigo=(document.getElementById("apartadoCodigo")?.value||"").trim();
+    const nombre=(document.getElementById("apartadoNombre")?.value||"").trim();
+    const cantidad=Number(document.getElementById("apartadoCantidad")?.value||0);
+    const precio=Number(document.getElementById("apartadoPrecio")?.value||0);
+    const anticipo=Number(document.getElementById("apartadoAnticipo")?.value||0);
+    const fechaAnticipo=(document.getElementById("apartadoFechaAnticipo")?.value||"").trim();
+    const metodoPago=(document.getElementById("apartadoMetodoPago")?.value||"efectivo").toLowerCase();
+    const notas=(document.getElementById("apartadoNotas")?.value||"").trim();
+
+    if(!cliente){msg("mensajeApartado",'<div class="mensaje-error">❌ Selecciona un cliente para el apartado.</div>');return;}
+    if(!articulo&&codigo)articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
+    if(!articulo&&nombre)articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo){msg("mensajeApartado",'<div class="mensaje-error">❌ No encontramos ese artículo.</div>');return;}
+    if(!Number.isInteger(cantidad)||cantidad<1){msg("mensajeApartado",'<div class="mensaje-error">❌ Indica una cantidad válida.</div>');return;}
+    const stockActual=Number(articulo.stock||0);
+    if(cantidad>stockActual){msg("mensajeApartado",'<div class="mensaje-error">❌ No hay suficiente stock. Disponible: <strong>'+stockActual+'</strong>.</div>');return;}
+    if(!Number.isFinite(precio)||precio<0){msg("mensajeApartado",'<div class="mensaje-error">❌ El precio no es válido.</div>');return;}
+    if(!Number.isFinite(anticipo)||anticipo<0||anticipo>cantidad*precio){msg("mensajeApartado",'<div class="mensaje-error">❌ El anticipo no puede ser negativo ni superar el total.</div>');return;}
+    if(anticipo>0 && fechaAnticipo){
+      const d=new Date(fechaAnticipo+"T12:00:00Z");
+      if(Number.isNaN(d.getTime())){msg("mensajeApartado",'<div class="mensaje-error">❌ La fecha del anticipo no es válida.</div>');return;}
+    }
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoPago)){
+      msg("mensajeApartado",'<div class="mensaje-error">❌ Método de pago no válido.</div>');return;
+    }
+
+    const total=cantidad*precio;
+    const saldo=Math.max(0,total-anticipo);
+    const idApartado=crypto.randomUUID();
+    let pagoId=null;
+    let stockActualConfirmado=stockActual;
+    let stockDescontado=false;
+
+    try{
+      msg("mensajeApartado","🔄 Creando apartado...");
+      const rr=await fetch(SUPABASE_URL+"/rest/v1/apartados",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({
+          id:idApartado,cliente_id:cliente.id,articulo_id:articulo.id,
+          cantidad:cantidad,precio_unitario:precio,fecha:new Date().toISOString(),
+          total:total,pagado:anticipo,saldo:saldo,
+          estado:saldo<=0?"pagado":"pendiente",metodo_pago:metodoPago,notas:notas
+        })
+      });
+      if(!rr.ok)throw new Error("No se pudo crear el apartado: "+await rr.text());
+
+      if(anticipo>0){
+        pagoId=crypto.randomUUID();
+        const fechaPago=fechaAnticipo
+          ?new Date(fechaAnticipo+"T12:00:00Z").toISOString()
+          :new Date().toISOString();
+        const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{
+          method:"POST",
+          headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({
+            id:pagoId,apartado_id:idApartado,fecha:fechaPago,
+            importe:anticipo,metodo_pago:metodoPago,notas:"Anticipo inicial del apartado"
+          })
+        });
+        if(!rp.ok)throw new Error("No se pudo guardar el anticipo: "+await rp.text());
+      }
+
+      /* Releer stock antes de descontar para no pisar un cambio reciente. */
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id)+"&select=id,stock",{
+        headers:headersSupabase,cache:"no-store"
+      });
+      if(!ra.ok)throw new Error("No se pudo comprobar el stock real.");
+      const arts=await ra.json();
+      if(!arts.length)throw new Error("No se encontró el artículo.");
+      stockActualConfirmado=Number(arts[0].stock||0);
+      if(cantidad>stockActualConfirmado)throw new Error("El stock cambió mientras se creaba el apartado. Disponible ahora: "+stockActualConfirmado);
+
+      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:stockActualConfirmado-cantidad})
+      });
+      if(!rs.ok)throw new Error("No se pudo descontar el stock: "+await rs.text());
+      stockDescontado=true;
+
+      msg("mensajeApartado",'<div class="mensaje-exito"><strong>✅ Apartado creado correctamente.</strong><br><br>Total: <strong>'+dinero(total)+'</strong><br>Anticipo: <strong>'+dinero(anticipo)+'</strong><br>Saldo: <strong>'+dinero(saldo)+'</strong></div>');
+      if(document.getElementById("apartadoCodigo"))document.getElementById("apartadoCodigo").value="";
+      if(document.getElementById("apartadoNombre"))document.getElementById("apartadoNombre").value="";
+      if(document.getElementById("apartadoCantidad"))document.getElementById("apartadoCantidad").value="1";
+      if(document.getElementById("apartadoPrecio"))document.getElementById("apartadoPrecio").value="";
+      if(document.getElementById("apartadoAnticipo"))document.getElementById("apartadoAnticipo").value="0";
+      if(document.getElementById("apartadoFechaAnticipo"))document.getElementById("apartadoFechaAnticipo").value=hoyMexico();
+      if(document.getElementById("apartadoNotas"))document.getElementById("apartadoNotas").value="";
+      articuloApartadoSeleccionado=null;
+      clienteApartadoSeleccionado=null;
+      await cargarArticulos();
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error creando apartado:",e);
+      /* Rollback completo: primero stock, luego pago y finalmente apartado. */
+      if(stockDescontado){
+        await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({stock:stockActualConfirmado})
+        });
+      }
+      if(pagoId){
+        await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?id=eq."+encodeURIComponent(pagoId),{
+          method:"DELETE",headers:headersSupabase
+        });
+      }
+      await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?apartado_id=eq."+encodeURIComponent(idApartado),{
+        method:"DELETE",headers:headersSupabase
+      });
+      await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(idApartado),{
+        method:"DELETE",headers:headersSupabase
+      });
+      msg("mensajeApartado",'<div class="mensaje-error">❌ No se pudo crear el apartado.<br><br>'+escaparHTML(e.message||String(e))+'</div>');
+    }
+  };
+
+  /*
+   * Historial activo: los apartados totalmente pagados desaparecen,
+   * pero los cancelados siguen visibles como histórico.
+   */
+  window.cargarHistorialApartados=async function(){
+    const contenedor=document.getElementById("historialApartados");
+    if(!contenedor)return;
+    contenedor.innerHTML="🔄 Cargando apartados...";
+    try{
+      const [ra,rc]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&order=fecha.desc",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/clientes?select=id,nombre,codigo_cliente",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!ra.ok)throw new Error(await ra.text());
+      const apartados=await ra.json();
+      const clientesDb=rc.ok?await rc.json():[];
+      const mapaClientes={};
+      clientesDb.forEach(c=>mapaClientes[String(c.id)]=c.nombre||c.codigo_cliente||"Cliente");
+
+      const activos=apartados.filter(a=>!["pagado","liquidado"].includes(estadoNormal(a.estado)));
+      if(!activos.length){
+        contenedor.innerHTML='<div class="tarjeta">No hay apartados pendientes. Los apartados totalmente pagados ya no aparecen aquí.</div>';
+        return;
+      }
+
+      const mapaArticulos={};
+      articulos.forEach(a=>mapaArticulos[String(a.id)]=a);
+
+      contenedor.innerHTML=activos.map(function(a){
+        const est=estadoNormal(a.estado);
+        const art=mapaArticulos[String(a.articulo_id)]||{};
+        const cancelado=["cancelada","cancelado"].includes(est);
+        let botones='<button type="button" onclick="mostrarHistorialAbonosApartado(\''+a.id+'\')">📜 Ver historial de adelantos</button>';
+        if(!cancelado){
+          botones+='<button type="button" class="eliminar" onclick="cancelarApartado(\''+a.id+'\')">❌ Cancelar apartado y devolver stock</button>';
+          if(est==="pendiente"&&Number(a.saldo||0)>0){
+            botones+='<button type="button" onclick="registrarAbonoApartado(\''+a.id+'\')">💵 Registrar adelanto</button>';
+          }
+        }else{
+          botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
+        }
+        return '<div class="historial">'+
+          '<strong>📋 Apartado</strong>'+
+          '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
+          '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
+          '<div class="dato">Cliente: <strong>'+escaparHTML(mapaClientes[String(a.cliente_id)]||"Cliente no disponible")+'</strong></div>'+
+          '<div class="dato">Artículo: <strong>'+escaparHTML(art.nombre||"Artículo no disponible")+'</strong></div>'+
+          '<div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div>'+
+          '<div class="dato">Precio por unidad: '+dinero(a.precio_unitario)+'</div>'+
+          '<div class="dato">Total: <strong>'+dinero(a.total)+'</strong></div>'+
+          '<div class="dato">Pagado: <strong>'+dinero(a.pagado)+'</strong></div>'+
+          '<div class="dato">Saldo: <strong>'+dinero(a.saldo)+'</strong></div>'+
+          '<div class="dato">Estado: <strong class="'+(cancelado?'':'estado-ok')+'">'+escaparHTML(a.estado||"pendiente")+'</strong></div>'+
+          (a.notas?'<div class="dato">📝 '+escaparHTML(a.notas)+'</div>':'')+
+          '<div class="separador"></div>'+botones+
+          '</div>';
+      }).join("");
+    }catch(e){
+      console.error("Error historial apartados:",e);
+      contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de apartados.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  window.registrarAbonoApartado=async function(id){
+    const importe=Number(prompt("Importe del nuevo adelanto:","0"));
+    if(!Number.isFinite(importe)||importe<=0)return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const datos=await r.json();
+      if(!datos.length)throw new Error("No se encontró el apartado.");
+      const a=datos[0], est=estadoNormal(a.estado), saldo=Number(a.saldo||0);
+      if(["cancelada","cancelado"].includes(est))throw new Error("Este apartado está cancelado.");
+      if(["pagado","liquidado"].includes(est)||saldo<=0)throw new Error("Este apartado ya está pagado.");
+      if(importe>saldo)throw new Error("El adelanto no puede superar el saldo pendiente.");
+      const fecha=prompt("Fecha del adelanto (AAAA-MM-DD):",hoyMexico());
+      if(!fecha||!/^\d{4}-\d{2}-\d{2}$/.test(fecha))return;
+      const fechaObj=new Date(fecha+"T12:00:00Z");
+      if(Number.isNaN(fechaObj.getTime()))throw new Error("La fecha no es válida.");
+      const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+      if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo))throw new Error("Método no válido.");
+      const nuevoPagado=Number(a.pagado||0)+importe;
+      const nuevoSaldo=Math.max(0,Number(a.total||0)-nuevoPagado);
+      const nuevoEstado=nuevoSaldo<=0?"pagado":"pendiente";
+      const pagoId=crypto.randomUUID();
+
+      const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{
+        method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({id:pagoId,apartado_id:a.id,fecha:fechaObj.toISOString(),importe:importe,metodo_pago:metodo,notas:"Adelanto posterior"})
+      });
+      if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
+
+      const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})
+      });
+      if(!ru.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?id=eq."+encodeURIComponent(pagoId),{method:"DELETE",headers:headersSupabase});
+        throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
+      }
+
+      alert("✅ Adelanto registrado.\n\nImporte: "+dinero(importe)+"\nNuevo saldo: "+dinero(nuevoSaldo));
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error registrando adelanto:",e);
+      alert("❌ No se pudo registrar el adelanto.\n\n"+(e.message||String(e)));
+    }
+  };
+
+  window.cancelarApartado=async function(id){
+    if(!confirm("¿Seguro que quieres cancelar este apartado?\n\nEl artículo regresará al stock."))return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const datos=await r.json();
+      if(!datos.length)throw new Error("No se encontró el apartado.");
+      const a=datos[0], est=estadoNormal(a.estado);
+      if(["cancelada","cancelado"].includes(est))throw new Error("Este apartado ya está cancelado.");
+      if(["pagado","liquidado"].includes(est))throw new Error("Este apartado ya está pagado/liquidado y no se puede cancelar.");
+
+      const articuloId=a.articulo_id, cantidad=Number(a.cantidad||0);
+      if(!articuloId||!Number.isInteger(cantidad)||cantidad<1)throw new Error("El apartado no tiene una cantidad válida para devolver al stock.");
+
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId)+"&select=id,stock",{headers:headersSupabase,cache:"no-store"});
+      if(!ra.ok)throw new Error(await ra.text());
+      const arts=await ra.json();
+      if(!arts.length)throw new Error("No se encontró el artículo.");
+      const stockAnterior=Number(arts[0].stock||0);
+      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:stockAnterior+cantidad})
+      });
+      if(!rs.ok)throw new Error("No se pudo devolver el stock: "+await rs.text());
+
+      const rc=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({estado:"cancelada"})
+      });
+      if(!rc.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({stock:stockAnterior})
+        });
+        throw new Error("No se pudo marcar el apartado como cancelado: "+await rc.text());
+      }
+
+      alert("✅ Apartado cancelado. El stock fue devuelto.");
+      await cargarArticulos();
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error cancelando apartado:",e);
+      alert("❌ No se pudo cancelar el apartado.\n\n"+(e.message||String(e)));
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
