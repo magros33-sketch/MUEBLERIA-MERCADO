@@ -8800,46 +8800,6 @@ async function cargarResumenStockProveedores(){
 })();
 </script>
 \n
-<script id="stock-dibujos-articulos-20261006">
-(function(){
-  function dibujoArticulo(nombre){
-    const n=String(nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    if(n.includes("colchon")) return "🛏️";
-    if(n.includes("litera")) return "🛌";
-    if(n.includes("cama")) return "🛏️";
-    if(n.includes("ropero")||n.includes("closet")||n.includes("armario")) return "🚪";
-    if(n.includes("sofa")||n.includes("sillon")) return "🛋️";
-    if(n.includes("silla")) return "🪑";
-    if(n.includes("mesa")) return "🪑";
-    if(n.includes("comedor")) return "🍽️";
-    if(n.includes("refrigerador")||n.includes("refri")) return "🧊";
-    if(n.includes("estufa")) return "🔥";
-    if(n.includes("anaquel")||n.includes("estante")) return "🗄️";
-    if(n.includes("escritorio")) return "🖥️";
-    return "🏠";
-  }
-  const original=window.cargarResumenStockProveedores;
-  if(typeof original!=="function") return;
-  window.cargarResumenStockProveedores=async function(){
-    await original.apply(this,arguments);
-    const cont=document.getElementById("reporteStockProveedores");
-    if(!cont)return;
-    cont.querySelectorAll(".dato").forEach(function(el){
-      const strong=el.querySelector("strong");
-      if(!strong)return;
-      const nombre=strong.textContent||"";
-      const icon=dibujoArticulo(nombre);
-      if(!strong.dataset.dibujoArticulo){
-        const span=document.createElement("span");
-        span.textContent=icon+" ";
-        span.style.fontSize="28px";
-        span.style.verticalAlign="middle";
-        strong.parentNode.insertBefore(span,strong);
-        strong.dataset.dibujoArticulo="1";
-      }
-    });
-  };
-})();
-</script>
+
 </body>
 </html>
