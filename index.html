@@ -2495,7 +2495,9 @@ async function cargarDeudasProveedores(){
       if(!grupos[pid])grupos[pid]={nombre:mapa[pid]||"Proveedor no identificado",saldo:0};
       grupos[pid].saldo+=Number(c.saldo||0);
     });
-    box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: 
+    box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: '+money(g.saldo)+'</div></div>').join("");
+  }
+}
 
 const contenedor=
 document.getElementById("historialCompras");
