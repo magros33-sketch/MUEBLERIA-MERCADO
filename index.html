@@ -6874,7 +6874,7 @@ try{
 const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=*&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
 const txt=await r.text();
 if(!r.ok)throw new Error(txt||("HTTP "+r.status));
-proveedores=txt?JSON.parse(txt):[]; mostrarProveedores(proveedores); actualizarSelectorProveedoresArticulo();
+proveedores=txt?JSON.parse(txt):[]; mostrarProveedores(proveedores); actualizarSelectorProveedoresArticulo(); mostrarArticulos(articulos);
 }catch(e){
 console.error("Error cargando proveedores:",e); proveedores=[];
 const c=document.getElementById("listaProveedores");
