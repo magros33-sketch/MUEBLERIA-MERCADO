@@ -1,2 +1,3 @@
-# MUEBLERIA-MERCADO
-Aplicacion MUEBLERIA MERCADO
+Muebleria Mercado
+
+Corrección temporal de ventas múltiples activada.
