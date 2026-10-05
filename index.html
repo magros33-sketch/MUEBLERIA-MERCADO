@@ -826,7 +826,7 @@ Cancelar
 <h2>🚚 Proveedores</h2>
 <button onclick="mostrarFormularioProveedor()">➕ Nuevo proveedor</button>
 
-<input id="buscarProveedor" type="text" placeholder="Buscar por nombre, contacto o telefono" autocomplete="off" oninput="filtrarProveedores">
+<input id="buscarProveedor" type="text" placeholder="Buscar por nombre, contacto o telefono" autocomplete="off" oninput="filtrarProveedores()">
 
 <div id="formProveedor" class="tarjeta oculto">
 <h3 id="tituloFormularioProveedor">Nuevo proveedor</h3>
@@ -6572,7 +6572,7 @@ proveedorEditando=null; document.getElementById("formProveedor").style.display="
 
 async function guardarProveedor(){
 const mensaje=document.getElementById("mensajeProveedor");
-const datos={nombre:document.getElementById("nombreProveedor").value.trim(),contacto:document.getElementById("contactoProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
 if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
 try{
 mensaje.innerHTML="Guardando proveedor...";
