@@ -363,10 +363,9 @@ Puedes buscar el articulo por codigo o por nombre.
 
 <label>Proveedor</label>
 
-<select id="compraProveedor">
-<option value="">Seleccionar proveedor</option>
-</select>
-
+<input id="compraProveedor" type="text" placeholder="Escribe el nombre del proveedor" autocomplete="off">
+<input id="compraProveedorId" type="hidden">
+<div id="resultadoProveedorCompra"></div>
 <div id="estadoProveedorCompra"></div>
 
 <label>Codigo del articulo</label>
@@ -1936,19 +1935,32 @@ $${Number(articulo.costo||0).toFixed(2)}
 /* ================= REGISTRAR COMPRA ================= */
 
 async function cargarProveedoresEnCompra(){
-const select=document.getElementById("compraProveedor");
-if(!select)return;
+const campo=document.getElementById("compraProveedor");
+const resultados=document.getElementById("resultadoProveedorCompra");
+if(!campo)return;
 try{
 const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"});
 if(!r.ok)throw new Error(await r.text());
-const lista=await r.json();
-select.innerHTML='<option value="">Seleccionar proveedor</option>'+lista.map(function(p){
-return '<option value="'+escaparHTML(p.id||"")+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>';
-}).join("");
-}catch(e){
-console.error("Error cargando proveedores para compras:",e);
-select.innerHTML='<option value="">No se pudieron cargar los proveedores</option>';
+window.proveedoresCompra=await r.json();
+campo.oninput=function(){
+const texto=this.value.trim().toLowerCase();
+document.getElementById("compraProveedorId").value="";
+if(!texto){resultados.innerHTML="";return;}
+const encontrados=window.proveedoresCompra.filter(function(p){return String(p.nombre||"").toLowerCase().includes(texto);});
+if(!encontrados.length){resultados.innerHTML='<div class="ayuda">No se encontró ese proveedor.</div>';return;}
+resultados.innerHTML='<div class="info-articulo"><strong>🔎 Selecciona el proveedor:</strong>'+encontrados.slice(0,8).map(function(p){
+return '<button type="button" class="opcion" onclick="seleccionarProveedorCompra(\''+p.id+'\')">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</button>';
+}).join("")+'</div>';
+if(encontrados.length===1 && String(encontrados[0].nombre||"").toLowerCase()===texto)seleccionarProveedorCompra(encontrados[0].id);
+};
+}catch(e){console.error("Error cargando proveedores para compras:",e);}
 }
+function seleccionarProveedorCompra(id){
+const p=(window.proveedoresCompra||[]).find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+document.getElementById("compraProveedor").value=p.nombre||"";
+document.getElementById("compraProveedorId").value=p.id||"";
+document.getElementById("resultadoProveedorCompra").innerHTML='<div class="estado-ok">✅ Proveedor seleccionado</div>';
 }
 
 async function registrarCompra(){
@@ -1957,7 +1969,7 @@ const mensaje=
 document.getElementById("mensajeCompra");
 
 const proveedorId=
-(document.getElementById("compraProveedor")?.value||"").trim();
+(document.getElementById("compraProveedorId")?.value||"").trim();
 
 if(!proveedorId){
 mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';
@@ -2285,8 +2297,11 @@ document.getElementById("estadoCodigo").innerHTML="";
 document.getElementById("estadoNombre").innerHTML="";
 document.getElementById("resultadoCompra").innerHTML="";
 document.getElementById("estadoProveedorCompra").innerHTML="";
-const selectProveedor=document.getElementById("compraProveedor");
-if(selectProveedor)selectProveedor.value="";
+document.getElementById("resultadoProveedorCompra").innerHTML="";
+const campoProveedor=document.getElementById("compraProveedor");
+const campoProveedorId=document.getElementById("compraProveedorId");
+if(campoProveedor)campoProveedor.value="";
+if(campoProveedorId)campoProveedorId.value="";
 
 await cargarArticulos();
 
