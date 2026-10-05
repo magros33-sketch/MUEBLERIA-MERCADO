@@ -7746,12 +7746,21 @@ async function registrarPagoProveedor(compraId){
 <!-- respaldo-navegacion-20261005 -->
 <script>
 (function(){
-  if(typeof window.mostrarPantalla === "function") return;
-  window.mostrarPantalla = function(id){
-    document.querySelectorAll(".pantalla").forEach(function(p){p.classList.remove("activa");});
-    var pantalla=document.getElementById(id);
-    if(pantalla) pantalla.classList.add("activa");
-  };
+  function abrir(id){
+    var pantallas=document.querySelectorAll(".pantalla");
+    for(var i=0;i<pantallas.length;i++) pantallas[i].classList.remove("activa");
+    var destino=document.getElementById(id);
+    if(destino) destino.classList.add("activa");
+  }
+  window.mostrarPantalla=abrir;
+  document.addEventListener("DOMContentLoaded",function(){
+    document.querySelectorAll(".menu button").forEach(function(b){
+      var m=(b.getAttribute("onclick")||"").match(/mostrarPantalla\(['"]([^'"]+)['"]\)/);
+      if(m){
+        b.onclick=function(e){e.preventDefault();abrir(m[1]);};
+      }
+    });
+  });
 })();
 </script>
 
