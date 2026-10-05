@@ -7880,6 +7880,42 @@ async function registrarPagoProveedor(compraId){
     for(var i=0;i<pantallas.length;i++) pantallas[i].classList.remove("activa");
     var destino=document.getElementById(id);
     if(destino) destino.classList.add("activa");
+
+    // Este respaldo debe conservar también la carga de datos de cada módulo.
+    try{
+      if(id==="inventario"){
+        Promise.all([cargarProveedores(),cargarArticulos()])
+          .then(function(){ if(typeof cargarResumenStockProveedores==="function") cargarResumenStockProveedores(); });
+      }else if(id==="proveedores"){
+        cargarProveedores();
+      }else if(id==="clientes"){
+        cargarClientes();
+      }else if(id==="compras"){
+        cargarArticulos();
+        cargarProveedoresEnCompra();
+        cargarHistorialCompras();
+      }else if(id==="ventas"){
+        cargarArticulos();
+        cargarClientes();
+        setTimeout(function(){
+          if(typeof inicializarHistorialVentas==="function") inicializarHistorialVentas();
+          cargarHistorialVentas();
+          cargarResumenVentasDia();
+        },100);
+      }else if(id==="apartados"){
+        cargarArticulos();
+        cargarClientes();
+        setTimeout(function(){ cargarHistorialApartados(); },100);
+      }else if(id==="gastos"){
+        inicializarGastos();
+        cargarHistorialGastos();
+      }else if(id==="reportes"){
+        cargarReporteVentasDiarias();
+        cargarReporteArticulosVendidos();
+      }
+    }catch(error){
+      console.error("Error cargando módulo "+id+":",error);
+    }
   }
   window.mostrarPantalla=abrir;
   document.addEventListener("DOMContentLoaded",function(){
