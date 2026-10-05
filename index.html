@@ -2530,133 +2530,68 @@ async function cargarDeudasProveedores(){
   }
 }
 
-const contenedor=
-document.getElementById("historialCompras");
+async function cargarHistorialCompras(){
+  const contenedor=document.getElementById("historialCompras");
+  if(!contenedor)return;
+  contenedor.innerHTML="🔄 Cargando historial...";
+  try{
+    const respuesta=await fetch(
+      SUPABASE_URL+"/rest/v1/compras?select=*&estado=neq.cancelada&estado=neq.cancelado&order=fecha.desc",
+      {method:"GET",headers:headersSupabase,cache:"no-store"}
+    );
+    if(!respuesta.ok)throw new Error(await respuesta.text());
+    const compras=await respuesta.json();
 
-if(!contenedor)return;
+    const proveedoresRespuesta=await fetch(
+      SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre",
+      {headers:headersSupabase,cache:"no-store"}
+    );
+    const proveedoresHistorial=proveedoresRespuesta.ok?await proveedoresRespuesta.json():[];
+    const mapaProveedores={};
+    proveedoresHistorial.forEach(function(p){
+      mapaProveedores[String(p.id)]=p.nombre||"Sin nombre";
+    });
 
-contenedor.innerHTML="Cargando historial...";
+    if(!compras.length){
+      contenedor.innerHTML='<div class="tarjeta">Todavía no hay compras registradas.</div>';
+      await cargarDeudasProveedores();
+      return;
+    }
 
-try{
+    contenedor.innerHTML=compras.map(function(c){
+      const operacion=String(c.id||"").substring(0,8);
+      const pid=String(c.proveedor_id||c.id_proveedor||"");
+      const nombreProveedor=mapaProveedores[pid]||"Proveedor no identificado";
+      const estadoCompra=String(c.estado||"").toLowerCase();
+      let botones="";
+      if(estadoCompra==="cancelada"||estadoCompra==="cancelado"){
+        botones='<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';
+      }else{
+        botones='<button type="button" class="editar" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>';
+        if(Number(c.saldo||0)>0){
+          botones+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';
+        }
+        botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
+      }
+      return '<div class="historial">'+
+        '<strong>🛒 Compra</strong>'+
+        '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
+        '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
+        '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
+        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Estado: '+escaparHTML(c.estado||"")+'</div>'+
+        '<div class="dato">Forma de pago: <strong>'+escaparHTML(c.metodo_pago==="credito_pagado"?"Crédito — pagado":(c.metodo_pago||"contado"))+'</strong></div>'+
+        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(2)+'</strong></div>'+
+        '<div class="separador"></div>'+botones+
+        '</div>';
+    }).join("");
 
-const respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/compras?select=*&estado=neq.cancelada&estado=neq.cancelado&order=fecha.desc",
-{
-method:"GET",
-headers:headersSupabase,
-cache:"no-store"
-}
-);
-
-if(!respuesta.ok){
-
-const errorTexto=await respuesta.text();
-
-console.error(
-"Error historial compras:",
-errorTexto
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-No se pudo cargar el historial de compras.
-<br><br>
-${escaparHTML(errorTexto)}
-</div>
-`;
-
-return;
-
-}
-
-const compras=
-await respuesta.json();
-
-await cargarDeudasProveedores();
-
-const proveedoresRespuesta=await fetch(
-SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre",
-{headers:headersSupabase,cache:"no-store"}
-);
-const proveedoresHistorial=proveedoresRespuesta.ok?await proveedoresRespuesta.json():[];
-const mapaProveedores={};
-proveedoresHistorial.forEach(function(p){mapaProveedores[String(p.id)]=p.nombre||"Sin nombre";});
-
-if(!compras.length){
-
-contenedor.innerHTML=
-`
-<div class="tarjeta">
-Todavia no hay compras registradas.
-</div>
-`;
-
-return;
-
-}
-
-contenedor.innerHTML=
-compras.map(function(c){
-
-const operacion=
-String(c.id||"").substring(0,8);
-const nombreProveedor=
-mapaProveedores[String(c.id_proveedor)]||"Proveedor no identificado";
-
-return `
-<div class="historial">
-
-<strong>
-🛒 Compra
-</strong>
-
-<div class="dato">
-🚚 Proveedor: <strong>${escaparHTML(nombreProveedor)}</strong>
-</div>
-
-<div class="fecha-operacion">
-📅 ${formatearFecha(c.fecha)}
-</div>
-
-<div class="operacion-id">
-Operacion: ${escaparHTML(operacion)}
-</div>
-
-<div class="dato">
-Total: <strong>$${Number(c.total||0).toFixed(2)}</strong>
-</div>
-
-<div class="dato">
-Estado: ${escaparHTML(c.estado||"")}
-</div>
-<div class="dato">Forma de pago: <strong>${escaparHTML(c.metodo_pago==="credito_pagado"?"Crédito — pagado":(c.metodo_pago||"contado"))}</strong></div>
-<div class="dato">Pagado: <strong>${Number(c.pagado||0).toFixed(2)}</strong></div>
-<div class="dato">Saldo pendiente: <strong>${Number(c.saldo||0).toFixed(2)}</strong></div>
-<div class="separador"></div>
-${(function(){const estadoCompra=String(c.estado||"").toLowerCase();if(estadoCompra==="cancelada"||estadoCompra==="cancelado")return '<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';let botonesCompra='<button type="button" class="editar" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>';if(Number(c.saldo||0)>0)botonesCompra+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';botonesCompra+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';return botonesCompra;})()}}
-</div>
-
-</div>
-`;
-
-}).join("");
-
-}catch(error){
-
-console.error(error);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-Error de conexion con Supabase.
-</div>
-`;
-
-}
-
+    await cargarDeudasProveedores();
+  }catch(error){
+    console.error("Error historial compras:",error);
+    contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de compras.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+  }
 }
 
 
@@ -7648,7 +7583,7 @@ function cambiarPinAdministracion(){
 
       const detalles=compraItems.map(function(x){
         return {
-          uid:crypto.randomUUID(),
+          id:crypto.randomUUID(),
           compra_id:compraGuardada.id,
           articulo_id:x.articulo_id,
           cantidad:x.cantidad,
