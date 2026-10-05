@@ -3629,7 +3629,15 @@ ${escaparHTML(errorTexto)}
 return;
 }
 
-const ventas=await respuesta.json();
+let ventas=await respuesta.json();
+
+/* Las ventas canceladas se conservan en Supabase para el historial
+   interno, pero NO deben aparecer en el historial visible ni contar
+   como ventas del día. */
+ventas=ventas.filter(function(v){
+return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase().trim());
+});
+
 if(!respuestaGastos.ok)throw new Error("Gastos: "+await respuestaGastos.text());
 const gastos=await respuestaGastos.json();
 if(fechaFiltro){
