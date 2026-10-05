@@ -5376,21 +5376,20 @@ alert(
 }
 
 
-/* ================= CANCELAR COMPRA ================= */
+/* ================= ELIMINAR COMPRA ================= */
 
 async function cancelarCompra(id){
 
 if(!confirm(
-"¿Seguro que quieres cancelar esta compra?\n\n"+
-"El stock será revertido."
+"¿Seguro que quieres eliminar esta compra?\n\n"+
+"Se quitará del stock y la compra desaparecerá del historial y de la base de datos."
 ))return;
 
 try{
 
+/* Obtener la compra */
 const respuestaCompra=await fetch(
-SUPABASE_URL+
-"/rest/v1/compras?id=eq."+
-encodeURIComponent(id),
+SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),
 {
 method:"GET",
 headers:headersSupabase,
@@ -5398,10 +5397,7 @@ cache:"no-store"
 }
 );
 
-if(!respuestaCompra.ok){
-alert("No se pudo consultar la compra.");
-return;
-}
+if(!respuestaCompra.ok)throw new Error("No se pudo consultar la compra.");
 
 const compras=await respuestaCompra.json();
 
@@ -5412,26 +5408,17 @@ return;
 
 const compra=compras[0];
 
-const estado=
-String(compra.estado||"")
-.toLowerCase()
-.trim();
-
 if(
-estado==="cancelada"||
-estado==="cancelado"
+String(compra.estado||"").toLowerCase().trim()==="cancelada" ||
+String(compra.estado||"").toLowerCase().trim()==="cancelado"
 ){
-alert("Esta compra ya está cancelada.");
+alert("Esta compra ya estaba cancelada.");
 return;
 }
 
-
-/* Obtener detalles */
-
+/* Obtener TODOS los detalles: funciona también con compras de varios artículos */
 const respuestaDetalle=await fetch(
-SUPABASE_URL+
-"/rest/v1/compra_detalles?compra_id=eq."+
-encodeURIComponent(id),
+SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),
 {
 method:"GET",
 headers:headersSupabase,
@@ -5439,29 +5426,28 @@ cache:"no-store"
 }
 );
 
-if(!respuestaDetalle.ok){
-alert("No se pudieron obtener los artículos de la compra.");
-return;
-}
+if(!respuestaDetalle.ok)throw new Error("No se pudieron obtener los artículos de la compra.");
 
 const detalles=await respuestaDetalle.json();
 
+if(!detalles.length){
+throw new Error("La compra no tiene artículos asociados; no se eliminará para evitar inconsistencias.");
+}
+
+/* Consultar stock y preparar los cambios */
 const cambios=[];
-
-
-/* Comprobar stock antes de modificar */
 
 for(const detalle of detalles){
 
+const cantidad=Number(detalle.cantidad||0);
+if(!Number.isFinite(cantidad)||cantidad<0){
+throw new Error("La compra contiene una cantidad no válida.");
+}
+
 const articuloId=detalle.articulo_id;
 
-const cantidad=
-Number(detalle.cantidad||0);
-
 const respuestaArticulo=await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(articuloId),
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),
 {
 method:"GET",
 headers:headersSupabase,
@@ -5469,35 +5455,21 @@ cache:"no-store"
 }
 );
 
-if(!respuestaArticulo.ok){
-throw new Error(
-"No se pudo consultar un artículo."
-);
-}
+if(!respuestaArticulo.ok)throw new Error("No se pudo consultar uno de los artículos.");
 
-const encontrados=
-await respuestaArticulo.json();
+const encontrados=await respuestaArticulo.json();
 
-if(!encontrados.length){
-throw new Error(
-"No se encontró uno de los artículos."
-);
-}
+if(!encontrados.length)throw new Error("No se encontró uno de los artículos de la compra.");
 
 const articulo=encontrados[0];
-
-const stockActual=
-Number(articulo.stock||0);
+const stockActual=Number(articulo.stock||0);
 
 if(cantidad>stockActual){
-
 alert(
-"❌ No se puede cancelar esta compra.\n\n"+
-"El stock actual de uno de los artículos "+"es menor que la cantidad que se recibió."
+"❌ No se puede eliminar esta compra.\n\n"+
+"El stock actual de uno de los artículos es menor que la cantidad que recibió esta compra."
 );
-
 return;
-
 }
 
 cambios.push({
@@ -5508,112 +5480,108 @@ nuevoStock:stockActual-cantidad
 
 }
 
-
 /* Revertir stock */
+const stockAplicado=[];
 
 for(const cambio of cambios){
 
 const respuestaStock=await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(cambio.id),
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(cambio.id),
 {
 method:"PATCH",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify({
-stock:cambio.nuevoStock
-})
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:cambio.nuevoStock})
 }
 );
 
 if(!respuestaStock.ok){
 
-/* Rollback */
-
-for(const rollback of cambios){
-
+for(const rollback of stockAplicado){
 await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(rollback.id),
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
 {
 method:"PATCH",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify({
-stock:rollback.stockAnterior
-})
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
+}
+);
+}
+
+throw new Error("No se pudo revertir correctamente el stock.");
+}
+
+stockAplicado.push(cambio);
+}
+
+/*
+ * Primero eliminamos los detalles y después la compra.
+ * Guardamos los detalles en memoria para poder restaurarlos si algo falla.
+ */
+const respuestaBorrarDetalles=await fetch(
+SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
 }
 );
 
-}
+if(!respuestaBorrarDetalles.ok){
 
-alert(
-"❌ No se pudo revertir correctamente el stock."
-);
-
-return;
-
-}
-
-}
-
-
-/* Marcar compra como cancelada */
-
-const respuestaCancelar=await fetch(
-SUPABASE_URL+
-"/rest/v1/compras?id=eq."+
-encodeURIComponent(id),
+for(const rollback of stockAplicado){
+await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
 {
 method:"PATCH",
-headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify({
-estado:"cancelada"
-})
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
 }
 );
+}
 
-if(!respuestaCancelar.ok){
+throw new Error("No se pudieron eliminar los detalles de la compra.");
+}
 
-for(const cambio of cambios){
-
-await fetch(
-SUPABASE_URL+
-"/rest/v1/articulos?id=eq."+
-encodeURIComponent(cambio.id),
+/* Eliminar la compra definitivamente */
+const respuestaBorrarCompra=await fetch(
+SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),
 {
-method:"PATCH",headers:{
-...headersSupabase,
-"Prefer":"return=minimal"
-},
-body:JSON.stringify({
-stock:cambio.stockAnterior
-})
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
 }
 );
 
-}
+if(!respuestaBorrarCompra.ok){
 
-alert(
-"❌ No se pudo cancelar la compra."
+/* Intentar restaurar los detalles */
+await fetch(
+SUPABASE_URL+"/rest/v1/compra_detalles",
+{
+method:"POST",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify(detalles)
+}
 );
 
-return;
+/* Restaurar stock */
+for(const rollback of stockAplicado){
+await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
+}
+);
+}
 
+throw new Error("No se pudo eliminar definitivamente la compra.");
 }
 
 alert(
-"✅ Compra cancelada correctamente.\n\n"+
-"El stock fue revertido."
+"✅ Compra eliminada correctamente.\n\n"+
+"• Se quitaron sus artículos del stock.\n"+
+"• Se eliminaron sus detalles.\n"+
+"• La compra ya no ocupa espacio en el historial ni en la base de datos."
 );
 
 await cargarArticulos();
@@ -5621,13 +5589,10 @@ await cargarHistorialCompras();
 
 }catch(error){
 
-console.error(
-"Error cancelando compra:",
-error
-);
+console.error("Error eliminando compra:",error);
 
 alert(
-"❌ No se pudo cancelar la compra.\n\n"+
+"❌ No se pudo eliminar la compra.\n\n"+
 (error.message||String(error))
 );
 
@@ -5637,6 +5602,7 @@ alert(
 
 
 /* ================= CANCELAR APARTADO ================= */
+
 
 async function cancelarApartado(id){
 
