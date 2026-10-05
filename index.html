@@ -328,6 +328,11 @@ Nuevo articulo
 <label>Stock minimo</label>
 <input id="stockMinimoArticulo" type="number">
 
+<label>Proveedor</label>
+<select id="proveedorArticulo">
+<option value="">Sin proveedor</option>
+</select>
+
 <button id="botonGuardarArticulo" onclick="guardarArticulo()">
 💾 Guardar articulo
 </button>
@@ -1151,6 +1156,7 @@ pantalla.classList.add("activa");
 
 if(id==="inventario"){
 cargarArticulos();
+cargarProveedores();
 }
 
 if(id==="compras"){
@@ -1327,6 +1333,7 @@ return;
 
 articulos=await respuesta.json();
 
+actualizarSelectorProveedoresArticulo();
 mostrarArticulos(articulos);
 
 }catch(error){
@@ -1337,6 +1344,16 @@ console.error(error);
 
 }
 
+
+function actualizarSelectorProveedoresArticulo(){
+const select=document.getElementById("proveedorArticulo");
+if(!select)return;
+const actual=select.value;
+select.innerHTML='<option value="">Sin proveedor</option>'+proveedores.map(function(p){
+return '<option value="'+p.id+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>';
+}).join("");
+if(actual)select.value=actual;
+}
 
 function mostrarArticulos(lista){
 
@@ -1370,6 +1387,10 @@ ${escaparHTML(a.nombre||"")}
 
 <div class="dato">
 Codigo: ${escaparHTML(a.codigo||"")}
+</div>
+
+<div class="dato">
+Proveedor: ${escaparHTML((proveedores.find(function(p){return p.id===a.proveedor_id;})||{}).nombre||"Sin proveedor")}
 </div>
 
 <div class="dato">
@@ -1468,6 +1489,7 @@ document.getElementById("costoArticulo").value="";
 document.getElementById("precioArticulo").value="";
 document.getElementById("stockArticulo").value="";
 document.getElementById("stockMinimoArticulo").value="";
+document.getElementById("proveedorArticulo").value="";
 document.getElementById("mensajeArticulo").innerHTML="";
 
 }
@@ -1511,6 +1533,9 @@ articulo.stock??"";
 document.getElementById("stockMinimoArticulo").value=
 articulo.stock_minimo??"";
 
+document.getElementById("proveedorArticulo").value=
+articulo.proveedor_id||"";
+
 window.scrollTo({
 top:0,
 behavior:"smooth"
@@ -1538,6 +1563,9 @@ Number(document.getElementById("stockArticulo").value||0);
 
 const stockMinimo=
 Number(document.getElementById("stockMinimoArticulo").value||0);
+
+const proveedorId=
+document.getElementById("proveedorArticulo").value||null;
 
 const mensaje=
 document.getElementById("mensajeArticulo");
@@ -1577,7 +1605,8 @@ nombre:nombre,
 costo:costo,
 precio_publico:precio,
 stock:stock,
-stock_minimo:stockMinimo
+stock_minimo:stockMinimo,
+proveedor_id:proveedorId
 })
 }
 );
@@ -1601,6 +1630,7 @@ costo:costo,
 precio_publico:precio,
 stock:stock,
 stock_minimo:stockMinimo,
+proveedor_id:proveedorId,
 activo:true
 })
 }
