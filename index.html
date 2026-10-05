@@ -304,6 +304,8 @@ autocomplete="off"
 oninput="filtrarArticulos()"
 >
 
+<div id="resultadoBusquedaArticulo"></div>
+
 <div id="formArticulo" class="tarjeta oculto">
 
 <h3 id="tituloFormulario">
@@ -1455,38 +1457,45 @@ onclick="eliminarArticulo('${a.id}')"
 
 function filtrarArticulos(){
 
-const campo=
-document.getElementById("buscarArticulo");
-
+const campo=document.getElementById("buscarArticulo");
+const resultados=document.getElementById("resultadoBusquedaArticulo");
 if(!campo)return;
 
-const texto=
-campo.value
-.trim()
-.toLowerCase();
+const texto=campo.value.trim().toLowerCase();
 
 if(!texto){
-
+if(resultados)resultados.innerHTML="";
 mostrarArticulos(articulos);
 return;
-
 }
 
-const filtrados=
-articulos.filter(function(a){
-
-return String(a.codigo||"")
-.toLowerCase()
-.includes(texto)
-||
-String(a.nombre||"")
-.toLowerCase()
-.includes(texto);
-
+const filtrados=articulos.filter(function(a){
+return String(a.codigo||"").toLowerCase().includes(texto)
+||String(a.nombre||"").toLowerCase().includes(texto);
 });
+
+if(resultados){
+if(filtrados.length){
+resultados.innerHTML='<div class="info-articulo"><strong>🔎 Artículos encontrados:</strong>'+filtrados.slice(0,8).map(function(a){
+return '<button type="button" class="opcion" onclick="seleccionarArticuloDesdeBusqueda(\\''+a.id+'\\')">📦 '+escaparHTML(a.nombre||"Sin nombre")+'<br><strong>Código: '+escaparHTML(a.codigo||"Sin código")+'</strong></button>';
+}).join("")+'</div>';
+}else{
+resultados.innerHTML='<div class="ayuda">No se encontró ese artículo.</div>';
+}
+}
 
 mostrarArticulos(filtrados);
 
+}
+
+function seleccionarArticuloDesdeBusqueda(id){
+const articulo=articulos.find(function(a){return String(a.id)===String(id);});
+if(!articulo)return;
+const campo=document.getElementById("buscarArticulo");
+if(campo)campo.value=articulo.nombre||articulo.codigo||"";
+const resultados=document.getElementById("resultadoBusquedaArticulo");
+if(resultados)resultados.innerHTML='<div class="estado-ok">✅ '+escaparHTML(articulo.nombre||"Artículo")+' — Código: '+escaparHTML(articulo.codigo||"Sin código")+'</div>';
+mostrarArticulos([articulo]);
 }
 
 
