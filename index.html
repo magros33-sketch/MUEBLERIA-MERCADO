@@ -373,7 +373,7 @@ Puedes buscar el articulo por codigo o por nombre.
 <input
 id="compraCodigo"
 type="text"
-placeholder="Escribe el codigo"
+placeholder="Escribe código o parte del código"
 autocomplete="off"
 >
 
@@ -384,7 +384,7 @@ autocomplete="off"
 <input
 id="compraNombre"
 type="text"
-placeholder="Escribe el nombre"
+placeholder="Escribe nombre o parte del nombre"
 autocomplete="off"
 >
 
@@ -1828,7 +1828,7 @@ contenedor.innerHTML=
 
 <strong>🔎 Selecciona el articulo:</strong>
 
-${lista.map(function(a){
+${lista.slice(0,8).map(function(a){
 
 return `
 <button
