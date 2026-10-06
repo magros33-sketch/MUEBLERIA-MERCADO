@@ -8701,17 +8701,19 @@ async function cargarResumenStockProveedores(){
     return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   }
 
+  // El código siempre toma las 3 primeras letras del nombre del mueble.
+  // La numeración es global entre todos los artículos, independientemente
+  // del proveedor, para que nunca se repita un código.
   function prefijoArticulo(nombre){
-    const n=quitarAcentos(nombre).toLowerCase().trim();
-    if(n.includes("colchon")) return "COL";
-    if(n.includes("litera")) return "LIT";
-    if(n.includes("cama")) return "CAM";
-    if(n.includes("ropero")) return "ROP";
-    return "";
+    const limpio=quitarAcentos(nombre).replace(/[^a-zA-Z]/g,"").toUpperCase();
+    return limpio.slice(0,3);
   }
 
   async function siguienteCodigoArticulo(prefijo){
+    if(!prefijo)return "";
     try{
+      // Consulta todos los códigos que empiezan por el mismo prefijo,
+      // incluidos artículos inactivos, para no reutilizar códigos antiguos.
       const r=await fetch(
         SUPABASE_URL+"/rest/v1/articulos?select=codigo&codigo=ilike."+encodeURIComponent(prefijo+"*"),
         {headers:headersSupabase,cache:"no-store"}
@@ -8720,7 +8722,7 @@ async function cargarResumenStockProveedores(){
         const filas=await r.json();
         let max=0;
         filas.forEach(function(a){
-          const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"[\\s-]*(\\d+)$"));
+          const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"(\\d+)$"));
           if(m)max=Math.max(max,Number(m[1]));
         });
         return prefijo+String(max+1).padStart(3,"0");
@@ -8731,7 +8733,7 @@ async function cargarResumenStockProveedores(){
 
     let max=0;
     (Array.isArray(articulos)?articulos:[]).forEach(function(a){
-      const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"[\\s-]*(\\d+)$"));
+      const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"(\\d+)$"));
       if(m)max=Math.max(max,Number(m[1]));
     });
     return prefijo+String(max+1).padStart(3,"0");
@@ -8742,18 +8744,20 @@ async function cargarResumenStockProveedores(){
     const nombre=document.getElementById("nombreArticulo");
     const codigo=document.getElementById("codigoArticulo");
     if(!nombre||!codigo)return;
-    const prefijo=prefijoArticulo(nombre.value);
+
+    const nombreActual=nombre.value.trim();
+    const prefijo=prefijoArticulo(nombreActual);
     if(!prefijo)return;
 
-    if(codigo.dataset.generadoNombre===nombre.value.trim())return;
+    if(codigo.dataset.generadoNombre===nombreActual)return;
 
     codigo.dataset.generando="1";
     const nuevo=await siguienteCodigoArticulo(prefijo);
 
-    if((document.getElementById("nombreArticulo")?.value||"").trim()===nombre.value.trim() &&
+    if((document.getElementById("nombreArticulo")?.value||"").trim()===nombreActual &&
        !(typeof articuloEditando!=="undefined" && articuloEditando)){
       codigo.value=nuevo;
-      codigo.dataset.generadoNombre=nombre.value.trim();
+      codigo.dataset.generadoNombre=nombreActual;
     }
     codigo.dataset.generando="";
   }
