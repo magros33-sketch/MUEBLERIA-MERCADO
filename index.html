@@ -347,6 +347,14 @@ Cancelar
 </div>
 
 <div id="listaArticulos"></div>
+
+<div class="tarjeta" style="border:2px solid #e5a900">
+<h3>⚠️ Productos con stock bajo</h3>
+<div class="ayuda">Aquí aparecen automáticamente los artículos cuyo stock está en el mínimo o por debajo, para saber qué productos hay que pedir.</div>
+<button onclick="mostrarProductosStockBajo()">🔄 Actualizar productos para pedir</button>
+<div id="productosStockBajo">Cargando...</div>
+</div>
+
 <!-- stock-proveedores-20261005 -->
 <div class="tarjeta">
 <h3>📦 Stock por proveedor</h3>
@@ -1440,6 +1448,7 @@ articulos=await respuesta.json();
 
 actualizarSelectorProveedoresArticulo();
 mostrarArticulos(articulos);
+mostrarProductosStockBajo();
 
 }catch(error){
 
@@ -1540,6 +1549,46 @@ onclick="eliminarArticulo('${a.id}')"
 
 }
 
+
+function mostrarProductosStockBajo(){
+const contenedor=document.getElementById("productosStockBajo");
+if(!contenedor)return;
+
+const bajos=(Array.isArray(articulos)?articulos:[])
+.filter(function(a){
+  const stock=Number(a.stock||0);
+  const minimo=Number(a.stock_minimo||0);
+  return minimo>0 && stock<=minimo;
+})
+.sort(function(a,b){
+  const fa=Number(a.stock||0)-Number(a.stock_minimo||0);
+  const fb=Number(b.stock||0)-Number(b.stock_minimo||0);
+  return fa-fb;
+});
+
+if(!bajos.length){
+  contenedor.innerHTML='<div class="estado-ok">✅ No hay productos con stock bajo.</div>';
+  return;
+}
+
+contenedor.innerHTML=bajos.map(function(a){
+  const stock=Number(a.stock||0);
+  const minimo=Number(a.stock_minimo||0);
+  const pedir=Math.max(minimo-stock,0);
+  const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";
+
+  return '<div class="articulo">'+
+    '<strong>📦 '+escaparHTML(a.nombre||"Sin nombre")+'</strong>'+
+    '<div class="dato">Código: '+escaparHTML(a.codigo||"Sin código")+'</div>'+
+    '<div class="dato">Proveedor: <strong>'+escaparHTML(proveedor)+'</strong></div>'+
+    '<div class="dato">Stock actual: <strong>'+stock+'</strong></div>'+
+    '<div class="dato">Stock mínimo: <strong>'+minimo+'</strong></div>'+
+    '<div class="dato">Faltan para llegar al mínimo: <strong>'+pedir+'</strong></div>'+
+    (stock===0?'<div class="mensaje-error">🚨 SIN STOCK — pedir cuanto antes</div>':
+      '<div class="ayuda">⚠️ Stock bajo — conviene pedir este producto.</div>')+
+  '</div>';
+}).join("");
+}
 
 function filtrarArticulos(){
 
