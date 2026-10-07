@@ -1584,13 +1584,20 @@ if(!bajos.length){
   return;
 }
 
+const coloresProveedor=["#eef7ff","#fff4e6","#eef9ee","#f7efff","#fff0f3","#eef8f7","#f8f5e8","#f0f0ff"];
+const mapaColoresProveedor={};
+const clavesProveedores=[...new Set(bajos.map(function(a){return String(a.proveedor_id||"sin-proveedor");}))].sort();
+clavesProveedores.forEach(function(clave,i){mapaColoresProveedor[clave]=coloresProveedor[i%coloresProveedor.length];});
+
 contenedor.innerHTML=bajos.map(function(a){
   const stock=Number(a.stock||0);
   const minimo=Number(a.stock_minimo||0);
   const pedir=Math.max(minimo-stock,0);
   const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";
+  const claveProveedor=String(a.proveedor_id||"sin-proveedor");
+  const colorProveedor=mapaColoresProveedor[claveProveedor]||"#f4f7f5";
 
-  return '<div class="articulo">'+
+  return '<div class="articulo" style="background:'+colorProveedor+';border-left:6px solid rgba(18,59,42,.35);">'+
     '<strong>📦 '+escaparHTML(a.nombre||"Sin nombre")+'</strong>'+
     '<div class="dato">Código: '+escaparHTML(a.codigo||"Sin código")+'</div>'+
     '<div class="dato">Proveedor: <strong>'+escaparHTML(proveedor)+'</strong></div>'+
@@ -8869,5 +8876,6 @@ async function cargarResumenStockProveedores(){
 
 
 <!-- orden-stock-bajo-proveedor-20261007 -->
+<!-- colores-stock-bajo-proveedor-20261007 -->
 </body>
 </html>
