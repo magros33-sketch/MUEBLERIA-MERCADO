@@ -351,6 +351,11 @@ Cancelar
 <div class="tarjeta" style="border:2px solid #e5a900">
 <h3>⚠️ Productos con stock bajo</h3>
 <div class="ayuda">Aquí aparecen automáticamente los artículos cuyo stock está en el mínimo o por debajo, para saber qué productos hay que pedir.</div>
+<label>Ordenar por</label>
+<select id="ordenStockBajo" onchange="mostrarProductosStockBajo()">
+<option value="faltante">Mayor necesidad de reposición</option>
+<option value="proveedor">Proveedor</option>
+</select>
 <button onclick="mostrarProductosStockBajo()">🔄 Actualizar productos para pedir</button>
 <div id="productosStockBajo">Cargando...</div>
 </div>
@@ -1559,8 +1564,16 @@ const bajos=(Array.isArray(articulos)?articulos:[])
   const stock=Number(a.stock||0);
   const minimo=Number(a.stock_minimo||0);
   return minimo>0 && stock<=minimo;
-})
-.sort(function(a,b){
+});
+
+const orden=document.getElementById("ordenStockBajo")?.value||"faltante";
+
+bajos.sort(function(a,b){
+  if(orden==="proveedor"){
+    const pa=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";
+    const pb=(proveedores.find(function(p){return String(p.id)===String(b.proveedor_id);})||{}).nombre||"Sin proveedor";
+    return pa.localeCompare(pb,"es",{sensitivity:"base"}) || String(a.nombre||"").localeCompare(String(b.nombre||""),"es",{sensitivity:"base"});
+  }
   const fa=Number(a.stock||0)-Number(a.stock_minimo||0);
   const fb=Number(b.stock||0)-Number(b.stock_minimo||0);
   return fa-fb;
@@ -8855,5 +8868,6 @@ async function cargarResumenStockProveedores(){
 \n
 
 
+<!-- orden-stock-bajo-proveedor-20261007 -->
 </body>
 </html>
