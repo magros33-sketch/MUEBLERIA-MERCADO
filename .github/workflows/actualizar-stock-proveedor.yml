@@ -1,4 +1,4 @@
-name: Añadir orden por proveedor en stock bajo
+name: Añadir orden y colores por proveedor en stock bajo
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@v4
 
-      - name: Añadir ordenación por proveedor
+      - name: Añadir ordenación y colores por proveedor
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -31,7 +31,12 @@ jobs:
           if old_js in s and 'const orden=document.getElementById("ordenStockBajo")' not in s:
               s = s.replace(old_js, new_js, 1)
 
-          marker = '<!-- orden-stock-bajo-proveedor-20261007 -->'
+          old_render = '''contenedor.innerHTML=bajos.map(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  const pedir=Math.max(minimo-stock,0);\n  const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";\n\n  return '<div class="articulo">'+'''
+          new_render = '''const coloresProveedor=["#eef7ff","#fff4e6","#eef9ee","#f7efff","#fff0f3","#eef8f7","#f8f5e8","#f0f0ff"];\nconst mapaColoresProveedor={};\nconst clavesProveedores=[...new Set(bajos.map(function(a){return String(a.proveedor_id||"sin-proveedor");}))].sort();\nclavesProveedores.forEach(function(clave,i){mapaColoresProveedor[clave]=coloresProveedor[i%coloresProveedor.length];});\n\ncontenedor.innerHTML=bajos.map(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  const pedir=Math.max(minimo-stock,0);\n  const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";\n  const claveProveedor=String(a.proveedor_id||"sin-proveedor");\n  const colorProveedor=mapaColoresProveedor[claveProveedor]||"#f4f7f5";\n\n  return '<div class="articulo" style="background:'+colorProveedor+';border-left:6px solid rgba(18,59,42,.35);">'+'''
+          if old_render in s and 'coloresProveedor=' not in s:
+              s = s.replace(old_render, new_render, 1)
+
+          marker = '<!-- colores-stock-bajo-proveedor-20261007 -->'
           if marker not in s:
               s = s.replace('</body>', marker + '\n</body>', 1)
 
@@ -46,6 +51,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Sin cambios que guardar"
           else
-            git commit -m "Añadir orden por proveedor a productos con stock bajo"
+            git commit -m "Colorear productos con stock bajo por proveedor"
             git push
           fi
