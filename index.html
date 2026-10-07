@@ -1555,6 +1555,17 @@ onclick="eliminarArticulo('${a.id}')"
 }
 
 
+function colorProveedorStock(id){
+  const paleta=[
+    "#e8f4ff","#fff2d9","#e9f7e8","#f5e8ff","#ffe9ed",
+    "#e7f6f4","#fff0e6","#eef0ff","#f3f7df","#fcecff"
+  ];
+  const texto=String(id||"sin-proveedor");
+  let hash=0;
+  for(let i=0;i<texto.length;i++) hash=(hash*31+texto.charCodeAt(i))>>>0;
+  return paleta[hash%paleta.length];
+}
+
 function mostrarProductosStockBajo(){
 const contenedor=document.getElementById("productosStockBajo");
 if(!contenedor)return;
@@ -8534,8 +8545,8 @@ async function cargarResumenStockProveedores(){
    if(mapa[id]){mapa[id].articulos++;mapa[id].unidades+=Number(a.stock||0);}
    else{sin++;sinUnidades+=Number(a.stock||0);}
   });
-  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>'<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong> — Stock: <strong>'+Number(a.stock||0)+'</strong></div>').join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
-  const sinFila=sin?'<div class="historial"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
+  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial" style="background:'+colorProveedorStock(p.id)+';"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>'<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong> — Stock: <strong>'+Number(a.stock||0)+'</strong></div>').join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
+  const sinFila=sin?'<div class="historial" style="background:#f0f0f0"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
   cont.innerHTML=(filas||'<div class="ayuda">No hay proveedores registrados.</div>')+sinFila;
  }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
 }
