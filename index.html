@@ -1292,6 +1292,7 @@ if(id==="compras"){
 cargarArticulos();
 cargarProveedoresEnCompra();
 cargarHistorialCompras();
+cargarDeudasProveedores();
 }
 
 if(id==="ventas"){
@@ -8582,7 +8583,11 @@ async function cargarResumenStockProveedores(){
     if(info) info.innerHTML=forma==="credito"
       ?"La compra quedará como deuda pendiente con el proveedor. Se registrará por separado de las compras de contado."
       :"La compra se registrará pagada de contado y se agrupará con las demás compras de contado del mismo proveedor y día.";
-    if(box) box.classList.toggle("oculto",forma!=="credito");
+    if(box){
+      const mostrar=forma==="credito";
+      box.classList.toggle("oculto",!mostrar);
+      box.style.display=mostrar?"block":"none";
+    }
   }
   window.actualizarFormaPagoCompra=actualizarFormaPagoCompraNueva;
 
