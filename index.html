@@ -224,6 +224,19 @@ font-size:13px;
 color:#666;
 word-break:break-all
 }
+
+.compra-vencida{
+background:#ffe1e1 !important;
+border:2px solid #b42318;
+}
+.compra-vencida .fecha-vencimiento{
+color:#a00000;
+font-weight:bold;
+}
+.compra-pendiente{
+background:#fff4d6;
+}
+.fecha-vencimiento{margin:7px 0;}
 </style>
 </head>
 
@@ -447,11 +460,10 @@ placeholder="Ejemplo: 3500"
 <div id="compraPlazoBox" class="oculto">
 <label>Plazo de pago del crédito</label>
 <select id="compraPlazoDias">
-<option value="7">7 días</option>
-<option value="15">15 días</option>
-<option value="30" selected>30 días</option>
-<option value="60">60 días</option>
-<option value="90">90 días</option>
+<option value="15">Crédito a 15 días</option>
+<option value="30" selected>Crédito a 30 días</option>
+<option value="60">Crédito a 60 días</option>
+<option value="90">Crédito a 90 días</option>
 </select>
 </div>
 
@@ -8885,6 +8897,75 @@ async function cargarResumenStockProveedores(){
 </script>
 \n
 
+
+
+<!-- compras-vencimientos-alerta-20261009 -->
+<script>
+(function(){
+  function fechaLocalMexico(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function fechaISOCompra(valor){
+    if(!valor)return "";
+    const m=String(valor).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m)return m[3]+"-"+m[2]+"-"+m[1];
+    const d=new Date(valor);
+    if(Number.isNaN(d.getTime()))return "";
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  }
+  function calcularVencimientoCompra(c){
+    const notas=String(c.notas||"");
+    const guardada=notas.match(/Vence:\s*(\d{2}\/\d{2}\/\d{4})/i);
+    if(guardada)return {iso:fechaISOCompra(guardada[1]),texto:guardada[1]};
+    const plazo=notas.match(/(?:cr[eé]dito\s+a\s*)(15|30|60|90)\s*d[ií]as/i);
+    if(!plazo||!c.fecha)return null;
+    const d=new Date(c.fecha);
+    if(Number.isNaN(d.getTime()))return null;
+    d.setDate(d.getDate()+Number(plazo[1]));
+    const iso=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+    const p=iso.split("-");
+    return {iso:iso,texto:p[2]+"/"+p[1]+"/"+p[0]};
+  }
+  const original=window.cargarHistorialCompras;
+  if(typeof original!=="function")return;
+  window.cargarHistorialCompras=async function(){
+    await original.apply(this,arguments);
+    const cont=document.getElementById("historialCompras");
+    if(!cont)return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/compras?select=id,fecha,notas,metodo_pago,pagado,saldo,total,estado&estado=neq.cancelada&estado=neq.cancelado&order=fecha.desc",{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const compras=await r.json();
+      const mapa={};
+      compras.forEach(c=>mapa[String(c.id||"").substring(0,8)]=c);
+      const hoy=fechaLocalMexico();
+      cont.querySelectorAll(".historial").forEach(card=>{
+        const idEl=card.querySelector(".operacion-id");
+        if(!idEl)return;
+        const m=(idEl.textContent||"").match(/Operación:\s*(\S+)/);
+        if(!m)return;
+        const c=mapa[m[1]];
+        if(!c)return;
+        card.classList.remove("compra-vencida","compra-pendiente");
+        card.querySelectorAll(".fecha-vencimiento").forEach(el=>el.remove());
+        const credito=/credito/i.test(String(c.metodo_pago||""))||Number(c.saldo||0)>0;
+        if(!credito)return;
+        const venc=calcularVencimientoCompra(c);
+        if(!venc)return;
+        const pendiente=Number(c.saldo||0)>0;
+        const vencida=pendiente&&venc.iso&&venc.iso<hoy;
+        card.classList.add(vencida?"compra-vencida":"compra-pendiente");
+        const saldoEl=Array.from(card.querySelectorAll(".dato")).find(el=>(el.textContent||"").includes("Saldo pendiente"));
+        const linea=document.createElement("div");
+        linea.className="dato fecha-vencimiento";
+        linea.textContent=(vencida?"⚠️ CRÉDITO VENCIDO · ":"📅 Vence: ")+venc.texto+(pendiente?"":" · Pagado");
+        if(saldoEl)saldoEl.insertAdjacentElement("beforebegin",linea);
+        else card.appendChild(linea);
+      });
+    }catch(e){console.error("No se pudieron actualizar los vencimientos visuales:",e);}
+  };
+})();
+</script>
 
 <!-- orden-stock-bajo-proveedor-20261007 -->
 <!-- colores-stock-bajo-proveedor-20261007 -->
