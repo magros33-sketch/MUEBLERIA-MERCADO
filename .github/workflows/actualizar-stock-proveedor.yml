@@ -1,4 +1,4 @@
-name: Añadir orden y colores por proveedor en stock bajo
+name: Actualizar inventario y administración
 
 on:
   push:
@@ -14,121 +14,37 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@v4
 
-      - name: Añadir ordenación y colores por proveedor
+      - name: Aplicar cambios de administración
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-
-          old_html = '''<div class="ayuda">Aquí aparecen automáticamente los artículos cuyo stock está en el mínimo o por debajo, para saber qué productos hay que pedir.</div>\n<button onclick="mostrarProductosStockBajo()">🔄 Actualizar productos para pedir</button>'''
-          new_html = '''<div class="ayuda">Aquí aparecen automáticamente los artículos cuyo stock está en el mínimo o por debajo, para saber qué productos hay que pedir.</div>\n<label>Ordenar por</label>\n<select id="ordenStockBajo" onchange="mostrarProductosStockBajo()">\n<option value="faltante">Mayor necesidad de reposición</option>\n<option value="proveedor">Proveedor</option>\n</select>\n<button onclick="mostrarProductosStockBajo()">🔄 Actualizar productos para pedir</button>'''
-          if old_html in s and 'id="ordenStockBajo"' not in s:
-              s = s.replace(old_html, new_html, 1)
-
-          old_js = '''const bajos=(Array.isArray(articulos)?articulos:[])\n.filter(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  return minimo>0 && stock<=minimo;\n})\n.sort(function(a,b){\n  const fa=Number(a.stock||0)-Number(a.stock_minimo||0);\n  const fb=Number(b.stock||0)-Number(b.stock_minimo||0);\n  return fa-fb;\n});'''
-          new_js = '''const bajos=(Array.isArray(articulos)?articulos:[])\n.filter(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  return minimo>0 && stock<=minimo;\n});\n\nconst orden=document.getElementById("ordenStockBajo")?.value||"faltante";\n\nbajos.sort(function(a,b){\n  if(orden==="proveedor"){\n    const pa=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";\n    const pb=(proveedores.find(function(p){return String(p.id)===String(b.proveedor_id);})||{}).nombre||"Sin proveedor";\n    return pa.localeCompare(pb,"es",{sensitivity:"base"}) || String(a.nombre||"").localeCompare(String(b.nombre||""),"es",{sensitivity:"base"});\n  }\n  const fa=Number(a.stock||0)-Number(a.stock_minimo||0);\n  const fb=Number(b.stock||0)-Number(b.stock_minimo||0);\n  return fa-fb;\n});'''
-          if old_js in s and 'const orden=document.getElementById("ordenStockBajo")' not in s:
-              s = s.replace(old_js, new_js, 1)
-
-          old_render = '''contenedor.innerHTML=bajos.map(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  const pedir=Math.max(minimo-stock,0);\n  const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";\n\n  return '<div class="articulo">'+'''
-          new_render = '''const coloresProveedor=["#eef7ff","#fff4e6","#eef9ee","#f7efff","#fff0f3","#eef8f7","#f8f5e8","#f0f0ff"];\nconst mapaColoresProveedor={};\nconst clavesProveedores=[...new Set(bajos.map(function(a){return String(a.proveedor_id||"sin-proveedor");}))].sort();\nclavesProveedores.forEach(function(clave,i){mapaColoresProveedor[clave]=coloresProveedor[i%coloresProveedor.length];});\n\ncontenedor.innerHTML=bajos.map(function(a){\n  const stock=Number(a.stock||0);\n  const minimo=Number(a.stock_minimo||0);\n  const pedir=Math.max(minimo-stock,0);\n  const proveedor=(proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor";\n  const claveProveedor=String(a.proveedor_id||"sin-proveedor");\n  const colorProveedor=mapaColoresProveedor[claveProveedor]||"#f4f7f5";\n\n  return '<div class="articulo" style="background:'+colorProveedor+';border-left:6px solid rgba(18,59,42,.35);">'+'''
-          if old_render in s and 'coloresProveedor=' not in s:
-              s = s.replace(old_render, new_render, 1)
-
-          marker = '<!-- colores-stock-bajo-proveedor-20261007 -->'
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='<!-- costo-total-inventario-20261009 -->'
           if marker not in s:
-              s = s.replace('</body>', marker + '\n</body>', 1)
-
-          admin_marker = '<!-- costo-total-inventario-20261009 -->'
-          if admin_marker not in s:
-              objetivo = '''<div class="tarjeta">\n<h3>📊 Resumen</h3>\n<div id="resumenAdministracion">Cargando resumen...</div>\n<button onclick="cargarResumenAdministracion()">🔄 Actualizar resumen</button>\n</div>'''
-              bloque = '''\n<!-- costo-total-inventario-20261009 -->\n<div class="tarjeta">\n<h3>📦 Costo total del inventario</h3>\n<div class="ayuda">Valor actual del inventario calculado con el costo de cada artículo multiplicado por las unidades que hay en stock.</div>\n<div id="costoTotalInventario" class="precio-venta">$0.00</div>\n<button type="button" onclick="cargarCostoTotalInventario()">🔄 Actualizar costo del inventario</button>\n</div>'''
+              objetivo='<div class="tarjeta">\\n<h3>📊 Resumen</h3>\\n<div id="resumenAdministracion">Cargando resumen...</div>\\n<button onclick="cargarResumenAdministracion()">🔄 Actualizar resumen</button>\\n</div>'
+              bloque='\\n'+marker+'\\n<div class="tarjeta">\\n<h3>📦 Costo total del inventario</h3>\\n<div class="ayuda">Valor actual del inventario calculado con el costo de cada artículo multiplicado por las unidades que hay en stock.</div>\\n<div id="costoTotalInventario" class="precio-venta">$0.00</div>\\n<button type="button" onclick="cargarCostoTotalInventario()">🔄 Actualizar costo del inventario</button>\\n</div>'
               if objetivo not in s:
                   raise SystemExit('No se encontró el bloque de Resumen de Administración')
-              s = s.replace(objetivo, objetivo + bloque, 1)
-
-              script = r'''<script id="costo-total-inventario-script-20261009">
-(function(){
-  let temporizador=null;
-
-  window.cargarCostoTotalInventario=async function(){
-    const box=document.getElementById('costoTotalInventario');
-    if(!box)return;
-    box.textContent='🔄 Calculando...';
-    try{
-      const r=await fetch(SUPABASE_URL+'/rest/v1/articulos?select=stock,costo&activo=eq.true&limit=5000',{
-        headers:headersSupabase,
-        cache:'no-store'
-      });
-      if(!r.ok)throw new Error(await r.text());
-      const articulosInventario=await r.json();
-      const total=articulosInventario.reduce(function(s,a){
-        return s+(Number(a.stock||0)*Number(a.costo||0));
-      },0);
-      box.textContent=numeroAdmin(total).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
-    }catch(e){
-      console.error('Error calculando costo total del inventario:',e);
-      box.textContent='❌ No se pudo calcular';
-    }
-  };
-
-  function iniciarActualizacion(){
-    if(temporizador)clearInterval(temporizador);
-    cargarCostoTotalInventario();
-    temporizador=setInterval(function(){
-      const panel=document.getElementById('adminPanel');
-      if(panel && panel.style.display!=='none')cargarCostoTotalInventario();
-    },10000);
-  }
-
-  const originalEntrar=window.entrarAdministracion;
-  if(typeof originalEntrar==='function'){
-    window.entrarAdministracion=async function(){
-      await originalEntrar.apply(this,arguments);
-      const panel=document.getElementById('adminPanel');
-      if(panel && panel.style.display!=='none')iniciarActualizacion();
-    };
-  }
-
-  const originalResumen=window.cargarResumenAdministracion;
-  if(typeof originalResumen==='function'){
-    window.cargarResumenAdministracion=async function(){
-      const resultado=await originalResumen.apply(this,arguments);
-      cargarCostoTotalInventario();
-      return resultado;
-    };
-  }
-
-  const originalSalir=window.salirAdministracion;
-  if(typeof originalSalir==='function'){
-    window.salirAdministracion=function(){
-      if(temporizador)clearInterval(temporizador);
-      temporizador=null;
-      return originalSalir.apply(this,arguments);
-    };
-  }
-
-  document.addEventListener('DOMContentLoaded',function(){
-    const panel=document.getElementById('adminPanel');
-    if(panel && panel.style.display!=='none')iniciarActualizacion();
-  });
-})();
-</script>
-'''
-              s=s.replace('</body>', script+'\n</body>', 1)
-
-          p.write_text(s, encoding='utf-8')
+              s=s.replace(objetivo,objetivo+bloque,1)
+          script_marker='<script id="costo-total-inventario-script-20261009">'
+          if script_marker not in s:
+              js='<script id="costo-total-inventario-script-20261009">(function(){let temporizador=null;window.cargarCostoTotalInventario=async function(){const box=document.getElementById("costoTotalInventario");if(!box)return;box.textContent="🔄 Calculando...";try{const r=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=stock,costo&activo=eq.true&limit=5000",{headers:headersSupabase,cache:"no-store"});if(!r.ok)throw new Error(await r.text());const datos=await r.json();const total=datos.reduce(function(s,a){return s+(Number(a.stock||0)*Number(a.costo||0));},0);box.textContent=numeroAdmin(total).toLocaleString("es-MX",{style:"currency",currency:"MXN"});}catch(e){console.error("Error calculando costo total del inventario:",e);box.textContent="❌ No se pudo calcular";}};function iniciarActualizacion(){if(temporizador)clearInterval(temporizador);cargarCostoTotalInventario();temporizador=setInterval(function(){const panel=document.getElementById("adminPanel");if(panel&&panel.style.display!=="none")cargarCostoTotalInventario();},10000);}const originalEntrar=window.entrarAdministracion;if(typeof originalEntrar==="function"){window.entrarAdministracion=async function(){await originalEntrar.apply(this,arguments);const panel=document.getElementById("adminPanel");if(panel&&panel.style.display!=="none")iniciarActualizacion();};}const originalResumen=window.cargarResumenAdministracion;if(typeof originalResumen==="function"){window.cargarResumenAdministracion=async function(){const resultado=await originalResumen.apply(this,arguments);cargarCostoTotalInventario();return resultado;};}const originalSalir=window.salirAdministracion;if(typeof originalSalir==="function"){window.salirAdministracion=function(){if(temporizador)clearInterval(temporizador);temporizador=null;return originalSalir.apply(this,arguments);};}})();</script>\\n'
+              s=s.replace('</body>',js+'</body>',1)
+          p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Guardar cambios
+      - name: Verificar y guardar
         run: |
+          grep -q 'costo-total-inventario-20261009' index.html
+          grep -q 'cargarCostoTotalInventario' index.html
+          git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
             echo "Sin cambios que guardar"
           else
-            git commit -m "Colorear productos con stock bajo por proveedor"
+            git commit -m "Mostrar costo total del inventario en Administración"
             git push
           fi
