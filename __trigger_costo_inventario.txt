@@ -1,0 +1,1 @@
+Activar actualización del costo total del inventario.
