@@ -47,5 +47,6 @@ jobs:
             echo "Sin cambios que guardar"
           else
             git commit -m "Mostrar costo total del inventario en Administración"
+            git pull --rebase origin main
             git push
           fi
