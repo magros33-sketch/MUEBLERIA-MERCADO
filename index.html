@@ -1044,6 +1044,13 @@ Cargando artículos vendidos...
 <div id="resumenAdministracion">Cargando resumen...</div>
 <button onclick="cargarResumenAdministracion()">🔄 Actualizar resumen</button>
 </div>
+<!-- costo-total-inventario-20261009 -->
+<div class="tarjeta">
+<h3>📦 Costo total del inventario</h3>
+<div class="ayuda">Valor actual del inventario calculado con el costo de cada artículo multiplicado por las unidades que hay en stock.</div>
+<div id="costoTotalInventario" class="precio-venta">$0.00</div>
+<button type="button" onclick="cargarCostoTotalInventario()">🔄 Actualizar costo del inventario</button>
+</div>
 
 <div class="tarjeta">
 <h3>🔑 Cambiar PIN</h3>
@@ -9070,5 +9077,6 @@ async function cargarResumenStockProveedores(){
 
 <!-- orden-stock-bajo-proveedor-20261007 -->
 <!-- colores-stock-bajo-proveedor-20261007 -->
+<script id="costo-total-inventario-script-20261009">(function(){let temporizador=null;window.cargarCostoTotalInventario=async function(){const box=document.getElementById("costoTotalInventario");if(!box)return;box.textContent="🔄 Calculando...";try{const r=await fetch(SUPABASE_URL+"/rest/v1/articulos?select=stock,costo&activo=eq.true&limit=5000",{headers:headersSupabase,cache:"no-store"});if(!r.ok)throw new Error(await r.text());const datos=await r.json();const total=datos.reduce(function(s,a){return s+(Number(a.stock||0)*Number(a.costo||0));},0);box.textContent=numeroAdmin(total).toLocaleString("es-MX",{style:"currency",currency:"MXN"});}catch(e){console.error("Error calculando costo total del inventario:",e);box.textContent="❌ No se pudo calcular";}};function iniciarActualizacion(){if(temporizador)clearInterval(temporizador);cargarCostoTotalInventario();temporizador=setInterval(function(){const panel=document.getElementById("adminPanel");if(panel&&panel.style.display!=="none")cargarCostoTotalInventario();},10000);}const originalEntrar=window.entrarAdministracion;if(typeof originalEntrar==="function"){window.entrarAdministracion=async function(){await originalEntrar.apply(this,arguments);const panel=document.getElementById("adminPanel");if(panel&&panel.style.display!=="none")iniciarActualizacion();};}const originalResumen=window.cargarResumenAdministracion;if(typeof originalResumen==="function"){window.cargarResumenAdministracion=async function(){const resultado=await originalResumen.apply(this,arguments);cargarCostoTotalInventario();return resultado;};}const originalSalir=window.salirAdministracion;if(typeof originalSalir==="function"){window.salirAdministracion=function(){if(temporizador)clearInterval(temporizador);temporizador=null;return originalSalir.apply(this,arguments);};}})();</script>
 </body>
 </html>
