@@ -2727,7 +2727,6352 @@ async function cargarDeudasProveedores(){
       if(!grupos[pid])grupos[pid]={nombre:mapa[pid]||"Proveedor no identificado",saldo:0};
       grupos[pid].saldo+=Number(c.saldo||0);
     });
-    box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: '+money(g.saldo)+'</div></div>').join("");
+    box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: 
+  }catch(e){
+    console.error("Error cargando deudas de proveedores:",e);
+    box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
+  }
+}
+
+async function cargarHistorialCompras(){
+  const contenedor=document.getElementById("historialCompras");
+  if(!contenedor)return;
+  contenedor.innerHTML="🔄 Cargando historial...";
+  try{
+    const respuesta=await fetch(
+      SUPABASE_URL+"/rest/v1/compras?select=*&estado=neq.cancelada&estado=neq.cancelado&order=fecha.desc",
+      {method:"GET",headers:headersSupabase,cache:"no-store"}
+    );
+    if(!respuesta.ok)throw new Error(await respuesta.text());
+    const compras=await respuesta.json();
+
+    const proveedoresRespuesta=await fetch(
+      SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre",
+      {headers:headersSupabase,cache:"no-store"}
+    );
+    const proveedoresHistorial=proveedoresRespuesta.ok?await proveedoresRespuesta.json():[];
+    const mapaProveedores={};
+    proveedoresHistorial.forEach(function(p){
+      mapaProveedores[String(p.id)]=p.nombre||"Sin nombre";
+    });
+
+    if(!compras.length){
+      contenedor.innerHTML='<div class="tarjeta">Todavía no hay compras registradas.</div>';
+      await cargarDeudasProveedores();
+      return;
+    }
+
+    contenedor.innerHTML=compras.map(function(c){
+      const operacion=String(c.id||"").substring(0,8);
+      const pid=String(c.proveedor_id||c.id_proveedor||"");
+      const nombreProveedor=mapaProveedores[pid]||"Proveedor no identificado";
+      const estadoCompra=String(c.estado||"").toLowerCase();
+      let botones="";
+      if(estadoCompra==="cancelada"||estadoCompra==="cancelado"){
+        botones='<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';
+      }else{
+        botones='<button type="button" class="editar" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>';
+        if(Number(c.saldo||0)>0){
+          botones+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';
+        }
+        botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
+      }
+      return '<div class="historial">'+
+        '<strong>🛒 Compra</strong>'+
+        '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
+        '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
+        '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
+        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Estado: '+escaparHTML(c.estado||"")+'</div>'+
+        '<div class="dato">Forma de pago: <strong>'+escaparHTML(c.metodo_pago==="credito_pagado"?"Crédito — pagado":(c.metodo_pago||"contado"))+'</strong></div>'+
+        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(2)+'</strong></div>'+
+        '<div class="separador"></div>'+botones+
+        '</div>';
+    }).join("");
+
+    await cargarDeudasProveedores();
+  }catch(error){
+    console.error("Error historial compras:",error);
+    contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de compras.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+  }
+}
+
+
+/* ================= VENTAS ================= */
+
+const campoVentaCodigo=
+document.getElementById("ventaCodigo");
+
+const campoVentaNombre=
+document.getElementById("ventaNombre");
+
+const campoVentaCliente=
+document.getElementById("ventaCliente");
+
+
+document
+.getElementById("ventaTipoCliente")
+.addEventListener(
+"change",
+function(){
+
+const campo=
+document.getElementById("campoClienteVenta");
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(this.value==="cliente"){
+
+campo.classList.remove("oculto");
+
+cargarClientes();
+
+}else{
+
+campo.classList.add("oculto");
+
+document.getElementById("ventaCliente").value="";
+
+}
+
+}
+);
+
+
+campoVentaCliente.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+clienteVentaSeleccionado=null;
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+
+if(!texto)return;
+
+const exactoCodigo=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===texto;
+
+});
+
+if(exactoCodigo){
+
+seleccionarClienteVenta(exactoCodigo);
+return;
+
+}
+
+const exacto=
+clientes.find(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()===texto
+||
+String(c.telefono||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarClienteVenta(exacto);
+return;
+
+}
+
+const encontrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.nombre||"")
+.toLowerCase()
+.includes(texto)
+||
+String(c.telefono||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesClienteVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese cliente.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesClienteVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoClienteVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el cliente:</strong>
+
+${lista.map(function(c){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarClienteVentaPorId('${c.id}')"
+>
+
+👤 ${escaparHTML(c.nombre||"")}
+
+<br>
+
+Codigo:
+<strong>
+${escaparHTML(c.codigo_cliente||"Sin codigo")}
+</strong>
+
+<br>
+
+Telefono:
+${escaparHTML(c.telefono||"")}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarClienteVentaPorId(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(cliente){
+seleccionarClienteVenta(cliente);
+}
+
+}
+
+
+function seleccionarClienteVenta(cliente){
+
+clienteVentaSeleccionado=cliente;
+
+campoVentaCliente.value=
+cliente.codigo_cliente||"";
+
+document.getElementById("estadoClienteVenta").innerHTML=
+`
+<div class="estado-ok">
+✅ Cliente seleccionado
+</div>
+`;
+
+document.getElementById("resultadoClienteVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>👤 Cliente seleccionado</strong>
+
+<br><br>
+
+Codigo:
+<strong>
+${escaparHTML(cliente.codigo_cliente||"")}
+</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(cliente.nombre||"")}
+
+<br>
+
+Telefono:
+${escaparHTML(cliente.telefono||"")}
+
+</div>
+`;
+
+}
+
+
+campoVentaCodigo.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese codigo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+campoVentaNombre.addEventListener(
+"input",
+function(){
+
+const texto=this.value.trim().toLowerCase();
+
+articuloVentaSeleccionado=null;
+
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+if(!texto){
+
+document.getElementById("ventaPrecio").value="";
+
+actualizarTotalVenta();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloVenta(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesVenta(encontrados);
+
+}else{
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese articulo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesVenta(lista){
+
+const contenedor=
+document.getElementById("resultadoVenta");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el articulo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloVentaPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+${Number(a.stock||0)}
+
+<br>
+
+Precio publico:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloVentaPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+seleccionarArticuloVenta(articulo);
+}
+
+}
+
+
+function seleccionarArticuloVenta(articulo){
+
+articuloVentaSeleccionado=articulo;
+
+campoVentaCodigo.value=articulo.codigo||"";
+campoVentaNombre.value=articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("ventaPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoVentaCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Codigo encontrado
+</div>
+`;
+
+document.getElementById("estadoVentaNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Articulo encontrado
+</div>
+`;
+
+document.getElementById("resultadoVenta").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Articulo seleccionado</strong>
+
+<br><br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioVenta").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio para aplicar un descuento.
+</div>
+`;
+
+actualizarTotalVenta();
+
+}
+
+
+function actualizarTotalVenta(){
+
+const cantidad=
+Number(document.getElementById("ventaCantidad").value||0);
+
+const precio=
+Number(document.getElementById("ventaPrecio").value||0);
+
+const total=cantidad*precio;
+
+document.getElementById("totalVenta").innerHTML=
+"$"+total.toFixed(2);
+
+}
+
+
+/* ================= REGISTRAR VENTA ================= */
+
+async function registrarVenta(){
+
+const mensaje=
+document.getElementById("mensajeVenta");
+
+let articulo=
+articuloVentaSeleccionado;
+
+const codigo=
+campoVentaCodigo.value.trim();
+
+const nombre=
+campoVentaNombre.value.trim();
+
+const cantidad=
+Number(document.getElementById("ventaCantidad").value||0);
+
+const precio=
+Number(document.getElementById("ventaPrecio").value||0);
+
+const tipoCliente=
+document.getElementById("ventaTipoCliente").value;
+
+const clienteTexto=
+document.getElementById("ventaCliente").value.trim();
+
+const metodoPago=
+document.getElementById("ventaMetodoPago").value;
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado&&clienteTexto){
+
+const clienteEncontrado=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+||
+String(c.nombre||"")
+.toLowerCase()===clienteTexto.toLowerCase()
+||
+String(c.telefono||"")
+.toLowerCase()===clienteTexto.toLowerCase();
+
+});
+
+if(clienteEncontrado){
+clienteVentaSeleccionado=clienteEncontrado;
+}
+
+}
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No encontramos ese articulo.
+</div>
+`;
+
+return;
+
+}
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Indica una cantidad valida.
+</div>
+`;
+
+return;
+
+}
+
+const stockActual=Number(articulo.stock||0);
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El precio no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+if(tipoCliente==="cliente"&&!clienteVentaSeleccionado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Selecciona un cliente.
+</div>
+`;
+
+return;
+
+}
+
+const total=cantidad*precio;
+
+const nuevoStock=stockActual-cantidad;
+
+const idVenta=crypto.randomUUID();
+
+try{
+
+const respuestaVenta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+id:idVenta,
+
+cliente_id:
+tipoCliente==="cliente"
+?clienteVentaSeleccionado.id
+:null,
+
+fecha:new Date().toISOString(),
+
+tipo_cliente:tipoCliente,
+
+metodo_pago:metodoPago,
+
+total:total,
+
+estado:"completada",
+
+notas:"Venta registrada desde la aplicacion"
+
+})
+}
+);
+
+if(!respuestaVenta.ok){
+
+const errorTexto=
+await respuestaVenta.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar la venta.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+const respuestaDetalle=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+venta_id:idVenta,
+
+articulo_id:articulo.id,
+
+cantidad:cantidad,
+
+precio_unitario:precio,
+
+subtotal:total
+
+})
+}
+);
+
+if(!respuestaDetalle.ok){
+
+const errorTexto=
+await respuestaDetalle.text();
+
+console.error(errorTexto);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta se creo,
+pero no se pudo guardar el detalle.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+const respuestaArticulo=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:nuevoStock
+})
+}
+);
+
+if(!respuestaArticulo.ok){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ La venta quedo guardada,
+pero no se pudo actualizar el stock.
+
+</div>
+`;
+
+return;
+
+}
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Venta registrada correctamente
+</strong>
+
+<br><br>
+
+Operacion:
+<strong>${escaparHTML(idVenta.substring(0,8))}</strong>
+
+<br>
+
+Fecha y hora:
+${formatearFecha(new Date().toISOString())}
+
+<br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Metodo de pago:
+${escaparHTML(metodoPago)}
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
+
+</div>
+`;
+
+articuloVentaSeleccionado=null;
+clienteVentaSeleccionado=null;
+
+campoVentaCodigo.value="";
+campoVentaNombre.value="";
+
+document.getElementById("ventaCantidad").value="1";
+document.getElementById("ventaPrecio").value="";
+document.getElementById("ventaCliente").value="";
+
+document.getElementById("estadoClienteVenta").innerHTML="";
+document.getElementById("resultadoClienteVenta").innerHTML="";
+document.getElementById("estadoVentaCodigo").innerHTML="";
+document.getElementById("estadoVentaNombre").innerHTML="";
+document.getElementById("resultadoVenta").innerHTML="";
+document.getElementById("infoPrecioVenta").innerHTML="";
+
+actualizarTotalVenta();
+
+await cargarArticulos();
+
+await cargarHistorialVentas();
+
+}catch(error){
+
+console.error(error);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= RESUMEN VENTAS DEL DIA ================= */
+async function cargarResumenVentasDia(){
+const contenedor=document.getElementById("resumenVentasDia");
+if(!contenedor)return;
+contenedor.innerHTML="🔄 Cargando resumen...";
+try{
+const [rv,rp,rg]=await Promise.all([
+fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+]);
+if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+if(!rp.ok)throw new Error("Pagos de apartados: "+await rp.text());
+if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+
+const ventas=await rv.json();
+const pagosApartados=await rp.json();
+const gastos=await rg.json();
+
+const fechaSeleccionada=document.getElementById("fechaResumenVentas")?.value||new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+
+function esFechaMexico(fecha){
+if(!fecha)return false;
+const d=new Date(fecha);
+if(Number.isNaN(d.getTime()))return false;
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaSeleccionada;
+}
+
+const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()));
+const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha));
+const gh=gastos.filter(g=>esFechaMexico(g.fecha));
+
+function sumarMetodo(lista,metodo){
+return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo)
+.reduce((s,v)=>s+Number(v.total??v.importe??0),0);
+}
+
+const contado=sumarMetodo(vh,"efectivo")+sumarMetodo(ph,"efectivo");
+const tarjeta=sumarMetodo(vh,"tarjeta")+sumarMetodo(ph,"tarjeta");
+const transferencia=sumarMetodo(vh,"transferencia")+sumarMetodo(ph,"transferencia");
+const aplazo=sumarMetodo(vh,"aplazo")+sumarMetodo(ph,"aplazo");
+const otros=vh.filter(v=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(v.metodo_pago||"").trim().toLowerCase()))
+.reduce((s,v)=>s+Number(v.total||0),0)+
+ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().toLowerCase()))
+.reduce((s,p)=>s+Number(p.importe||0),0);
+
+const total=contado+tarjeta+transferencia+aplazo+otros;
+const totalGastos=gh.reduce((s,g)=>s+Number(g.importe||0),0);
+const neto=total-totalGastos;
+
+contenedor.innerHTML=
+'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Apartados / Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💰 Total cobrado del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(2)+'</div></div>'+
+'<div class="ayuda">Importes del día en hora de México. Los gastos se descuentan del total cobrado para obtener el neto del día.</div>';
+}catch(error){
+console.error("Error resumen ventas del día:",error);
+contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+}
+}
+
+function mostrarHistorialSegunFecha(){
+const fecha=document.getElementById("fechaResumenVentas")?.value||"";
+const historial=document.getElementById("historialVentas");
+if(!historial)return;
+const hoy=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const tarjeta=historial.closest(".tarjeta");
+if(fecha){
+if(tarjeta)tarjeta.style.display="";
+cargarHistorialVentas(fecha);
+}else{
+if(tarjeta)tarjeta.style.display="";
+cargarHistorialVentas();
+}
+}
+
+/* ================= HISTORIAL VENTAS ================= */
+
+function fechaMexicoHoyVentas(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+function inicializarHistorialVentas(){
+const campo=document.getElementById("fechaHistorialVentas");
+if(campo) campo.value=fechaMexicoHoyVentas();
+}
+
+async function cargarHistorialVentas(fechaFiltro){
+
+const contenedor=document.getElementById("historialVentas");
+if(!contenedor)return;
+
+if(!fechaFiltro){
+fechaFiltro=document.getElementById("fechaHistorialVentas")?.value||fechaMexicoHoyVentas();
+}
+
+const campoFecha=document.getElementById("fechaHistorialVentas");
+if(campoFecha && !campoFecha.value) campoFecha.value=fechaFiltro;
+
+contenedor.innerHTML="🔄 Cargando historial de ventas...";
+
+try{
+
+const [respuesta, respuestaGastos]=await Promise.all([
+fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?select=*&limit=1000",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+),
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+]);
+
+if(!respuesta.ok){
+const errorTexto=await respuesta.text();
+contenedor.innerHTML=`
+<div class="mensaje-error">
+❌ No se pudo cargar el historial de ventas.<br><br>
+Código: ${respuesta.status}<br><br>
+${escaparHTML(errorTexto)}
+</div>`;
+return;
+}
+
+let ventas=await respuesta.json();
+
+/* Las ventas canceladas se conservan en Supabase para el historial
+   interno, pero NO deben aparecer en el historial visible ni contar
+   como ventas del día. */
+ventas=ventas.filter(function(v){
+return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase().trim());
+});
+
+if(!respuestaGastos.ok)throw new Error("Gastos: "+await respuestaGastos.text());
+const gastos=await respuestaGastos.json();
+if(fechaFiltro){
+ventas.splice(0,ventas.length,...ventas.filter(v=>{
+const d=new Date(v.fecha||"");
+return !Number.isNaN(d.getTime())&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaFiltro;
+}));
+}
+
+if(!Array.isArray(ventas)||!ventas.length){
+contenedor.innerHTML=`
+<div class="tarjeta">Todavia no hay ventas registradas.</div>`;
+return;
+}
+
+ventas.sort(function(a,b){
+return new Date(b.fecha||0).getTime()-new Date(a.fecha||0).getTime();
+});
+
+const agrupacion=document.getElementById("ventasAgrupacion")?.value||"dia";
+
+function claveGrupo(fecha){
+const d=new Date(fecha);
+if(Number.isNaN(d.getTime()))return "Sin fecha";
+const partes=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+const p={}; partes.forEach(function(x){if(x.type!=="literal")p[x.type]=x.value;});
+const dm=new Date(Number(p.year),Number(p.month)-1,Number(p.day));
+
+if(agrupacion==="mes"){
+return dm.toLocaleDateString("es-MX",{month:"long",year:"numeric"});
+}
+
+if(agrupacion==="semana"){
+const copia=new Date(dm);
+const dia=(copia.getDay()+6)%7;
+copia.setDate(copia.getDate()-dia);
+const inicio=copia.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
+const fin=new Date(copia);
+fin.setDate(copia.getDate()+6);
+const final=fin.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
+return "Semana del "+inicio+" al "+final;
+}
+
+return dm.toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+}
+
+const grupos=[];
+const mapa={};
+
+ventas.forEach(function(v){
+const clave=claveGrupo(v.fecha);
+if(!mapa[clave]){
+mapa[clave]=[];
+grupos.push(clave);
+}
+mapa[clave].push(v);
+});
+
+contenedor.innerHTML=grupos.map(function(grupo){
+
+const lista=mapa[grupo];
+const ventasValidasGrupo=lista.filter(function(v){
+return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase());
+});
+const totalGrupo=ventasValidasGrupo.reduce(function(s,v){
+return s+Number(v.total||0);
+},0);
+
+const gastosGrupo=gastos.filter(function(g){
+return claveGrupo(g.fecha)===grupo;
+});
+const totalGastosGrupo=gastosGrupo.reduce(function(s,g){
+return s+Number(g.importe||0);
+},0);
+const netoGrupo=totalGrupo-totalGastosGrupo;
+
+return `
+<div class="tarjeta">
+<h3>📅 ${escaparHTML(grupo)}</h3>
+<div class="dato">
+<strong>${lista.length}</strong> venta(s) ·
+<strong>${totalGrupo.toFixed(2)}</strong> ventas
+</div>
+<div class="dato">
+💸 Gastos: <strong>-${totalGastosGrupo.toFixed(2)}</strong>
+</div>
+<div class="dato">
+🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(2)}</strong>
+</div>
+</div>
+
+${lista.map(function(v){
+
+const id=String(v.id||"");
+const operacion=id.substring(0,8);
+const tipoCliente=v.tipo_cliente==="cliente"?"Cliente":"Publico general";
+const clienteRelacionado=clientes.find(function(c){return String(c.id)===String(v.cliente_id||"");});
+const nombreClienteVenta=clienteRelacionado
+  ? ((clienteRelacionado.codigo_cliente?clienteRelacionado.codigo_cliente+" — ":"")+ (clienteRelacionado.nombre||"Cliente"))
+  : tipoCliente;
+
+return `
+<div class="historial">
+
+<strong>💰 Venta</strong>
+
+<div class="fecha-operacion">
+📅 ${formatearFecha(v.fecha)}
+</div>
+
+<div class="operacion-id">
+Operacion: ${escaparHTML(operacion)}
+</div>
+
+<div class="dato">
+Cliente:
+<strong>${escaparHTML(nombreClienteVenta)}</strong>
+</div>
+
+<div class="dato">
+Metodo:
+${escaparHTML(v.metodo_pago||"")}
+</div>
+
+<div class="dato">
+Total:
+<strong>$${Number(v.total||0).toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+Estado:
+<span class="estado-ok">${escaparHTML(v.estado||"")}</span>
+</div>
+
+<div class="separador"></div>
+
+${String(v.estado||"").toLowerCase()!=="cancelada"&&String(v.estado||"").toLowerCase()!=="cancelado"
+?'<button onclick="editarVenta(\''+id+'\')">✏️ Editar venta</button><button class="eliminar" onclick="cancelarVenta(\''+id+'\')">🗑️ Eliminar venta y devolver stock</button>'
+:'<div class="ayuda">Venta cancelada. El stock ya fue devuelto.</div>'}
+
+</div>`;
+}).join("")}`;
+}).join("");
+
+}catch(error){
+
+console.error("Error historial ventas:",error);
+
+contenedor.innerHTML=`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase al cargar el historial.
+<br><br>
+${escaparHTML(error.message||String(error))}
+</div>`;
+
+}
+
+}
+
+
+/* ================= APARTADOS ================= */
+
+
+/* CLIENTE */
+
+const campoApartadoCliente=
+document.getElementById("apartadoCliente");
+
+campoApartadoCliente.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+clienteApartadoSeleccionado=null;
+
+document.getElementById("estadoClienteApartado").innerHTML="";
+document.getElementById("resultadoClienteApartado").innerHTML="";
+
+if(!texto)return;
+
+const exactoCodigo=
+clientes.find(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase()===texto;
+
+});
+
+if(exactoCodigo){
+
+seleccionarClienteApartado(exactoCodigo);
+return;
+
+}
+
+const exacto=
+clientes.find(function(c){
+
+return String(c.nombre||"")
+.toLowerCase()===texto
+||
+String(c.telefono||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarClienteApartado(exacto);
+return;
+
+}
+
+const encontrados=
+clientes.filter(function(c){
+
+return String(c.codigo_cliente||"")
+.toLowerCase().includes(texto)
+||
+String(c.nombre||"")
+.toLowerCase().includes(texto)
+||
+String(c.telefono||"")
+.toLowerCase().includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesClienteApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoClienteApartado").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese cliente.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesClienteApartado(lista){
+
+const contenedor=
+document.getElementById("resultadoClienteApartado");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el cliente:</strong>
+
+${lista.map(function(c){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarClienteApartadoPorId('${c.id}')"
+>
+
+👤 ${escaparHTML(c.nombre||"")}
+
+<br>
+
+Codigo:
+<strong>
+${escaparHTML(c.codigo_cliente||"Sin codigo")}
+</strong>
+
+<br>
+
+Telefono:
+${escaparHTML(c.telefono||"")}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarClienteApartadoPorId(id){
+
+const cliente=
+clientes.find(function(c){
+return c.id===id;
+});
+
+if(cliente){
+seleccionarClienteApartado(cliente);
+}
+
+}
+
+
+function seleccionarClienteApartado(cliente){
+
+clienteApartadoSeleccionado=cliente;
+
+campoApartadoCliente.value=
+cliente.codigo_cliente||"";
+
+document.getElementById("estadoClienteApartado").innerHTML=
+`
+<div class="estado-ok">
+✅ Cliente seleccionado
+</div>
+`;
+
+document.getElementById("resultadoClienteApartado").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>👤 Cliente seleccionado</strong>
+
+<br><br>
+
+Codigo:
+<strong>
+${escaparHTML(cliente.codigo_cliente||"")}
+</strong>
+
+<br>
+
+Nombre:
+${escaparHTML(cliente.nombre||"")}
+
+<br>
+
+Telefono:
+${escaparHTML(cliente.telefono||"")}
+
+</div>
+`;
+
+}
+
+
+/* ARTICULO */
+
+const campoApartadoCodigo=
+document.getElementById("apartadoCodigo");
+
+const campoApartadoNombre=
+document.getElementById("apartadoNombre");
+
+
+campoApartadoCodigo.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloApartadoSeleccionado=null;
+
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+if(!texto){
+document.getElementById("apartadoPrecio").value="";
+
+actualizarTotalApartado();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloApartado(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoApartadoCodigo").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese codigo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+campoApartadoNombre.addEventListener(
+"input",
+function(){
+
+const texto=
+this.value.trim().toLowerCase();
+
+articuloApartadoSeleccionado=null;
+
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+if(!texto){
+
+document.getElementById("apartadoPrecio").value="";
+
+actualizarTotalApartado();
+
+return;
+
+}
+
+const exacto=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+if(exacto){
+
+seleccionarArticuloApartado(exacto);
+return;
+
+}
+
+const encontrados=
+articulos.filter(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()
+.includes(texto);
+
+});
+
+if(encontrados.length){
+
+mostrarOpcionesApartado(encontrados);
+
+}else{
+
+document.getElementById("estadoApartadoNombre").innerHTML=
+`
+<div class="ayuda">
+No se encontro ese articulo.
+</div>
+`;
+
+}
+
+}
+);
+
+
+function mostrarOpcionesApartado(lista){
+
+const contenedor=
+document.getElementById("resultadoApartado");
+
+contenedor.innerHTML=
+`
+<div class="info-articulo">
+
+<strong>🔎 Selecciona el articulo:</strong>
+
+${lista.map(function(a){
+
+return `
+<button
+type="button"
+class="opcion"
+onclick="seleccionarArticuloApartadoPorId('${a.id}')"
+>
+
+📦 ${escaparHTML(a.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(a.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(a.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${Number(a.precio_publico||0).toFixed(2)}
+
+</button>
+`;
+
+}).join("")}
+
+</div>
+`;
+
+}
+
+
+function seleccionarArticuloApartadoPorId(id){
+
+const articulo=
+articulos.find(function(a){
+return a.id===id;
+});
+
+if(articulo){
+seleccionarArticuloApartado(articulo);
+}
+
+}
+
+
+function seleccionarArticuloApartado(articulo){
+
+articuloApartadoSeleccionado=articulo;
+
+campoApartadoCodigo.value=
+articulo.codigo||"";
+
+campoApartadoNombre.value=
+articulo.nombre||"";
+
+const precio=
+Number(articulo.precio_publico||0);
+
+document.getElementById("apartadoPrecio").value=
+precio.toFixed(2);
+
+document.getElementById("estadoApartadoCodigo").innerHTML=
+`
+<div class="estado-ok">
+✅ Codigo encontrado
+</div>
+`;
+
+document.getElementById("estadoApartadoNombre").innerHTML=
+`
+<div class="estado-ok">
+✅ Articulo encontrado
+</div>
+`;
+
+document.getElementById("resultadoApartado").innerHTML=
+`
+<div class="info-articulo">
+
+<strong>✅ Articulo seleccionado</strong>
+
+<br><br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Codigo:
+${escaparHTML(articulo.codigo||"")}
+
+<br>
+
+Stock disponible:
+<strong>${Number(articulo.stock||0)}</strong>
+
+<br>
+
+Precio publico:
+$${precio.toFixed(2)}
+
+</div>
+`;
+
+document.getElementById("infoPrecioApartado").innerHTML=
+`
+<div class="ayuda">
+Puedes modificar el precio del apartado.
+</div>
+`;
+
+actualizarTotalApartado();
+
+}
+
+
+/* TOTAL Y SALDO */
+
+function actualizarTotalApartado(){
+
+const cantidad=
+Number(
+document.getElementById("apartadoCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("apartadoPrecio").value||0
+);
+
+const anticipo=
+Number(
+document.getElementById("apartadoAnticipo").value||0
+);
+
+const total=
+cantidad*precio;
+
+let saldo=
+total-anticipo;
+
+if(saldo<0){
+saldo=0;
+}
+
+document.getElementById("totalApartado").innerHTML=
+"$"+total.toFixed(2);
+
+document.getElementById("saldoApartado").innerHTML=
+"$"+saldo.toFixed(2);
+
+}
+
+
+/* REGISTRAR APARTADO */
+
+async function registrarApartado(){
+
+const mensaje=
+document.getElementById("mensajeApartado");
+
+let articulo=
+articuloApartadoSeleccionado;
+
+const codigo=
+campoApartadoCodigo.value.trim();
+
+const nombre=
+campoApartadoNombre.value.trim();
+
+const cantidad=
+Number(
+document.getElementById("apartadoCantidad").value||0
+);
+
+const precio=
+Number(
+document.getElementById("apartadoPrecio").value||0
+);
+
+const anticipo=
+Number(
+document.getElementById("apartadoAnticipo").value||0
+);
+
+const fechaAnticipo=
+document.getElementById("apartadoFechaAnticipo")?.value||"";
+
+const metodoPago=
+document.getElementById("apartadoMetodoPago").value;
+
+const notas=
+document.getElementById("apartadoNotas").value.trim();
+
+
+if(!clienteApartadoSeleccionado){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Selecciona un cliente para el apartado.
+</div>
+`;
+
+return;
+
+}
+
+
+if(!articulo&&codigo){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.codigo||"")
+.toLowerCase()===codigo.toLowerCase();
+
+});
+
+}
+
+if(!articulo&&nombre){
+
+articulo=
+articulos.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===nombre.toLowerCase();
+
+});
+
+}
+
+
+if(!articulo){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ No encontramos ese articulo.
+</div>
+`;
+
+return;
+
+}
+
+
+if(!cantidad||cantidad<1){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Indica una cantidad valida.
+</div>
+`;
+
+return;
+
+}
+
+
+const stockActual=
+Number(articulo.stock||0);
+
+
+if(cantidad>stockActual){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No hay suficiente stock.
+
+<br><br>
+
+Stock disponible:
+<strong>${stockActual}</strong>
+
+<br>
+
+Cantidad solicitada:
+<strong>${cantidad}</strong>
+
+</div>
+`;
+
+return;
+
+}
+
+
+if(precio<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El precio no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+
+const total=
+cantidad*precio;
+
+
+if(anticipo<0){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El anticipo no puede ser negativo.
+</div>
+`;
+
+return;
+
+}
+
+
+if(anticipo>total){
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ El anticipo no puede ser mayor que el total.
+</div>
+`;
+
+return;
+
+}
+
+
+const saldo=
+total-anticipo;
+
+
+const idApartado=
+crypto.randomUUID();
+
+
+try{
+
+
+/*
+ Primero guardamos el apartado.
+ El stock todavía no se toca hasta confirmar
+ que el apartado se guardó correctamente.
+*/
+
+const respuestaApartado=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=representation"
+},
+body:JSON.stringify({
+
+id:idApartado,
+
+cliente_id:
+clienteApartadoSeleccionado.id,
+articulo_id:
+articulo.id,
+
+cantidad:cantidad,
+
+precio_unitario:precio,
+
+fecha:new Date().toISOString(),
+
+total:total,
+
+pagado:anticipo,
+
+saldo:saldo,
+
+estado:
+saldo<=0
+?"pagado"
+:"pendiente",
+
+metodo_pago:metodoPago,
+
+notas:notas
+
+})
+}
+);
+
+
+if(!respuestaApartado.ok){
+
+const errorTexto=
+await respuestaApartado.text();
+
+console.error(
+"Error guardando apartado:",
+errorTexto
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo crear el apartado.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+/*
+ Si existe anticipo, registramos el pago.
+*/
+
+if(anticipo>0){
+
+const respuestaPago=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartado_pagos",
+{
+method:"POST",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+id:crypto.randomUUID(),
+
+apartado_id:idApartado,
+
+fecha:(anticipo>0&&fechaAnticipo)
+?new Date(fechaAnticipo+"T12:00:00Z").toISOString()
+:new Date().toISOString(),
+
+importe:anticipo,
+
+metodo_pago:metodoPago,
+
+notas:"Anticipo inicial del apartado"
+
+})
+}
+);
+
+
+if(!respuestaPago.ok){
+
+const errorTexto=
+await respuestaPago.text();
+
+console.error(
+"Error guardando anticipo:",
+errorTexto
+);
+
+
+/*
+ Intentamos eliminar el apartado creado para no dejar
+ un apartado incompleto.
+*/
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(idApartado),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo guardar el anticipo.
+<br><br>
+
+No se realizó el descuento del stock.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+}
+
+
+/*
+ Ahora descontamos el stock.
+*/
+
+const nuevoStock=
+stockActual-cantidad;
+
+
+const respuestaStock=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articulo.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+
+stock:nuevoStock
+
+})
+}
+);
+
+
+if(!respuestaStock.ok){
+
+const errorTexto=
+await respuestaStock.text();
+
+console.error(
+"Error actualizando stock del apartado:",
+errorTexto
+);
+
+
+/*
+ Intentamos eliminar el apartado para evitar que exista
+ un apartado que no pudo reservar correctamente el stock.
+*/
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(idApartado),
+{
+method:"DELETE",
+headers:headersSupabase
+}
+);
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ El apartado se guardó,
+pero no se pudo descontar el stock.
+
+<br><br>
+
+No se dejó activo el apartado.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+mensaje.innerHTML=
+`
+<div class="mensaje-exito">
+
+<strong>
+✅ Apartado creado correctamente
+</strong>
+
+<br><br>
+
+Operacion:
+<strong>
+${escaparHTML(idApartado.substring(0,8))}
+</strong>
+
+<br>
+
+Fecha:
+${formatearFecha(new Date().toISOString())}
+
+<br>
+
+Cliente:
+${escaparHTML(clienteApartadoSeleccionado.nombre||"")}
+
+<br>
+
+Articulo:
+${escaparHTML(articulo.nombre||"")}
+
+<br>
+
+Cantidad:
+${cantidad}
+
+<br>
+
+Precio por unidad:
+$${precio.toFixed(2)}
+
+<br>
+
+Total:
+<strong>$${total.toFixed(2)}</strong>
+
+<br>
+
+Anticipo:
+<strong>$${anticipo.toFixed(2)}</strong>
+
+<br>
+
+Saldo:
+<strong>$${saldo.toFixed(2)}</strong>
+
+<br>
+
+Nuevo stock:
+<strong>${nuevoStock}</strong>
+
+</div>
+`;
+
+
+/*
+ Limpiar formulario.
+*/
+
+articuloApartadoSeleccionado=null;
+clienteApartadoSeleccionado=null;
+
+campoApartadoCliente.value="";
+campoApartadoCodigo.value="";
+campoApartadoNombre.value="";
+
+document.getElementById("apartadoCantidad").value="1";
+document.getElementById("apartadoPrecio").value="";
+document.getElementById("apartadoAnticipo").value="0";
+if(document.getElementById("apartadoFechaAnticipo"))document.getElementById("apartadoFechaAnticipo").value=fechaHoyMexicoApartado();
+document.getElementById("apartadoNotas").value="";
+
+document.getElementById("estadoClienteApartado").innerHTML="";
+document.getElementById("resultadoClienteApartado").innerHTML="";
+document.getElementById("estadoApartadoCodigo").innerHTML="";
+document.getElementById("estadoApartadoNombre").innerHTML="";
+document.getElementById("resultadoApartado").innerHTML="";
+document.getElementById("infoPrecioApartado").innerHTML="";
+
+actualizarTotalApartado();
+
+await cargarArticulos();
+
+await cargarHistorialApartados();
+
+
+}catch(error){
+
+console.error(
+"Error registrando apartado:",
+error
+);
+
+mensaje.innerHTML=
+`
+<div class="mensaje-error">
+❌ Error de conexion con Supabase.
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= HISTORIAL APARTADOS ================= */
+
+async function cargarHistorialApartados(){
+
+const contenedor=
+document.getElementById("historialApartados");
+
+if(!contenedor)return;
+
+contenedor.innerHTML=
+"🔄 Cargando apartados...";
+
+
+try{
+
+const respuesta=
+await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?select=*&order=fecha.desc",
+{
+method:"GET",
+headers:{
+...headersSupabase,
+"Cache-Control":"no-cache",
+"Pragma":"no-cache"
+},
+cache:"no-store"
+}
+);
+
+
+if(!respuesta.ok){
+
+const errorTexto=
+await respuesta.text();
+
+console.error(
+"Error historial apartados:",
+errorTexto
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ No se pudo cargar el historial de apartados.
+
+<br><br>
+
+${escaparHTML(errorTexto)}
+
+</div>
+`;
+
+return;
+
+}
+
+
+const apartados=
+await respuesta.json();
+
+
+if(!Array.isArray(apartados)||!apartados.length){
+
+contenedor.innerHTML=
+`
+<div class="tarjeta">
+Todavia no hay apartados registrados.
+</div>
+`;
+
+return;
+
+}
+
+
+/*
+ Cargamos clientes y articulos desde los arrays actuales.
+*/
+
+contenedor.innerHTML=
+apartados.map(function(a){
+
+const cliente=
+clientes.find(function(c){
+return c.id===a.cliente_id;
+});
+
+const articulo=
+articulos.find(function(x){
+return x.id===a.articulo_id;
+});
+
+
+const nombreCliente=
+cliente
+?cliente.nombre
+:"Cliente no disponible";
+
+
+const nombreArticulo=
+articulo
+?articulo.nombre
+:"Articulo no disponible";
+
+
+const estado=
+String(a.estado||"pendiente").toLowerCase();
+
+
+let estadoHTML=
+`
+<span class="estado-ok">
+${escaparHTML(a.estado||"pendiente")}
+</span>
+`;
+
+
+if(estado==="cancelado"||estado==="cancelada"){
+
+estadoHTML=
+`
+<strong style="color:#a00000">
+${escaparHTML(a.estado)}
+</strong>
+`;
+
+}
+
+
+const puedeCancelar=
+estado!=="cancelado"&&
+estado!=="cancelada"&&
+estado!=="liquidado"&&
+estado!=="pagado";
+
+
+let botones='<button type="button" onclick="mostrarHistorialAbonosApartado(\''+a.id+'\')">📜 Ver historial de adelantos</button>';
+
+
+if(puedeCancelar){
+
+botones+=
+`
+<button
+class="eliminar"
+onclick="cancelarApartado('${a.id}')"
+>
+❌ Cancelar apartado y devolver stock
+</button>
+`;
+
+}
+
+
+if(estado==="pendiente"&&Number(a.saldo||0)>0){
+
+botones+=
+`
+<button
+onclick="registrarAbonoApartado('${a.id}')"
+>
+💵 Registrar adelanto
+</button>
+`;
+
+}
+
+
+return `
+<div class="historial">
+
+<strong>
+📋 Apartado
+</strong>
+
+<div class="fecha-operacion">
+📅 ${formatearFecha(a.fecha)}
+</div>
+
+<div class="operacion-id">
+Operacion:
+${escaparHTML(String(a.id||"").substring(0,8))}
+</div>
+
+<div class="dato">
+Cliente:
+<strong>
+${escaparHTML(nombreCliente)}
+</strong>
+</div>
+
+<div class="dato">
+Articulo:
+<strong>
+${escaparHTML(nombreArticulo)}
+</strong>
+</div>
+
+<div class="dato">
+Cantidad:
+${Number(a.cantidad||0)}
+</div>
+
+<div class="dato">
+Precio por unidad:
+$${Number(a.precio_unitario||0).toFixed(2)}
+</div>
+
+<div class="dato">
+Total:
+<strong>
+$${Number(a.total||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Pagado:
+<strong>
+$${Number(a.pagado||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Saldo:
+<strong>
+$${Number(a.saldo||0).toFixed(2)}
+</strong>
+</div>
+
+<div class="dato">
+Metodo inicial:
+${escaparHTML(a.metodo_pago||"")}
+</div>
+
+<div class="dato">
+💳 Adelantos acumulados:
+<strong>${Number(a.pagado||0).toFixed(2)}</strong>
+</div>
+
+<div class="dato">
+Estado:
+${estadoHTML}
+</div>
+
+${a.notas?
+`
+<div class="dato">
+📝 Notas:
+${escaparHTML(a.notas)}
+</div>
+`
+:""}
+
+<div class="separador"></div>
+
+${botones}
+
+</div>
+`;
+
+}).join("");
+
+
+}catch(error){
+
+console.error(
+"Error historial apartados:",
+error
+);
+
+contenedor.innerHTML=
+`
+<div class="mensaje-error">
+
+❌ Error de conexion con Supabase.
+
+<br><br
+</div>
+`;
+
+}
+
+}
+
+
+/* ================= HISTORIAL DE ABONOS DE APARTADOS ================= */
+async function mostrarHistorialAbonosApartado(id){
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&apartado_id=eq."+encodeURIComponent(id)+"&order=fecha.asc",{headers:headersSupabase,cache:"no-store"});
+    if(!r.ok)throw new Error(await r.text());
+    const pagos=await r.json();
+    if(!Array.isArray(pagos)||!pagos.length){alert("Este apartado no tiene adelantos registrados.");return;}
+    let total=0;
+    const lineas=pagos.map(function(p,i){
+      const importe=Number(p.importe||0); total+=importe;
+      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(2)+" — "+(p.metodo_pago||"Sin método");
+    });
+    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(2));
+  }catch(e){
+    console.error("Error consultando historial de adelantos:",e);
+    alert("❌ No se pudo consultar el historial de adelantos.\n\n"+(e.message||String(e)));
+  }
+}
+
+/* ================= ABONOS DE APARTADOS ================= */
+
+async function registrarAbonoApartado(id){
+  const importe=Number(prompt("Importe del nuevo adelanto:","0"));
+  if(!Number.isFinite(importe)||importe<=0)return;
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+    if(!r.ok)throw new Error(await r.text());
+    const datos=await r.json();
+    if(!datos.length)throw new Error("No se encontró el apartado.");
+    const apartado=datos[0];
+    const estado=String(apartado.estado||"").toLowerCase().trim();
+    if(["cancelada","cancelado"].includes(estado)){alert("Este apartado está cancelado.");return;}
+    if(["pagado","liquidado"].includes(estado)){alert("Este apartado ya está pagado.");return;}
+    const saldoActual=Number(apartado.saldo||0);
+    if(saldoActual<=0){alert("Este apartado ya no tiene deuda.");return;}
+    if(importe>saldoActual){alert("El adelanto no puede superar el saldo pendiente.");return;}
+    const fecha=prompt("Fecha en que el cliente entregó este adelanto (AAAA-MM-DD):",fechaHoyMexicoApartado());
+    if(!fecha||!/\d{4}-\d{2}-\d{2}$/.test(fecha)){alert("La fecha no es válida.");return;}
+    const fechaComprobada=new Date(fecha+"T12:00:00Z");
+    if(Number.isNaN(fechaComprobada.getTime())){alert("La fecha no es válida.");return;}
+    const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo)){alert("Método no válido.");return;}
+    const nuevoPagado=Number(apartado.pagado||0)+importe;
+    const nuevoSaldo=Math.max(0,Number(apartado.total||0)-nuevoPagado);
+    const nuevoEstado=nuevoSaldo<=0?"pagado":"pendiente";
+    const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({id:crypto.randomUUID(),apartado_id:apartado.id,fecha:fechaComprobada.toISOString(),importe:importe,metodo_pago:metodo,notas:"Adelanto posterior"})});
+    if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
+    const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})});
+    if(!ru.ok)throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
+    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(2)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(2));
+    await cargarHistorialApartados();
+    await cargarResumenVentasDia();
+  }catch(e){
+    console.error("Error registrando adelanto de apartado:",e);
+    alert("No se pudo registrar el adelanto.\n\n"+(e.message||String(e)));
+  }
+}
+/* ================= CANCELAR VENTA ================= */
+
+async function cancelarVenta(id){
+
+if(!confirm(
+"¿Seguro que quieres cancelar esta venta?\n\n"+
+"El stock de los artículos será devuelto."
+))return;
+
+try{
+
+const respuestaVenta=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaVenta.ok){
+alert("No se pudo consultar la venta.");
+return;
+}
+
+const ventas=await respuestaVenta.json();
+
+if(!ventas.length){
+alert("No se encontró la venta.");
+return;
+}
+
+const venta=ventas[0];
+
+const estado=
+String(venta.estado||"")
+.toLowerCase()
+.trim();
+
+if(
+estado==="cancelada"||
+estado==="cancelado"
+){
+alert("Esta venta ya está cancelada.");
+return;
+}
+
+
+/* Obtener detalles */
+
+const respuestaDetalle=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas_detalle?venta_id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaDetalle.ok){
+alert("No se pudieron obtener los artículos de la venta.");
+return;
+}
+
+const detalles=await respuestaDetalle.json();
+
+
+/* Guardar stocks anteriores */
+
+const cambios=[];
+
+for(const detalle of detalles){
+
+const articuloId=detalle.articulo_id;
+
+const cantidad=
+Number(detalle.cantidad||0);
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok){
+throw new Error(
+"No se pudo consultar el artículo."
+);
+}
+
+const articulosEncontrados=
+await respuestaArticulo.json();
+
+if(!articulosEncontrados.length){
+throw new Error(
+"No se encontró uno de los artículos de la venta."
+);
+}
+
+const articulo=articulosEncontrados[0];
+
+const stockAnterior=
+Number(articulo.stock||0);
+
+const nuevoStock=
+stockAnterior+cantidad;
+
+cambios.push({
+id:articuloId,
+stockAnterior:stockAnterior,
+nuevoStock:nuevoStock
+});
+
+}
+
+
+/* Devolver stock */
+
+for(const cambio of cambios){
+
+const respuestaStock=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.nuevoStock
+})
+}
+);
+
+if(!respuestaStock.ok){
+
+/* Intentar regresar los stocks modificados */
+
+for(const rollback of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:rollback.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"No se pudo devolver correctamente el stock."
+);
+
+return;
+
+}
+
+}
+
+
+/* Marcar venta como cancelada */
+
+const respuestaCancelar=await fetch(
+SUPABASE_URL+
+"/rest/v1/ventas?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+estado:"cancelada"
+})
+}
+);
+
+if(!respuestaCancelar.ok){
+
+/* Rollback del stock */
+
+for(const cambio of cambios){
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:cambio.stockAnterior
+})
+}
+);
+
+}
+
+alert(
+"No se pudo cancelar la venta. "+
+"El stock fue restaurado al estado anterior."
+);
+
+return;
+
+}
+
+alert(
+"✅ Venta cancelada correctamente.\n\n"+
+"El stock fue devuelto."
+);
+
+await cargarArticulos();
+await cargarHistorialVentas();
+
+if(
+document.getElementById("reportes")
+.classList.contains("activa")
+){
+
+cargarReporteVentasDiarias();
+cargarReporteArticulosVendidos();
+
+}
+
+}catch(error){
+
+console.error(
+"Error cancelando venta:",
+error
+);
+
+alert(
+"❌ No se pudo cancelar la venta.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= ELIMINAR COMPRA ================= */
+
+async function cancelarCompra(id){
+
+if(!confirm(
+"¿Seguro que quieres eliminar esta compra?\n\n"+
+"Se quitará del stock y la compra desaparecerá del historial y de la base de datos."
+))return;
+
+try{
+
+/* Obtener la compra */
+const respuestaCompra=await fetch(
+SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaCompra.ok)throw new Error("No se pudo consultar la compra.");
+
+const compras=await respuestaCompra.json();
+
+if(!compras.length){
+alert("No se encontró la compra.");
+return;
+}
+
+const compra=compras[0];
+
+if(
+String(compra.estado||"").toLowerCase().trim()==="cancelada" ||
+String(compra.estado||"").toLowerCase().trim()==="cancelado"
+){
+alert("Esta compra ya estaba cancelada.");
+return;
+}
+
+/* Obtener TODOS los detalles: funciona también con compras de varios artículos */
+const respuestaDetalle=await fetch(
+SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaDetalle.ok)throw new Error("No se pudieron obtener los artículos de la compra.");
+
+const detalles=await respuestaDetalle.json();
+
+if(!detalles.length){
+throw new Error("La compra no tiene artículos asociados; no se eliminará para evitar inconsistencias.");
+}
+
+/* Consultar stock y preparar los cambios */
+const cambios=[];
+
+for(const detalle of detalles){
+
+const cantidad=Number(detalle.cantidad||0);
+if(!Number.isFinite(cantidad)||cantidad<0){
+throw new Error("La compra contiene una cantidad no válida.");
+}
+
+const articuloId=detalle.articulo_id;
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok)throw new Error("No se pudo consultar uno de los artículos.");
+
+const encontrados=await respuestaArticulo.json();
+
+if(!encontrados.length)throw new Error("No se encontró uno de los artículos de la compra.");
+
+const articulo=encontrados[0];
+const stockActual=Number(articulo.stock||0);
+
+if(cantidad>stockActual){
+alert(
+"❌ No se puede eliminar esta compra.\n\n"+
+"El stock actual de uno de los artículos es menor que la cantidad que recibió esta compra."
+);
+return;
+}
+
+cambios.push({
+id:articuloId,
+stockAnterior:stockActual,
+nuevoStock:stockActual-cantidad
+});
+
+}
+
+/* Revertir stock */
+const stockAplicado=[];
+
+for(const cambio of cambios){
+
+const respuestaStock=await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(cambio.id),
+{
+method:"PATCH",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:cambio.nuevoStock})
+}
+);
+
+if(!respuestaStock.ok){
+
+for(const rollback of stockAplicado){
+await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
+}
+);
+}
+
+throw new Error("No se pudo revertir correctamente el stock.");
+}
+
+stockAplicado.push(cambio);
+}
+
+/*
+ * Primero eliminamos los detalles y después la compra.
+ * Guardamos los detalles en memoria para poder restaurarlos si algo falla.
+ */
+const respuestaBorrarDetalles=await fetch(
+SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
+}
+);
+
+if(!respuestaBorrarDetalles.ok){
+
+for(const rollback of stockAplicado){
+await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
+}
+);
+}
+
+throw new Error("No se pudieron eliminar los detalles de la compra.");
+}
+
+/* Eliminar la compra definitivamente */
+const respuestaBorrarCompra=await fetch(
+SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(id),
+{
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
+}
+);
+
+if(!respuestaBorrarCompra.ok){
+
+/* Intentar restaurar los detalles */
+await fetch(
+SUPABASE_URL+"/rest/v1/compra_detalles",
+{
+method:"POST",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify(detalles)
+}
+);
+
+/* Restaurar stock */
+for(const rollback of stockAplicado){
+await fetch(
+SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(rollback.id),
+{
+method:"PATCH",
+headers:{...headersSupabase,"Prefer":"return=minimal"},
+body:JSON.stringify({stock:rollback.stockAnterior})
+}
+);
+}
+
+throw new Error("No se pudo eliminar definitivamente la compra.");
+}
+
+alert(
+"✅ Compra eliminada correctamente.\n\n"+
+"• Se quitaron sus artículos del stock.\n"+
+"• Se eliminaron sus detalles.\n"+
+"• La compra ya no ocupa espacio en el historial ni en la base de datos."
+);
+
+await cargarArticulos();
+await cargarHistorialCompras();
+
+}catch(error){
+
+console.error("Error eliminando compra:",error);
+
+alert(
+"❌ No se pudo eliminar la compra.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= CANCELAR APARTADO ================= */
+
+
+async function cancelarApartado(id){
+
+if(!confirm(
+"¿Seguro que quieres cancelar este apartado?\n\n"+
+"El artículo regresará al stock."
+))return;
+
+try{
+
+const respuesta=await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(id),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuesta.ok){
+alert("No se pudo consultar el apartado.");
+return;
+}
+
+const apartados=await respuesta.json();
+
+if(!apartados.length){
+alert("No se encontró el apartado.");
+return;
+}
+
+const apartado=apartados[0];
+
+const estado=
+String(apartado.estado||"")
+.toLowerCase()
+.trim();
+
+if(
+estado==="cancelada"||
+estado==="cancelado"
+){
+alert("Este apartado ya está cancelado.");
+return;
+}
+
+if(
+estado==="pagado"||
+estado==="liquidado"
+){
+alert(
+"Este apartado ya está pagado/liquidado y no se puede cancelar desde aquí."
+);
+return;
+}
+
+
+const articuloId=apartado.articulo_id;
+
+const cantidad=
+Number(apartado.cantidad||0);
+
+const respuestaArticulo=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"GET",
+headers:headersSupabase,
+cache:"no-store"
+}
+);
+
+if(!respuestaArticulo.ok){
+alert("No se pudo consultar el artículo.");
+return;
+}
+
+const encontrados=
+await respuestaArticulo.json();
+
+if(!encontrados.length){
+alert("No se encontró el artículo.");
+return;
+}
+
+const articulo=encontrados[0];
+
+const stockAnterior=
+Number(articulo.stock||0);
+
+const nuevoStock=
+stockAnterior+cantidad;
+
+
+/* Devolver stock */
+
+const respuestaStock=await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:nuevoStock
+})
+}
+);
+
+if(!respuestaStock.ok){
+alert("No se pudo devolver el artículo al stock.");
+return;
+}
+
+
+/* Marcar apartado como cancelado */
+
+const respuestaCancelar=await fetch(
+SUPABASE_URL+
+"/rest/v1/apartados?id=eq."+
+encodeURIComponent(id),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+estado:"cancelada"
+})
+}
+);
+
+if(!respuestaCancelar.ok){
+
+/* Restaurar stock anterior */
+
+await fetch(
+SUPABASE_URL+
+"/rest/v1/articulos?id=eq."+
+encodeURIComponent(articuloId),
+{
+method:"PATCH",
+headers:{
+...headersSupabase,
+"Prefer":"return=minimal"
+},
+body:JSON.stringify({
+stock:stockAnterior
+})
+}
+);
+
+alert(
+"❌ No se pudo cancelar el apartado. "+
+"El stock fue restaurado."
+);
+
+return;
+
+}
+
+alert(
+"✅ Apartado cancelado correctamente.\n\n"+
+"El stock fue devuelto."
+);
+
+await cargarArticulos();
+await cargarHistorialApartados();
+
+}catch(error){
+
+console.error(
+"Error cancelando apartado:",
+error
+);
+
+alert(
+"❌ No se pudo cancelar el apartado.\n\n"+
+(error.message||String(error))
+);
+
+}
+
+}
+
+
+/* ================= FUNCIONES AUXILIARES ================= */
+
+function escaparHTML(valor){
+
+return String(valor??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+function formatearFecha(fecha){
+
+if(!fecha)return"";
+
+const d=new Date(fecha);
+
+if(Number.isNaN(d.getTime())){
+return String(fecha);
+}
+
+return d.toLocaleString(
+"es-MX",
+{
+dateStyle:"short",
+timeStyle:"short"
+}
+);
+
+}
+
+
+/* ================= INICIO ================= */
+
+document.addEventListener(
+"DOMContentLoaded",
+function(){
+
+comprobarConexion();
+
+}
+);
+/* =========================================================
+   CLIENTES - AGREGAR SIN TOCAR EL RESTO DEL INDEX
+   ========================================================= */
+
+async function cargarClientes(){
+  try{
+    const respuesta = await fetch(
+      SUPABASE_URL + "/rest/v1/clientes?select=*&order=nombre.asc",
+      {
+        headers: {
+          ...headersSupabase,
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        },
+        cache: "no-store"
+      }
+    );
+
+    if(!respuesta.ok){
+      throw new Error(await respuesta.text());
+    }
+
+    clientes = await respuesta.json();
+
+    mostrarClientes(clientes);
+    cargarClientesEnSelectores();
+
+  }catch(error){
+    console.error("Error cargando clientes:", error);
+    clientes = [];
+    mostrarClientes([]);
+    cargarClientesEnSelectores();
+  }
+}
+
+
+function mostrarClientes(lista){
+
+  const contenedor = document.getElementById("listaClientes");
+
+  if(!contenedor) return;
+
+  if(!lista || lista.length === 0){
+    contenedor.innerHTML =
+      '<div class="vacio">No hay clientes registrados.</div>';
+    return;
+  }
+
+  contenedor.innerHTML = lista.map(c => {
+
+    const id = escaparHTML(c.id || "");
+    const codigo = escaparHTML(c.codigo_cliente || "");
+    const nombre = escaparHTML(c.nombre || "");
+    const telefono = escaparHTML(c.telefono || "");
+    const email = escaparHTML(c.email || "");
+    const direccion = escaparHTML(c.direccion || "");
+    const notas = escaparHTML(c.notas || "");
+
+    return `
+      <div class="cliente">
+
+        <div class="codigo-cliente">
+          ${codigo || "Sin código"}
+        </div>
+
+        <strong>${nombre || "Sin nombre"}</strong>
+
+        ${telefono
+          ? `<div>📞 ${telefono}</div>`
+          : ""}
+
+        ${email
+          ? `<div>✉️ ${email}</div>`
+          : ""}
+
+        ${direccion
+          ? `<div>📍 ${direccion}</div>`
+          : ""}
+
+        ${notas
+          ? `<div>📝 ${notas}</div>`
+          : ""}
+
+        <div class="acciones">
+
+          <button
+            type="button"
+            onclick="editarCliente('${id}')">
+            ✏️ Editar
+          </button>
+
+          <button
+            type="button"
+            class="btn-danger"
+            onclick="eliminarCliente('${id}')">
+            🗑️ Eliminar
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+function filtrarClientes(){
+
+  const texto =
+    (document.getElementById("buscarCliente")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  if(!texto){
+    mostrarClientes(clientes);
+    return;
+  }
+
+  const filtrados = clientes.filter(c => {
+
+    return [
+      c.codigo_cliente,
+      c.nombre,
+      c.telefono,
+      c.email,
+      c.direccion
+    ].some(valor =>
+      String(valor || "")
+      .toLowerCase()
+      .includes(texto)
+    );
+
+  });
+
+  mostrarClientes(filtrados);
+}
+
+
+/* =========================================================
+   NUEVO CLIENTE
+   ========================================================= */
+
+function mostrarFormularioCliente(){
+
+  clienteEditando = null;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  const codigo =
+    document.getElementById("codigoCliente");
+
+  const nombre =
+    document.getElementById("nombreCliente");
+
+  const telefono =
+    document.getElementById("telefonoCliente");
+
+  const email =
+    document.getElementById("emailCliente");
+
+  const direccion =
+    document.getElementById("direccionCliente");
+
+  const notas =
+    document.getElementById("notasCliente");
+
+  if(!formulario) return;
+
+  formulario.style.display = "block";
+
+  if(codigo) codigo.value = "Generando...";
+  if(nombre) nombre.value = "";
+  if(telefono) telefono.value = "";
+  if(email) email.value = "";
+  if(direccion) direccion.value = "";
+  if(notas) notas.value = "";
+
+  if(mensaje) mensaje.innerHTML = "";
+
+  const titulo =
+    document.getElementById("tituloFormularioCliente");
+
+  const boton =
+    document.getElementById("botonGuardarCliente");
+
+  if(titulo)
+    titulo.textContent = "Nuevo cliente";
+
+  if(boton)
+    boton.textContent = "Guardar cliente";
+
+  generarSiguienteCodigoCliente().then(codigoNuevo => {
+
+    if(!clienteEditando && codigo){
+      codigo.value = codigoNuevo;
+    }
+
+  });
+}
+
+
+/* =========================================================
+   GENERAR CLI-0001, CLI-0002, CLI-0003...
+   ========================================================= */
+
+async function generarSiguienteCodigoCliente(){
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/clientes?select=codigo_cliente&order=codigo_cliente.desc&limit=1000",
+      {
+        headers: headersSupabase
+      }
+    );
+
+    if(!respuesta.ok){
+      throw new Error(await respuesta.text());
+    }
+
+    const datos = await respuesta.json();
+
+    let mayor = 0;
+
+    datos.forEach(c => {
+
+      const codigo =
+        String(c.codigo_cliente || "");
+
+      const coincidencia =
+        codigo.match(/(\d+)$/);
+
+      if(coincidencia){
+
+        const numero =
+          parseInt(coincidencia[1],10);
+
+        if(numero > mayor){
+          mayor = numero;
+        }
+
+      }
+
+    });
+
+    return "CLI-" +
+      String(mayor + 1).padStart(4,"0");
+
+  }catch(error){
+
+    console.error(
+      "Error generando código:",
+      error
+    );
+
+    let mayor = 0;
+
+    clientes.forEach(c => {
+
+      const coincidencia =
+        String(c.codigo_cliente || "")
+        .match(/(\d+)$/);
+
+      if(coincidencia){
+
+        const numero =
+          parseInt(coincidencia[1],10);
+
+        if(numero > mayor){
+          mayor = numero;
+        }
+
+      }
+
+    });
+
+    return "CLI-" +
+      String(mayor + 1).padStart(4,"0");
+  }
+}
+
+
+/* =========================================================
+   GUARDAR / EDITAR CLIENTE
+   ========================================================= */
+
+async function guardarCliente(){
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  const codigo =
+    document.getElementById("codigoCliente")
+    ?.value.trim();
+
+  const nombre =
+    document.getElementById("nombreCliente")
+    ?.value.trim();
+
+  const telefono =
+    document.getElementById("telefonoCliente")
+    ?.value.trim();
+
+  const email =
+    document.getElementById("emailCliente")
+    ?.value.trim();
+
+  const direccion =
+    document.getElementById("direccionCliente")
+    ?.value.trim();
+
+  const notas =
+    document.getElementById("notasCliente")
+    ?.value.trim();
+
+  if(!nombre){
+
+    if(mensaje){
+      mensaje.innerHTML =
+        '<span class="error">Escribe el nombre del cliente.</span>';
+    }
+
+    return;
+  }
+
+  try{
+
+    if(mensaje){
+      mensaje.innerHTML =
+        "Guardando cliente...";
+    }
+
+    const datos = {
+
+      codigo_cliente:
+        codigo ||
+        await generarSiguienteCodigoCliente(),
+
+      nombre: nombre,
+
+      telefono: telefono,
+
+      email: email,
+
+      direccion: direccion,
+
+      notas: notas
+
+    };
+
+    let respuesta;
+
+    /* EDITAR */
+
+    if(clienteEditando){
+
+      respuesta = await fetch(
+
+        SUPABASE_URL +
+        "/rest/v1/clientes?id=eq." +
+        encodeURIComponent(clienteEditando),
+
+        {
+          method: "PATCH",
+
+          headers: {
+            ...headersSupabase,
+            "Prefer": "return=representation"
+          },
+
+          body: JSON.stringify(datos)
+        }
+
+      );
+
+    }
+
+    /* NUEVO */
+
+    else{
+
+      respuesta = await fetch(
+
+        SUPABASE_URL +
+        "/rest/v1/clientes",
+
+        {
+          method: "POST",
+
+          headers: {
+            ...headersSupabase,
+            "Prefer": "return=representation"
+          },
+
+          body: JSON.stringify(datos)
+        }
+
+      );
+
+    }
+
+    if(!respuesta.ok){
+
+      const errorTexto =
+        await respuesta.text();
+
+      /* Si el código ya existe, genera otro */
+
+      if(
+        !clienteEditando &&
+        (
+          errorTexto.includes("23505") ||
+          errorTexto.toLowerCase()
+            .includes("duplicate")
+        )
+      ){
+
+        datos.codigo_cliente =
+          await generarSiguienteCodigoCliente();
+
+        respuesta = await fetch(
+
+          SUPABASE_URL +
+          "/rest/v1/clientes",
+
+          {
+            method: "POST",
+
+            headers: {
+              ...headersSupabase,
+              "Prefer": "return=representation"
+            },
+
+            body: JSON.stringify(datos)
+          }
+
+        );
+
+      }
+
+      if(!respuesta.ok){
+        throw new Error(
+          await respuesta.text()
+        );
+      }
+    }
+
+    if(mensaje){
+      mensaje.innerHTML =
+        '<span class="ok">✓ Cliente guardado correctamente.</span>';
+    }
+
+    clienteEditando = null;
+
+    const formulario =
+      document.getElementById("formCliente");
+
+    if(formulario){
+      formulario.style.display = "none";
+    }
+
+    await cargarClientes();
+
+  }catch(error){
+
+    console.error(
+      "Error guardando cliente:",
+      error
+    );
+
+    if(mensaje){
+
+      mensaje.innerHTML =
+        '<span class="error">' +
+        'No se pudo guardar el cliente.<br>' +
+        escaparHTML(
+          error.message || String(error)
+        ) +
+        '</span>';
+
+    }
+
+  }
+}
+
+
+/* =========================================================
+   EDITAR CLIENTE
+   ========================================================= */
+
+function editarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  clienteEditando = cliente.id;
+
+  const formulario = document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "block";
+  }
+
+  const titulo = document.getElementById("tituloFormularioCliente");  const boton = document.getElementById("botonGuardarCliente");
+  const mensaje = document.getElementById("mensajeCliente");
+
+  if(titulo){
+    titulo.textContent = "Editar cliente";
+  }
+
+  if(boton){
+    boton.textContent = "Guardar cambios";
+  }
+
+  if(mensaje){
+    mensaje.innerHTML = "";
+  }
+
+  const codigo = document.getElementById("codigoCliente");
+  const nombre = document.getElementById("nombreCliente");
+  const telefono = document.getElementById("telefonoCliente");
+  const email = document.getElementById("emailCliente");
+  const direccion = document.getElementById("direccionCliente");
+  const notas = document.getElementById("notasCliente");
+
+  if(codigo) codigo.value = cliente.codigo_cliente || "";
+  if(nombre) nombre.value = cliente.nombre || "";
+  if(telefono) telefono.value = cliente.telefono || "";
+  if(email) email.value = cliente.email || "";
+  if(direccion) direccion.value = cliente.direccion || "";
+  if(notas) notas.value = cliente.notas || "";
+
+  formulario.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+/* =========================================================
+   CANCELAR EDICIÓN
+   ========================================================= */
+
+function cancelarCliente(){
+
+  clienteEditando = null;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "none";
+  }
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  if(mensaje){
+    mensaje.innerHTML = "";
+  }
+}
+
+
+/* =========================================================
+   ELIMINAR CLIENTE
+   ========================================================= */
+
+async function eliminarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  if(!confirm(
+    "¿Quieres eliminar al cliente?\n\n" +
+    (cliente.codigo_cliente || "") +
+    " - " +
+    (cliente.nombre || "")
+  )){
+    return;
+  }
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/clientes?id=eq." +
+      encodeURIComponent(cliente.id),
+      {
+        method: "DELETE",
+        headers: {
+          ...headersSupabase,
+          "Prefer": "return=minimal"
+        }
+      }
+    );
+
+    if(!respuesta.ok){
+
+      const error = await respuesta.text();
+
+      throw new Error(error);
+    }
+
+    // Quitarlo también del estado local evita que permanezca visible
+    // mientras se vuelve a consultar Supabase.
+    clientes = clientes.filter(c => String(c.id) !== String(cliente.id));
+    filtrarClientes();
+
+    alert("Cliente eliminado correctamente.");
+
+    // Recargar desde Supabase sin usar caché.
+    await cargarClientes();
+  }catch(error){
+
+    console.error(
+      "Error eliminando cliente:",
+      error
+    );
+
+    alert(
+      "No se pudo eliminar el cliente.\n\n" +
+      "Detalle:\n" +
+      (error.message || error)
+    );
+  }
+}
+
+/* =========================================================
+   CLIENTES EN VENTAS Y APARTADOS
+   ========================================================= */
+
+function cargarClientesEnSelectores(){
+
+  const selectVenta =
+    document.getElementById("ventaCliente");
+
+  const selectApartado =
+    document.getElementById("apartadoCliente");
+
+  const opciones =
+    clientes.map(c => {
+
+      return `
+        <option value="${escaparHTML(c.id || "")}">
+          ${escaparHTML(c.codigo_cliente || "")}
+          -
+          ${escaparHTML(c.nombre || "")}
+          ${c.telefono
+            ? " - " + escaparHTML(c.telefono)
+            : ""}
+        </option>
+      `;
+
+    }).join("");
+
+  if(selectVenta){
+
+    const valorActual =
+      selectVenta.value;
+
+    selectVenta.innerHTML =
+      '<option value="">Seleccionar cliente</option>' +
+      opciones;
+
+    if(valorActual){
+      selectVenta.value = valorActual;
+    }
+  }
+
+  if(selectApartado){
+
+    const valorActual =
+      selectApartado.value;
+
+    selectApartado.innerHTML =
+      '<option value="">Seleccionar cliente</option>' +
+      opciones;
+
+    if(valorActual){
+      selectApartado.value = valorActual;
+    }
+  }
+}
+
+
+/* =========================================================
+   PROTECCIÓN PARA MOSTRAR TEXTO SIN ROMPER EL HTML
+   ========================================================= */
+
+function escaparHTML(valor){
+
+  return String(valor ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+   }/* ===== CORRECCIÓN CLIENTES ===== */
+
+async function eliminarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  if(!confirm(
+    "¿Eliminar este cliente?\n\n" +
+    (cliente.codigo_cliente || "") +
+    " - " +
+    (cliente.nombre || "")
+  )){
+    return;
+  }
+
+  try{
+
+    const respuesta = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/clientes?id=eq." +
+      encodeURIComponent(String(cliente.id)),
+      {
+        method:"DELETE",
+        headers:{
+          ...headersSupabase,
+          "Prefer":"return=representation"
+        },
+        cache:"no-store"
+      }
+    );
+
+    const texto = await respuesta.text();
+
+    if(!respuesta.ok){
+      throw new Error(texto || ("HTTP " + respuesta.status));
+    }
+
+    let eliminados = [];
+    try{
+      eliminados = texto ? JSON.parse(texto) : [];
+    }catch(e){
+      eliminados = [];
+    }
+
+    // Supabase debe devolver el cliente eliminado.
+    // Si devuelve [] significa que la fila no fue eliminada
+    // (por ejemplo, por una política RLS).
+    if(!Array.isArray(eliminados) || eliminados.length === 0){
+      throw new Error(
+        "Supabase no eliminó ningún registro. Revisa la política RLS de la tabla clientes."
+      );
+    }
+
+    // Actualizar inmediatamente la lista visible.
+    clientes = clientes.filter(
+      c => String(c.id) !== String(cliente.id)
+    );
+    filtrarClientes();
+
+    alert("Cliente eliminado correctamente.");
+
+  }catch(error){
+
+    console.error("ERROR AL ELIMINAR CLIENTE:",error);
+
+    alert(
+      "No se pudo eliminar el cliente.\n\n" +
+      error.message
+    );
+  }
+}
+
+
+function editarCliente(id){
+
+  const cliente = clientes.find(
+    c => String(c.id) === String(id)
+  );
+
+  if(!cliente){
+    alert("No se encontró el cliente.");
+    return;
+  }
+
+  clienteEditando = cliente.id;
+
+  const formulario =
+    document.getElementById("formCliente");
+
+  if(formulario){
+    formulario.style.display = "block";
+  }
+
+  document.getElementById("codigoCliente").value =
+    cliente.codigo_cliente || "";
+
+  document.getElementById("nombreCliente").value =
+    cliente.nombre || "";
+
+  document.getElementById("telefonoCliente").value =
+    cliente.telefono || "";
+
+  document.getElementById("emailCliente").value =
+    cliente.email || "";
+
+  document.getElementById("direccionCliente").value =
+    cliente.direccion || "";
+
+  document.getElementById("notasCliente").value =
+    cliente.notas || "";
+
+  const titulo =
+    document.getElementById("tituloFormularioCliente");
+
+  if(titulo){
+    titulo.textContent = "Editar cliente";
+  }
+
+  const boton =
+    document.getElementById("botonGuardarCliente");
+
+  if(boton){
+    boton.textContent = "Guardar cambios";
+  }
+
+  const mensaje =
+    document.getElementById("mensajeCliente");
+
+  if(mensaje){
+    mensaje.innerHTML = "";
+  }
+
+  formulario.scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
+}
+/* ================= PROVEEDORES ================= */
+let proveedores=[];
+let proveedorEditando=null;
+
+async function cargarProveedores(){
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{method:"GET",headers:headersSupabase,cache:"no-store"});
+const txt=await r.text();
+if(!r.ok)throw new Error(txt||("HTTP "+r.status));
+proveedores=txt?JSON.parse(txt):[];
+mostrarProveedores(proveedores);
+actualizarSelectorProveedoresArticulo();
+if(Array.isArray(articulos))mostrarArticulos(articulos);
+}catch(e){
+console.error("Error cargando proveedores:",e); proveedores=[];
+const c=document.getElementById("listaProveedores");
+if(c)c.innerHTML='<div class="mensaje-error">No se pudieron cargar los proveedores.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+function mostrarProveedores(lista){
+const c=document.getElementById("listaProveedores"); if(!c)return;
+if(!lista||!lista.length){c.innerHTML='<div class="tarjeta">No hay proveedores registrados.</div>';return;}
+c.innerHTML=lista.map(function(p){
+let html='<div class="cliente"><div class="codigo-cliente">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</div>';
+if(p.contacto)html+='<div class="dato">👤 '+escaparHTML(p.contacto)+'</div>';
+if(p.telefono)html+='<div class="dato">📞 '+escaparHTML(p.telefono)+'</div>';
+if(p.email)html+='<div class="dato">✉️ '+escaparHTML(p.email)+'</div>';
+if(p.direccion)html+='<div class="dato">📍 '+escaparHTML(p.direccion)+'</div>';
+if(p.notas)html+='<div class="dato">📝 '+escaparHTML(p.notas)+'</div>';
+html+='<div class="separador"></div><button class="editar" onclick="editarProveedor(\''+escaparHTML(p.id||"")+'\')">✏️ Editar</button><button class="eliminar" onclick="eliminarProveedor(\''+escaparHTML(p.id||"")+'\')">🗑️ Eliminar</button></div>';
+return html;
+}).join("");
+}
+
+function filtrarProveedores(){
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+if(!t){mostrarProveedores(proveedores);return;}
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+}
+
+function mostrarFormularioProveedor(){
+proveedorEditando=null;
+document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Nuevo proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar proveedor";
+["nombreProveedor","contactoProveedor","telefonoProveedor","emailProveedor","direccionProveedor","notasProveedor"].forEach(function(id){document.getElementById(id).value="";});
+document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+function cancelarProveedor(){
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; document.getElementById("mensajeProveedor").innerHTML="";
+}
+
+async function guardarProveedor(){
+const mensaje=document.getElementById("mensajeProveedor");
+const datos={nombre:document.getElementById("nombreProveedor").value.trim(),telefono:document.getElementById("telefonoProveedor").value.trim(),email:document.getElementById("emailProveedor").value.trim(),direccion:document.getElementById("direccionProveedor").value.trim(),notas:document.getElementById("notasProveedor").value.trim()};
+if(!datos.nombre){mensaje.innerHTML='<div class="mensaje-error">Escribe el nombre del proveedor.</div>';return;}
+try{
+mensaje.innerHTML="Guardando proveedor...";
+let r;
+if(proveedorEditando){
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(proveedorEditando),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}else{
+r=await fetch(SUPABASE_URL+"/rest/v1/proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify(datos)});
+}
+if(!r.ok)throw new Error(await r.text());
+proveedorEditando=null; document.getElementById("formProveedor").style.display="none"; await cargarProveedores();
+}catch(e){console.error(e);mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el proveedor.<br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+
+function editarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p){alert("No se encontró el proveedor.");return;}
+proveedorEditando=p.id; document.getElementById("formProveedor").style.display="block";
+document.getElementById("tituloFormularioProveedor").textContent="Editar proveedor";
+document.getElementById("botonGuardarProveedor").textContent="💾 Guardar cambios";
+document.getElementById("nombreProveedor").value=p.nombre||"";
+document.getElementById("contactoProveedor").value=p.contacto||"";
+document.getElementById("telefonoProveedor").value=p.telefono||"";
+document.getElementById("emailProveedor").value=p.email||"";
+document.getElementById("direccionProveedor").value=p.direccion||"";
+document.getElementById("notasProveedor").value=p.notas||"";
+document.getElementById("mensajeProveedor").innerHTML="";
+document.getElementById("formProveedor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function eliminarProveedor(id){
+const p=proveedores.find(function(x){return String(x.id)===String(id);});
+if(!p)return;
+if(!confirm("¿Quieres eliminar al proveedor?\n\n"+(p.nombre||"")))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?id=eq."+encodeURIComponent(p.id),{method:"DELETE",headers:{...headersSupabase,"Prefer":"return=representation"}});
+const txt=await r.text(); if(!r.ok)throw new Error(txt);
+await cargarProveedores(); alert("Proveedor eliminado correctamente.");
+}catch(e){console.error(e);alert("No se pudo eliminar el proveedor.\n\n"+(e.message||String(e)));}
+}
+
+
+/* ================= GASTOS ================= */
+
+function fechaHoyMexicoApartado(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+function fechaMexicoHoy(){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+function inicializarGastos(){
+const fecha=document.getElementById("gastoFecha");
+const fechaHist=document.getElementById("fechaHistorialGastos");
+const hoy=fechaMexicoHoy();
+if(fecha && !fecha.value)fecha.value=hoy;
+if(fechaHist && !fechaHist.value)fechaHist.value=hoy;
+}
+
+async function guardarGasto(){
+const mensaje=document.getElementById("mensajeGasto");
+const fecha=document.getElementById("gastoFecha")?.value||"";
+const concepto=document.getElementById("gastoConcepto")?.value.trim()||"";
+const categoria=document.getElementById("gastoCategoria")?.value||"otros";
+const importe=Number(document.getElementById("gastoImporte")?.value||0);
+const notas=document.getElementById("gastoNotas")?.value.trim()||"";
+
+if(!fecha){mensaje.innerHTML='<div class="mensaje-error">Selecciona la fecha del gasto.</div>';return;}
+if(!concepto){mensaje.innerHTML='<div class="mensaje-error">Escribe el concepto del gasto.</div>';return;}
+if(!Number.isFinite(importe)||importe<=0){mensaje.innerHTML='<div class="mensaje-error">Indica un importe mayor que 0.</div>';return;}
+
+try{
+mensaje.innerHTML="Guardando gasto...";
+const fechaISO=new Date(fecha+"T12:00:00").toISOString();
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos",{
+method:"POST",
+headers:{...headersSupabase,"Prefer":"return=representation"},
+body:JSON.stringify({fecha:fechaISO,concepto:concepto,categoria:categoria,importe:importe,notas:notas})
+});
+if(!r.ok)throw new Error(await r.text());
+
+document.getElementById("gastoConcepto").value="";
+document.getElementById("gastoImporte").value="";
+document.getElementById("gastoNotas").value="";
+mensaje.innerHTML='<div class="mensaje-exito">✅ Gasto registrado correctamente.</div>';
+await cargarHistorialGastos();
+await cargarResumenVentasDia();
+}catch(e){
+console.error("Error guardando gasto:",e);
+mensaje.innerHTML='<div class="mensaje-error">No se pudo guardar el gasto.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function cargarHistorialGastos(){
+const contenedor=document.getElementById("historialGastos");
+if(!contenedor)return;
+const fechaFiltro=document.getElementById("fechaHistorialGastos")?.value||fechaMexicoHoy();
+contenedor.innerHTML="🔄 Cargando gastos...";
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&order=fecha.desc&limit=1000",{headers:headersSupabase,cache:"no-store"});
+if(!r.ok)throw new Error(await r.text());
+const gastos=await r.json();
+const filtrados=gastos.filter(function(g){
+return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(g.fecha))===fechaFiltro;
+});
+if(!filtrados.length){
+contenedor.innerHTML='<div class="tarjeta">No hay gastos registrados para este día.</div>';
+return;
+}
+const total=filtrados.reduce((s,g)=>s+Number(g.importe||0),0);
+contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+filtrados.map(function(g){
+return '<div class="historial">'+
+'<strong>💸 '+escaparHTML(g.concepto||"Sin concepto")+'</strong>'+
+'<div class="fecha-operacion">📅 '+formatearFecha(g.fecha)+'</div>'+
+'<div class="dato">Categoría: '+escaparHTML(g.categoria||"otros")+'</div>'+
+'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(2)+'</strong></div>'+
+(g.notas?'<div class="dato">📝 '+escaparHTML(g.notas)+'</div>':"")+
+'<div class="separador"></div>'+
+'<button class="eliminar" onclick="eliminarGasto(\''+g.id+'\')">🗑️ Eliminar gasto</button>'+
+'</div>';
+}).join("");
+}catch(e){
+console.error("Error historial gastos:",e);
+contenedor.innerHTML='<div class="mensaje-error">No se pudo cargar el historial de gastos.<br>'+escaparHTML(e.message||String(e))+'</div>';
+}
+}
+
+async function eliminarGasto(id){
+if(!confirm("¿Quieres eliminar este gasto?"))return;
+try{
+const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?id=eq."+encodeURIComponent(id),{
+method:"DELETE",
+headers:{...headersSupabase,"Prefer":"return=minimal"}
+});
+if(!r.ok)throw new Error(await r.text());
+await cargarHistorialGastos();
+await cargarResumenVentasDia();
+}catch(e){
+console.error("Error eliminando gasto:",e);
+alert("No se pudo eliminar el gasto.\n\n"+(e.message||String(e)));
+}
+}
+
+
+/* ================= FIN GASTOS ================= */
+
+/* ================= ADMINISTRACION ================= */
+
+function obtenerPinAdmin(){
+  return localStorage.getItem("muebleria_pin_admin") || "1234";
+}
+
+async function entrarAdministracion(){
+  const pin = (document.getElementById("adminPin")?.value || "").trim();
+  const mensaje = document.getElementById("mensajeAdminLogin");
+
+  if(pin !== obtenerPinAdmin()){
+    if(mensaje) mensaje.innerHTML = '<div class="mensaje-error">PIN incorrecto.</div>';
+    return;
+  }
+
+  if(mensaje) mensaje.innerHTML = "🔄 Cargando administración...";
+  try{
+    await cargarResumenAdministracion();
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+    if(mensaje) mensaje.innerHTML = "";
+  }catch(e){
+    console.error("Error entrando en administración:",e);
+    if(mensaje) mensaje.innerHTML = '<div class="mensaje-error">❌ No se pudo cargar Administración.<br>'+escaparHTML(e.message||String(e))+'</div>';
+  }
+}
+
+function salirAdministracion(){
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLogin").style.display = "block";
+  const pin = document.getElementById("adminPin");
+  if(pin) pin.value = "";
+  const mensaje = document.getElementById("mensajeAdminLogin");
+  if(mensaje) mensaje.innerHTML = "";
+}
+
+function numeroAdmin(valor){
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function dineroAdmin(valor){
+  return numeroAdmin(valor).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+}
+
+async function cargarResumenAdministracion(){
+  const contenedor=document.getElementById("resumenAdministracion");
+  if(!contenedor)return;
+
+  let controles=document.getElementById("adminControlesPeriodo");
+  if(!controles){
+    controles=document.createElement("div");
+    controles.id="adminControlesPeriodo";
+    controles.className="tarjeta";
+    controles.innerHTML=`
+      <h3>📅 Consultar periodo</h3>
+      <label>Periodo</label>
+      <select id="adminPeriodo">
+        <option value="dia">Día</option>
+        <option value="semana">Semana</option>
+        <option value="mes">Mes</option>
+      </select>
+      <label>Selecciona la fecha</label>
+      <input id="adminFecha" type="date">
+    `;
+    contenedor.parentElement.insertBefore(controles,contenedor);
+    document.getElementById("adminFecha").value=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City"}).format(new Date());
+    document.getElementById("adminPeriodo").addEventListener("change",cargarResumenAdministracion);
+    document.getElementById("adminFecha").addEventListener("change",cargarResumenAdministracion);
+  }
+
+  const periodo=document.getElementById("adminPeriodo")?.value||"dia";
+  const fechaSeleccionada=document.getElementById("adminFecha")?.value;
+  const base=new Date((fechaSeleccionada||new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City"}).format(new Date()))+"T12:00:00-06:00");
+  let inicio=new Date(base);
+  let fin=new Date(base);
+
+  if(periodo==="semana"){
+    const dia=base.getDay();
+    const diferencia=(dia+6)%7;
+    inicio.setDate(base.getDate()-diferencia);
+    fin=new Date(inicio);
+    fin.setDate(inicio.getDate()+7);
+  }else if(periodo==="mes"){
+    inicio=new Date(base.getFullYear(),base.getMonth(),1,12);
+    fin=new Date(base.getFullYear(),base.getMonth()+1,1,12);
+  }else{
+    fin.setDate(fin.getDate()+1);
+  }
+
+  const formatoFecha=x=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(x);
+  const desde=formatoFecha(inicio);
+  const hasta=formatoFecha(fin);
+  const etiqueta=periodo==="dia"
+    ? desde
+    : periodo==="semana"
+      ? desde+" al "+formatoFecha(new Date(fin.getTime()-86400000))
+      : inicio.toLocaleDateString("es-MX",{month:"long",year:"numeric"});
+
+  contenedor.innerHTML="🔄 Cargando resumen de "+etiqueta+"...";
+
+  try{
+    const filtroVentas="&fecha=gte."+encodeURIComponent(desde+"T00:00:00-06:00")+"&fecha=lt."+encodeURIComponent(hasta+"T00:00:00-06:00");
+    const filtroGastos=filtroVentas;
+    const filtroCompras=filtroVentas;
+
+    const [rv,rd,ra,rc,rg]=await Promise.all([
+      fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&estado=neq.cancelada"+filtroVentas,{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,costo",{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/compras?select=*&estado=neq.cancelada"+filtroCompras,{headers:headersSupabase,cache:"no-store"}),
+      fetch(SUPABASE_URL+"/rest/v1/gastos?select=*"+filtroGastos,{headers:headersSupabase,cache:"no-store"})
+    ]);
+
+    if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+    if(!rd.ok)throw new Error("Detalles de ventas: "+await rd.text());
+    if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+    if(!rc.ok)throw new Error("Compras: "+await rc.text());
+    if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+
+    const ventas=await rv.json();
+    const detalles=await rd.json();
+    const articulosAdmin=await ra.json();
+    const compras=await rc.json();
+    const gastos=await rg.json();
+
+    const mapaCosto={};
+    articulosAdmin.forEach(a=>mapaCosto[String(a.id)]=numeroAdmin(a.costo));
+
+    const ventasCobradas=ventas.filter(v=>numeroAdmin(v.total)>0);
+    const totalVentasCobradas=ventasCobradas.reduce((s,v)=>s+numeroAdmin(v.total),0);
+    const idsVentas={};
+    ventasCobradas.forEach(v=>idsVentas[String(v.id)]=true);
+
+    const costoVentas=detalles.reduce((s,d)=>{
+      if(!idsVentas[String(d.venta_id)])return s;
+      return s+numeroAdmin(d.cantidad)*numeroAdmin(mapaCosto[String(d.articulo_id)]);
+    },0);
+
+    const gananciaVentas=totalVentasCobradas-costoVentas;
+    const porcentajeGanancia=totalVentasCobradas>0?(gananciaVentas/totalVentasCobradas)*100:0;
+    const totalCompras=compras.reduce((s,v)=>s+numeroAdmin(v.total??v.importe??v.monto),0);
+    const totalGastos=gastos.reduce((s,v)=>s+numeroAdmin(v.importe??v.total??v.monto),0);
+    const resultado=gananciaVentas-totalGastos;
+
+    contenedor.innerHTML=`
+      <div class="info-articulo"><strong>📅 Periodo: ${escaparHTML(etiqueta)}</strong></div>
+      <div class="info-articulo"><strong>💵 Ventas registradas</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
+      <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
+      <div class="info-articulo"><strong>🛒 Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
+      <div class="info-articulo"><strong>💸 Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
+      <div class="info-articulo"><strong>📊 Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
+      <div class="ayuda">La fecha seleccionada determina el día, la semana o el mes que se consulta. La ganancia usa el costo registrado de cada artículo vendido. Los apartados pendientes no se consideran ganancia.</div>
+    `;
+  }catch(error){
+    console.error("Error en administración:",error);
+    contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el resumen de Administración.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+    throw error;
+  }
+}
+function cambiarPinAdministracion(){
+  const actual = (document.getElementById("pinActual")?.value || "").trim();
+  const nuevo = (document.getElementById("pinNuevo")?.value || "").trim();
+  const confirmacion = (document.getElementById("pinNuevoConfirmacion")?.value || "").trim();
+  const mensaje = document.getElementById("mensajeCambioPin");
+
+  if(actual !== obtenerPinAdmin()){
+    mensaje.innerHTML = '<div class="mensaje-error">El PIN actual no es correcto.</div>';
+    return;
+  }
+  if(!/^\d{4,12}$/.test(nuevo)){
+    mensaje.innerHTML = '<div class="mensaje-error">El nuevo PIN debe tener entre 4 y 12 números.</div>';
+    return;
+  }
+  if(nuevo !== confirmacion){
+    mensaje.innerHTML = '<div class="mensaje-error">Los nuevos PIN no coinciden.</div>';
+    return;
+  }
+
+  localStorage.setItem("muebleria_pin_admin",nuevo);
+  document.getElementById("pinActual").value = "";
+  document.getElementById("pinNuevo").value = "";
+  document.getElementById("pinNuevoConfirmacion").value = "";
+  mensaje.innerHTML = '<div class="mensaje-exito">✓ PIN cambiado correctamente.</div>';
+}
+
+/* ================= FIN ADMINISTRACION ================= */
+
+</script>
+
+
+<script id="ventas-multiples">
+(function(){
+  let ventaItems=[];
+
+  function money(n){
+    return "$"+Number(n||0).toFixed(2);
+  }
+
+  function el(id){ return document.getElementById(id); }
+
+  function renderVentaItems(){
+    const box=el("ventaItemsLista");
+    if(!box)return;
+    if(!ventaItems.length){
+      box.innerHTML='<div class="ayuda">Todavía no hay artículos añadidos a esta venta.</div>';
+    }else{
+      box.innerHTML=ventaItems.map(function(x,i){
+        return '<div class="info-articulo">'+
+          '<strong>'+escaparHTML(x.nombre||"")+'</strong><br>'+
+          'Código: '+escaparHTML(x.codigo||"")+
+          '<br>Cantidad: '+x.cantidad+
+          ' × '+money(x.precio)+
+          ' = <strong>'+money(x.subtotal)+'</strong>'+
+          '<button type="button" class="eliminar" onclick="quitarArticuloVenta('+i+')">🗑️ Quitar</button>'+
+          '</div>';
+      }).join("");
+    }
+    actualizarTotalVenta();
+  }
+
+  function totalPendiente(){
+    const cantidad=Number(el("ventaCantidad")?.value||0);
+    const precio=Number(el("ventaPrecio")?.value||0);
+    return (cantidad>0 && precio>=0) ? cantidad*precio : 0;
+  }
+
+  window.actualizarTotalVenta=function(){
+    const totalItems=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+    const total=totalItems+totalPendiente();
+    if(el("totalVenta"))el("totalVenta").innerHTML=money(total);
+  };
+
+  window.quitarArticuloVenta=function(i){
+    ventaItems.splice(i,1);
+    renderVentaItems();
+  };
+
+  window.agregarArticuloVenta=function(){
+    const mensaje=el("mensajeVenta");
+    const a=articuloVentaSeleccionado;
+    const cantidad=Number(el("ventaCantidad")?.value||0);
+    const precio=Number(el("ventaPrecio")?.value||0);
+
+    if(!a){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un artículo antes de añadirlo.</div>';
+      return;
+    }
+    if(!Number.isInteger(cantidad)||cantidad<1){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad entera mayor que 0.</div>';
+      return;
+    }
+    if(!Number.isFinite(precio)||precio<0){
+      mensaje.innerHTML='<div class="mensaje-error">❌ El precio no puede ser negativo.</div>';
+      return;
+    }
+
+    const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id));
+    const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
+
+    if(nuevaCantidad>Number(a.stock||0)){
+      mensaje.innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||"")+'. Disponible: '+Number(a.stock||0)+'</div>';
+      return;
+    }
+
+    if(existente){
+      existente.cantidad=nuevaCantidad;
+      existente.precio=precio;
+      existente.subtotal=nuevaCantidad*precio;
+    }else{
+      ventaItems.push({
+        articulo_id:a.id,
+        nombre:a.nombre||"",
+        codigo:a.codigo||"",
+        cantidad:cantidad,
+        precio:precio,
+        subtotal:cantidad*precio
+      });
+    }
+
+    mensaje.innerHTML="";
+    el("ventaCodigo").value="";
+    el("ventaNombre").value="";
+    el("ventaCantidad").value="1";
+    el("ventaPrecio").value="";
+    el("estadoVentaCodigo").innerHTML="";
+    el("estadoVentaNombre").innerHTML="";
+    el("resultadoVenta").innerHTML="";
+    el("infoPrecioVenta").innerHTML="";
+    articuloVentaSeleccionado=null;
+    renderVentaItems();
+  };
+
+  window.registrarVenta=async function(){
+    const mensaje=el("mensajeVenta");
+    const tipoCliente=el("ventaTipoCliente").value;
+    const clienteTexto=el("ventaCliente").value.trim();
+    const metodoPago=el("ventaMetodoPago").value;
+
+    // Si hay un artículo seleccionado en los campos, se añade automáticamente.
+    const a=articuloVentaSeleccionado;
+    const cantidad=Number(el("ventaCantidad")?.value||0);
+    const precio=Number(el("ventaPrecio")?.value||0);
+    if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
+      const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id));
+      const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
+      if(nuevaCantidad>Number(a.stock||0)){
+        mensaje.innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||"")+'. Disponible: '+Number(a.stock||0)+'</div>';
+        return;
+      }
+      if(existente){
+        existente.cantidad=nuevaCantidad;
+        existente.precio=precio;
+        existente.subtotal=nuevaCantidad*precio;
+      }else{
+        ventaItems.push({articulo_id:a.id,nombre:a.nombre||"",codigo:a.codigo||"",cantidad:cantidad,precio:precio,subtotal:cantidad*precio});
+      }
+      el("ventaCodigo").value="";
+      el("ventaNombre").value="";
+      el("ventaCantidad").value="1";
+      el("ventaPrecio").value="";
+      el("estadoVentaCodigo").innerHTML="";
+      el("estadoVentaNombre").innerHTML="";
+      el("resultadoVenta").innerHTML="";
+      el("infoPrecioVenta").innerHTML="";
+      articuloVentaSeleccionado=null;
+    }
+
+    if(!ventaItems.length){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Añade al menos un artículo a la venta.</div>';
+      return;
+    }
+
+    if(tipoCliente==="cliente"&&!clienteVentaSeleccionado&&clienteTexto){
+      const c=clientes.find(function(c){
+        return String(c.codigo_cliente||"").toLowerCase()===clienteTexto.toLowerCase() ||
+               String(c.nombre||"").toLowerCase()===clienteTexto.toLowerCase() ||
+               String(c.telefono||"").toLowerCase()===clienteTexto.toLowerCase();
+      });
+      if(c)clienteVentaSeleccionado=c;
+    }
+
+    if(tipoCliente==="cliente"&&!clienteVentaSeleccionado){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un cliente.</div>';
+      return;
+    }
+
+    // Comprobar nuevamente el stock real antes de guardar.
+    for(const x of ventaItems){
+      const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
+      if(!actual){
+        mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos el artículo '+escaparHTML(x.nombre||"")+'.</div>';
+        return;
+      }
+      if(Number(actual.stock||0)<x.cantidad){
+        mensaje.innerHTML='<div class="mensaje-error">❌ El stock cambió para '+escaparHTML(x.nombre||"")+'. Disponible ahora: '+Number(actual.stock||0)+'</div>';
+        return;
+      }
+    }
+
+    const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+    const idVenta=crypto.randomUUID();
+
+    try{
+      const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({
+          id:idVenta,
+          cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
+          fecha:new Date().toISOString(),
+          tipo_cliente:tipoCliente,
+          metodo_pago:metodoPago,
+          total:total,
+          estado:"completada",
+          notas:"Venta registrada desde la aplicacion"
+        })
+      });
+
+      if(!rv.ok)throw new Error("No se pudo guardar la venta: "+await rv.text());
+
+      const detalles=ventaItems.map(function(x){
+        return {
+          id:crypto.randomUUID(),
+          venta_id:idVenta,
+          articulo_id:x.articulo_id,
+          cantidad:x.cantidad,
+          precio_unitario:x.precio,
+          subtotal:x.subtotal
+        };
+      });
+
+      const rd=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify(detalles)
+      });
+
+      if(!rd.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        throw new Error("No se pudo guardar el detalle: "+await rd.text());
+      }
+
+      const stocksAplicados=[];
+      try{
+        for(const x of ventaItems){
+          const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
+          const nuevoStock=Number(actual.stock||0)-x.cantidad;
+          const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),{
+            method:"PATCH",
+            headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:nuevoStock})
+          });
+          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+          stocksAplicados.push({id:x.articulo_id,stockAnterior:Number(actual.stock||0)});
+        }
+      }catch(errorStock){
+        for(const s of stocksAplicados){
+          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
+            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:s.stockAnterior})
+          });
+        }
+        await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
+        throw errorStock;
+      }
+
+      mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
+        'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
+        'Artículos: <strong>'+ventaItems.length+'</strong><br>'+
+        'Total: <strong>'+money(total)+'</strong><br>'+
+        'Método de pago: '+escaparHTML(metodoPago)+
+        '</div>';
+
+      ventaItems=[];
+      clienteVentaSeleccionado=null;
+      el("ventaCliente").value="";
+      el("estadoClienteVenta").innerHTML="";
+      el("resultadoClienteVenta").innerHTML="";
+      renderVentaItems();
+
+      await cargarArticulos();
+      await cargarHistorialVentas();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error(e);
+      mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  function instalar(){
+    const totalBox=el("totalVenta");
+    if(!totalBox)return;
+
+    if(!el("ventaItemsPanel")){
+      const panel=document.createElement("div");
+      panel.id="ventaItemsPanel";
+      panel.className="tarjeta";
+      panel.innerHTML='<strong>🧾 Artículos de esta venta</strong>'+
+        '<div class="ayuda">Puedes añadir varios artículos al mismo ticket.</div>'+
+        '<div id="ventaItemsLista"></div>';
+      totalBox.closest(".info-articulo").parentNode.insertBefore(panel,totalBox.closest(".info-articulo"));
+    }
+
+    if(!el("botonAgregarArticuloVenta")){
+      const b=document.createElement("button");
+      b.id="botonAgregarArticuloVenta";
+      b.type="button";
+      b.textContent="➕ Añadir artículo a la venta";
+      b.onclick=window.agregarArticuloVenta;
+      el("infoPrecioVenta").parentNode.insertBefore(b,el("infoPrecioVenta").nextSibling);
+    }
+
+    const guardar=document.querySelector('#ventas button[onclick="registrarVenta()"]');
+    if(guardar){
+      guardar.textContent="💾 Registrar venta completa";
+      guardar.onclick=window.registrarVenta;
+    }
+
+    el("ventaCantidad")?.addEventListener("input",actualizarTotalVenta);
+    el("ventaPrecio")?.addEventListener("input",actualizarTotalVenta);
+    renderVentaItems();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",instalar);
+  }else{
+    instalar();
+  }
+})();
+</script>
+
+
+<script id="compras-multiples">
+(function(){
+  let compraItems=[];
+
+  function el(id){ return document.getElementById(id); }
+  function money(n){ return "$"+Number(n||0).toFixed(2); }
+
+  function fechaHoyMexicoCompra(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function vencimientoCreditoCompra(plazo){
+    const base=fechaHoyMexicoCompra();
+    const d=new Date(base+"T12:00:00-06:00");
+    d.setDate(d.getDate()+Number(plazo||0));
+    return new Intl.DateTimeFormat("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
+  }
+
+  function renderCompraItems(){
+    const box=el("compraItemsLista");
+    if(!box)return;
+
+    if(!compraItems.length){
+      box.innerHTML='<div class="ayuda">Todavía no hay artículos añadidos a esta compra.</div>';
+    }else{
+      box.innerHTML=compraItems.map(function(x,i){
+        return '<div class="info-articulo">'+
+          '<strong>'+escaparHTML(x.nombre||"")+'</strong><br>'+
+          'Código: '+escaparHTML(x.codigo||"")+
+          '<br>Cantidad: '+x.cantidad+
+          ' × '+money(x.costo)+
+          ' = <strong>'+money(x.subtotal)+'</strong>'+
+          '<button type="button" class="eliminar" onclick="quitarArticuloCompra('+i+')">🗑️ Quitar</button>'+
+          '</div>';
+      }).join("");
+    }
+
+    actualizarTotalCompraMultiple();
+  }
+
+  function totalCampoCompra(){
+    const cantidad=Number(el("compraCantidad")?.value||0);
+    const costo=Number(el("compraCosto")?.value||0);
+    return cantidad>0 && costo>=0 ? cantidad*costo : 0;
+  }
+
+  window.actualizarTotalCompraMultiple=function(){
+    const total=compraItems.reduce(function(s,x){
+      return s+Number(x.subtotal||0);
+    },0)+totalCampoCompra();
+
+    if(el("totalCompraMultiple")){
+      el("totalCompraMultiple").textContent=money(total);
+    }
+  };
+
+  window.quitarArticuloCompra=function(i){
+    compraItems.splice(i,1);
+    renderCompraItems();
+  };
+
+  function limpiarCamposArticuloCompra(){
+    articuloCompraSeleccionado=null;
+    if(el("compraCodigo"))el("compraCodigo").value="";
+    if(el("compraNombre"))el("compraNombre").value="";
+    if(el("compraCantidad"))el("compraCantidad").value="";
+    if(el("compraCosto"))el("compraCosto").value="";
+    if(el("estadoCodigo"))el("estadoCodigo").innerHTML="";
+    if(el("estadoNombre"))el("estadoNombre").innerHTML="";
+    if(el("resultadoCompra"))el("resultadoCompra").innerHTML="";
+  }
+
+  function anadirArticuloCompra(){
+    const mensaje=el("mensajeCompra");
+    const a=articuloCompraSeleccionado;
+    const cantidad=Number(el("compraCantidad")?.value||0);
+    const costo=Number(el("compraCosto")?.value||0);
+
+    if(!a){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un artículo antes de añadirlo.</div>';
+      return false;
+    }
+
+    if(!Number.isInteger(cantidad)||cantidad<1){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad entera mayor que 0.</div>';
+      return false;
+    }
+
+    if(!Number.isFinite(costo)||costo<0){
+      mensaje.innerHTML='<div class="mensaje-error">❌ El costo no puede ser negativo.</div>';
+      return false;
+    }
+
+    const existente=compraItems.find(function(x){
+      return String(x.articulo_id)===String(a.id);
+    });
+
+    if(existente){
+      existente.cantidad+=cantidad;
+      existente.costo=costo;
+      existente.subtotal=existente.cantidad*costo;
+    }else{
+      compraItems.push({
+        articulo_id:a.id,
+        nombre:a.nombre||"",
+        codigo:a.codigo||"",
+        cantidad:cantidad,
+        costo:costo,
+        subtotal:cantidad*costo
+      });
+    }
+
+    limpiarCamposArticuloCompra();
+    renderCompraItems();
+    mensaje.innerHTML="";
+    return true;
+  }
+
+  window.agregarArticuloCompra=function(){
+    anadirArticuloCompra();
+  };
+
+  window.registrarCompra=async function(){
+    const mensaje=el("mensajeCompra");
+    const proveedorId=(el("compraProveedorId")?.value||"").trim();
+
+    if(!proveedorId){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';
+      return;
+    }
+
+    if(articuloCompraSeleccionado){
+      const cantidad=Number(el("compraCantidad")?.value||0);
+      const costo=Number(el("compraCosto")?.value||0);
+
+      if(Number.isInteger(cantidad)&&cantidad>0&&Number.isFinite(costo)&&costo>=0){
+        anadirArticuloCompra();
+      }
+    }
+
+    if(!compraItems.length){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Añade al menos un artículo a la compra.</div>';
+      return;
+    }
+
+    try{
+      const articulosActualizados=[];
+
+      for(const x of compraItems){
+        const r=await fetch(
+          SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),
+          {headers:headersSupabase,cache:"no-store"}
+        );
+
+        if(!r.ok)throw new Error("No se pudo consultar el artículo "+(x.nombre||"")+": "+await r.text());
+
+        const datos=await r.json();
+        if(!datos.length)throw new Error("No se encontró el artículo "+(x.nombre||"")+".");
+
+        articulosActualizados.push(datos[0]);
+      }
+
+      const total=compraItems.reduce(function(s,x){
+        return s+Number(x.subtotal||0);
+      },0);
+
+      const formaPago=(el("compraFormaPago")?.value||"contado").toLowerCase();
+      const plazoCompra=Number(el("compraPlazoDias")?.value||30);
+      if(formaPago==="credito" && ![7,15,30,60,90].includes(plazoCompra))throw new Error("Selecciona un plazo de crédito válido.");
+      const pagadoInicial=formaPago==="credito" ? 0 : total;
+      const saldoInicial=total-pagadoInicial;
+
+      const idCompra=crypto.randomUUID();
+
+      const rc=await fetch(SUPABASE_URL+"/rest/v1/compras",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=representation"},
+        body:JSON.stringify({
+          id:idCompra,
+          proveedor_id:proveedorId,
+          id_proveedor:proveedorId,
+          fecha:new Date().toISOString(),
+          total:total,
+          estado:"completada",
+          metodo_pago:formaPago,
+          pagado:pagadoInicial,
+          saldo:saldoInicial,
+          notas:formaPago==="credito" ? ("Crédito a "+plazoCompra+" días | Vence: "+vencimientoCreditoCompra(plazoCompra)) : "Compra pagada de contado"
+        })
+      });
+
+      if(!rc.ok)throw new Error("No se pudo guardar la compra: "+await rc.text());
+
+      const comprasGuardadas=await rc.json();
+      const compraGuardada=comprasGuardadas[0];
+
+      if(!compraGuardada||!compraGuardada.id){
+        throw new Error("La compra no devolvió un identificador válido.");
+      }
+
+      const detalles=compraItems.map(function(x){
+        return {
+          id:crypto.randomUUID(),
+          compra_id:compraGuardada.id,
+          articulo_id:x.articulo_id,
+          cantidad:x.cantidad,
+          costo_unitario:x.costo,
+          subtotal:x.subtotal
+        };
+      });
+
+      const rd=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify(detalles)
+      });
+
+      if(!rd.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
+        throw new Error("La compra se creó, pero no se pudo guardar el detalle: "+await rd.text());
+      }
+
+      const stocksAplicadosCompra=[];
+      try{
+        for(let i=0;i<compraItems.length;i++){
+          const x=compraItems[i];
+          const articulo=articulosActualizados[i];
+          const nuevoStock=Number(articulo.stock||0)+x.cantidad;
+          const ra=await fetch(
+            SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),
+            {
+              method:"PATCH",
+              headers:{...headersSupabase,"Prefer":"return=minimal"},
+              body:JSON.stringify({stock:nuevoStock,costo:x.costo})
+            }
+          );
+          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
+          stocksAplicadosCompra.push({id:x.articulo_id,stockAnterior:Number(articulo.stock||0),costoAnterior:articulo.costo});
+        }
+      }catch(errorStock){
+        for(const s of stocksAplicadosCompra){
+          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
+            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({stock:s.stockAnterior,costo:s.costoAnterior})
+          });
+        }
+        await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
+        await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraGuardada.id),{method:"DELETE",headers:headersSupabase});
+        throw errorStock;
+      }
+
+      mensaje.innerHTML=
+        '<div class="mensaje-exito">'+
+        '<strong>✅ Compra registrada correctamente</strong><br><br>'+
+        'Operación: <strong>'+escaparHTML(String(compraGuardada.id).substring(0,8))+'</strong><br>'+
+        'Artículos: <strong>'+compraItems.length+'</strong><br>'+
+        'Total: <strong>'+money(total)+'</strong>'+
+        '</div>';
+
+      compraItems=[];
+      limpiarCamposArticuloCompra();
+
+      if(el("estadoProveedorCompra"))el("estadoProveedorCompra").innerHTML="";
+      if(el("resultadoProveedorCompra"))el("resultadoProveedorCompra").innerHTML="";
+      if(el("compraProveedor"))el("compraProveedor").value="";
+      if(el("compraProveedorId"))el("compraProveedorId").value="";
+
+      renderCompraItems();
+
+      await cargarArticulos();
+      await cargarHistorialCompras();
+
+    }catch(e){
+      console.error("Error registrando compra múltiple:",e);
+      mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  function instalar(){
+    const mensaje=el("mensajeCompra");
+    if(!mensaje)return;
+
+    if(!el("compraItemsPanel")){
+      const resultado=el("resultadoCompra");
+      if(resultado){
+        const panel=document.createElement("div");
+        panel.id="compraItemsPanel";
+        panel.className="tarjeta";
+        panel.innerHTML=
+          '<strong>🧾 Artículos de esta compra</strong>'+
+          '<div class="ayuda">Puedes añadir varios artículos a la misma compra.</div>'+
+          '<div id="compraItemsLista"></div>';
+        resultado.parentNode.insertBefore(panel,resultado.nextSibling);
+      }
+    }
+
+    if(el("compraCosto")){
+      const b=document.createElement("button");
+      b.id="botonAgregarArticuloCompra";
+      b.type="button";
+      b.textContent="➕ Añadir artículo a la compra";
+      b.onclick=window.agregarArticuloCompra;
+      el("compraCosto").parentNode.insertBefore(b,el("compraCosto").nextSibling);
+    }
+
+    if(!el("totalCompraPanel")){
+      const panel=document.createElement("div");
+      panel.id="totalCompraPanel";
+      panel.className="info-articulo";
+      panel.innerHTML=
+        '<strong>Total de la compra</strong>'+
+        '<div id="totalCompraMultiple" class="precio-venta">$0.00</div>';
+      mensaje.parentNode.insertBefore(panel,mensaje);
+    }
+
+    el("compraCantidad")?.addEventListener("input",actualizarTotalCompraMultiple);
+    el("compraCosto")?.addEventListener("input",actualizarTotalCompraMultiple);
+
+    renderCompraItems();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",instalar);
+  }else{
+    instalar();
+  }
+})();
+async function registrarPagoProveedor(compraId){
+  const importe=Number(prompt("Importe del abono al proveedor:","0"));
+  if(!Number.isFinite(importe)||importe<=0)return;
+  try{
+    const rc=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{headers:headersSupabase,cache:"no-store"});
+    if(!rc.ok)throw new Error("No se pudo consultar la compra.");
+    const compras=await rc.json(); if(!compras.length)throw new Error("No se encontró la compra.");
+    const compra=compras[0], saldo=Number(compra.saldo||0);
+    if(saldo<=0){alert("Esta compra ya está pagada.");return;}
+    if(importe>saldo){alert("El abono no puede superar la deuda.");return;}
+    const metodo=(prompt("Método: efectivo, tarjeta o transferencia","transferencia")||"transferencia").toLowerCase().trim();
+    if(!["efectivo","tarjeta","transferencia"].includes(metodo)){alert("Método no válido.");return;}
+    const nuevoPagado=Number(compra.pagado||0)+importe, nuevoSaldo=Math.max(0,Number(compra.total||0)-nuevoPagado);
+    const rp=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({compra_id:compra.id,proveedor_id:compra.proveedor_id||compra.id_proveedor||null,importe:importe,metodo_pago:metodo,notas:"Abono a compra a crédito"})});
+    if(!rp.ok)throw new Error("No se pudo registrar el abono: "+await rp.text());
+    const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,metodo_pago:nuevoSaldo>0?"credito":"credito_pagado"})});
+    if(!ru.ok)throw new Error("No se pudo actualizar la deuda: "+await ru.text());
+    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(2));
+    await cargarHistorialCompras();
+  }catch(e){alert("❌ No se pudo registrar el abono.\n\n"+(e.message||String(e)));}
+}
+
+
+</script>
+
+
+<!-- respaldo-navegacion-20261005 -->
+
+
+<!-- respaldo-nuevo-proveedor-20261005 -->
+
+
+<!-- respaldo-nuevo-articulo-20261005 -->
+
+
+<!-- comprobacion-supabase-independiente-20261005 -->
+<script>
+(function(){
+  var el=document.getElementById("conexion");
+  if(!el)return;
+  el.innerHTML="🔄 Comprobando conexión con Supabase...";
+  var ctl=new AbortController();
+  var timer=setTimeout(function(){ctl.abort();},6000);
+  fetch("https://ggaqknpwlohpbyxeyque.supabase.co/rest/v1/articulos?select=id&limit=1",{
+    method:"GET",
+    headers:{
+      "apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnYXFrbnB3bG9ocGJ5eGV5cXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MTU3MDEsImV4cCI6MjEwNTQ5MTcwMX0.Og4ty1LVNUSABJeUK-VdxP1C24nTbYrqzBxvn12kAsQ",
+      "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnYXFrbnB3bG9ocGJ5eGV5cXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MTU3MDEsImV4cCI6MjEwNTQ5MTcwMX0.Og4ty1LVNUSABJeUK-VdxP1C24nTbYrqzBxvn12kAsQ",
+      "Content-Type":"application/json"
+    },
+    cache:"no-store",signal:ctl.signal
+  }).then(function(r){
+    clearTimeout(timer);
+    if(r.ok){el.innerHTML="✅ Conectado correctamente con Supabase.";return;}
+    return r.text().then(function(t){el.innerHTML="❌ Supabase HTTP "+r.status+"<br><small>"+String(t).replace(/</g,"&lt;")+"</small>";});
+  }).catch(function(e){
+    clearTimeout(timer);
+    el.innerHTML="❌ Error de conexión: "+String(e.message||e);
+  });
+})();
+</script>
+
+<script id="reportes-conectados-20261005">
+(function(){
+  function fechaMexico(fecha){
+    return new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",
+      year:"numeric",month:"2-digit",day:"2-digit"
+    }).format(new Date(fecha));
+  }
+
+  function diaComercial(fecha){
+    const d=new Date(fecha);
+    if(Number.isNaN(d.getTime()))return "";
+    const partes=new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",
+      year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",hour12:false
+    }).formatToParts(d);
+    const vals={};
+    partes.forEach(function(p){vals[p.type]=p.value;});
+    const base=vals.year+"-"+vals.month+"-"+vals.day;
+    let clave=base;
+    if(Number(vals.hour)>=20){
+      const utcBase=new Date(base+"T12:00:00Z");
+      utcBase.setUTCDate(utcBase.getUTCDate()+1);
+      clave=utcBase.toISOString().slice(0,10);
+    }
+    return clave;
+  }
+
+  function dinero(n){
+    return "$"+Number(n||0).toFixed(2);
+  }
+
+  window.cargarReporteVentasDiarias=async function(){
+    const box=document.getElementById("reporteVentasDiarias");
+    if(!box)return;
+    box.innerHTML="🔄 Cargando ventas por día...";
+    try{
+      const [rv,rg]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+      const ventas=await rv.json();
+      const gastos=await rg.json();
+      const mapa={};
+
+      ventas.forEach(function(v){
+        if(["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()))return;
+        const dia=diaComercial(v.fecha);
+        if(!dia)return;
+        if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,gastos:0};
+        mapa[dia].ventas+=Number(v.total||0);
+        mapa[dia].cantidad++;
+      });
+
+      gastos.forEach(function(g){
+        const dia=diaComercial(g.fecha);
+        if(!dia)return;
+        if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,gastos:0};
+        mapa[dia].gastos+=Number(g.importe||0);
+      });
+
+      const dias=Object.keys(mapa).sort().reverse();
+      if(!dias.length){
+        box.innerHTML='<div class="tarjeta">Todavía no hay operaciones para mostrar.</div>';
+        return;
+      }
+
+      box.innerHTML=dias.map(function(dia){
+        const x=mapa[dia];
+        const neto=x.ventas-x.gastos;
+        return '<div class="historial">'+
+          '<div class="fecha-operacion">📅 '+dia+'</div>'+
+          '<div class="dato">Operaciones de venta: <strong>'+x.cantidad+'</strong></div>'+
+          '<div class="dato">Ventas: <strong>'+dinero(x.ventas)+'</strong></div>'+
+          '<div class="dato">Gastos: <strong>-'+dinero(x.gastos)+'</strong></div>'+
+          '<div class="dato">Neto después de gastos: <strong>'+dinero(neto)+'</strong></div>'+
+          '<div class="ayuda">Día comercial: de 20:00 a 19:59 hora de México.</div>'+
+        '</div>';
+      }).join("");
+    }catch(e){
+      console.error("Error reporte ventas diarias:",e);
+      box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  window.cargarReporteArticulosVendidos=async function(){
+    const box=document.getElementById("reporteArticulosVendidos");
+    if(!box)return;
+    box.innerHTML="🔄 Cargando artículos vendidos...";
+    try{
+      const [rv,rd,ra]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=id,estado&limit=5000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=*&limit=10000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo&limit=5000",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rd.ok)throw new Error("Detalles de ventas: "+await rd.text());
+      if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+
+      const ventas=await rv.json();
+      const detalles=await rd.json();
+      const articulos=await ra.json();
+      const ventasValidas={};
+      ventas.forEach(function(v){
+        if(!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase())){
+          ventasValidas[String(v.id)]=true;
+        }
+      });
+
+      const mapaArticulos={};
+      articulos.forEach(function(a){
+        mapaArticulos[String(a.id)]=a;
+      });
+
+      const resumen={};
+      detalles.forEach(function(d){
+        if(!ventasValidas[String(d.venta_id)])return;
+        const id=String(d.articulo_id||"");
+        if(!resumen[id])resumen[id]={cantidad:0,importe:0};
+        resumen[id].cantidad+=Number(d.cantidad||0);
+        resumen[id].importe+=Number(d.subtotal||0);
+      });
+
+      const filas=Object.keys(resumen).map(function(id){
+        const a=mapaArticulos[id]||{};
+        return {
+          id:id,
+          nombre:a.nombre||"Artículo no disponible",
+          codigo:a.codigo||"",
+          cantidad:resumen[id].cantidad,
+          importe:resumen[id].importe
+        };
+      }).sort(function(a,b){return b.cantidad-a.cantidad||b.importe-a.importe;});
+
+      if(!filas.length){
+        box.innerHTML='<div class="tarjeta">Todavía no hay artículos vendidos.</div>';
+        return;
+      }
+
+      const max=filas[0];
+      const min=filas[filas.length-1];
+
+      box.innerHTML=
+        '<div class="info-articulo"><strong>🏆 Más vendido</strong><br>'+
+        escaparHTML(max.nombre)+' '+(max.codigo?'('+escaparHTML(max.codigo)+')':'')+
+        '<br>Unidades: <strong>'+max.cantidad+'</strong>'+
+        '<br>Importe: <strong>'+dinero(max.importe)+'</strong></div>'+
+        '<div class="info-articulo"><strong>📉 Menos vendido</strong><br>'+
+        escaparHTML(min.nombre)+' '+(min.codigo?'('+escaparHTML(min.codigo)+')':'')+
+        '<br>Unidades: <strong>'+min.cantidad+'</strong>'+
+        '<br>Importe: <strong>'+dinero(min.importe)+'</strong></div>'+
+        filas.map(function(x){
+          return '<div class="historial"><strong>'+escaparHTML(x.nombre)+'</strong>'+
+            (x.codigo?'<div class="dato">Código: '+escaparHTML(x.codigo)+'</div>':'')+
+            '<div class="dato">Unidades vendidas: <strong>'+x.cantidad+'</strong></div>'+
+            '<div class="dato">Importe vendido: <strong>'+dinero(x.importe)+'</strong></div>'+
+          '</div>';
+        }).join("");
+    }catch(e){
+      console.error("Error reporte artículos vendidos:",e);
+      box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+})();
+</script>
+
+
+<!-- auditoria-apartados-conectados-20261005 -->
+<script>
+(function(){
+  function msg(id,html){
+    const e=document.getElementById(id);
+    if(e)e.innerHTML=html;
+  }
+  function hoyMexico(){
+    return new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"
+    }).format(new Date());
+  }
+  function dinero(n){return "$"+Number(n||0).toFixed(2);}
+  function estadoNormal(v){return String(v||"").toLowerCase().trim();}
+
+  /*
+   * APARTADOS: creación transaccional por etapas.
+   * Si falla el pago o el stock, se limpian todos los registros creados.
+   */
+  window.registrarApartado=async function(){
+    const mensaje=document.getElementById("mensajeApartado");
+    const cliente=clienteApartadoSeleccionado;
+    let articulo=articuloApartadoSeleccionado;
+    const codigo=(document.getElementById("apartadoCodigo")?.value||"").trim();
+    const nombre=(document.getElementById("apartadoNombre")?.value||"").trim();
+    const cantidad=Number(document.getElementById("apartadoCantidad")?.value||0);
+    const precio=Number(document.getElementById("apartadoPrecio")?.value||0);
+    const anticipo=Number(document.getElementById("apartadoAnticipo")?.value||0);
+    const fechaAnticipo=(document.getElementById("apartadoFechaAnticipo")?.value||"").trim();
+    const metodoPago=(document.getElementById("apartadoMetodoPago")?.value||"efectivo").toLowerCase();
+    const notas=(document.getElementById("apartadoNotas")?.value||"").trim();
+
+    if(!cliente){msg("mensajeApartado",'<div class="mensaje-error">❌ Selecciona un cliente para el apartado.</div>');return;}
+    if(!articulo&&codigo)articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
+    if(!articulo&&nombre)articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo){msg("mensajeApartado",'<div class="mensaje-error">❌ No encontramos ese artículo.</div>');return;}
+    if(!Number.isInteger(cantidad)||cantidad<1){msg("mensajeApartado",'<div class="mensaje-error">❌ Indica una cantidad válida.</div>');return;}
+    const stockActual=Number(articulo.stock||0);
+    if(cantidad>stockActual){msg("mensajeApartado",'<div class="mensaje-error">❌ No hay suficiente stock. Disponible: <strong>'+stockActual+'</strong>.</div>');return;}
+    if(!Number.isFinite(precio)||precio<0){msg("mensajeApartado",'<div class="mensaje-error">❌ El precio no es válido.</div>');return;}
+    if(!Number.isFinite(anticipo)||anticipo<0||anticipo>cantidad*precio){msg("mensajeApartado",'<div class="mensaje-error">❌ El anticipo no puede ser negativo ni superar el total.</div>');return;}
+    if(anticipo>0 && fechaAnticipo){
+      const d=new Date(fechaAnticipo+"T12:00:00Z");
+      if(Number.isNaN(d.getTime())){msg("mensajeApartado",'<div class="mensaje-error">❌ La fecha del anticipo no es válida.</div>');return;}
+    }
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoPago)){
+      msg("mensajeApartado",'<div class="mensaje-error">❌ Método de pago no válido.</div>');return;
+    }
+
+    const total=cantidad*precio;
+    const saldo=Math.max(0,total-anticipo);
+    const idApartado=crypto.randomUUID();
+    let pagoId=null;
+    let stockActualConfirmado=stockActual;
+    let stockDescontado=false;
+
+    try{
+      msg("mensajeApartado","🔄 Creando apartado...");
+      const rr=await fetch(SUPABASE_URL+"/rest/v1/apartados",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({
+          id:idApartado,cliente_id:cliente.id,articulo_id:articulo.id,
+          cantidad:cantidad,precio_unitario:precio,fecha:new Date().toISOString(),
+          total:total,pagado:anticipo,saldo:saldo,
+          estado:saldo<=0?"pagado":"pendiente",metodo_pago:metodoPago,notas:notas
+        })
+      });
+      if(!rr.ok)throw new Error("No se pudo crear el apartado: "+await rr.text());
+
+      if(anticipo>0){
+        pagoId=crypto.randomUUID();
+        const fechaPago=fechaAnticipo
+          ?new Date(fechaAnticipo+"T12:00:00Z").toISOString()
+          :new Date().toISOString();
+        const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{
+          method:"POST",
+          headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({
+            id:pagoId,apartado_id:idApartado,fecha:fechaPago,
+            importe:anticipo,metodo_pago:metodoPago,notas:"Anticipo inicial del apartado"
+          })
+        });
+        if(!rp.ok)throw new Error("No se pudo guardar el anticipo: "+await rp.text());
+      }
+
+      /* Releer stock antes de descontar para no pisar un cambio reciente. */
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id)+"&select=id,stock",{
+        headers:headersSupabase,cache:"no-store"
+      });
+      if(!ra.ok)throw new Error("No se pudo comprobar el stock real.");
+      const arts=await ra.json();
+      if(!arts.length)throw new Error("No se encontró el artículo.");
+      stockActualConfirmado=Number(arts[0].stock||0);
+      if(cantidad>stockActualConfirmado)throw new Error("El stock cambió mientras se creaba el apartado. Disponible ahora: "+stockActualConfirmado);
+
+      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:stockActualConfirmado-cantidad})
+      });
+      if(!rs.ok)throw new Error("No se pudo descontar el stock: "+await rs.text());
+      stockDescontado=true;
+
+      msg("mensajeApartado",'<div class="mensaje-exito"><strong>✅ Apartado creado correctamente.</strong><br><br>Total: <strong>'+dinero(total)+'</strong><br>Anticipo: <strong>'+dinero(anticipo)+'</strong><br>Saldo: <strong>'+dinero(saldo)+'</strong></div>');
+      if(document.getElementById("apartadoCodigo"))document.getElementById("apartadoCodigo").value="";
+      if(document.getElementById("apartadoNombre"))document.getElementById("apartadoNombre").value="";
+      if(document.getElementById("apartadoCantidad"))document.getElementById("apartadoCantidad").value="1";
+      if(document.getElementById("apartadoPrecio"))document.getElementById("apartadoPrecio").value="";
+      if(document.getElementById("apartadoAnticipo"))document.getElementById("apartadoAnticipo").value="0";
+      if(document.getElementById("apartadoFechaAnticipo"))document.getElementById("apartadoFechaAnticipo").value=hoyMexico();
+      if(document.getElementById("apartadoNotas"))document.getElementById("apartadoNotas").value="";
+      articuloApartadoSeleccionado=null;
+      clienteApartadoSeleccionado=null;
+      await cargarArticulos();
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error creando apartado:",e);
+      /* Rollback completo: primero stock, luego pago y finalmente apartado. */
+      if(stockDescontado){
+        await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({stock:stockActualConfirmado})
+        });
+      }
+      if(pagoId){
+        await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?id=eq."+encodeURIComponent(pagoId),{
+          method:"DELETE",headers:headersSupabase
+        });
+      }
+      await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?apartado_id=eq."+encodeURIComponent(idApartado),{
+        method:"DELETE",headers:headersSupabase
+      });
+      await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(idApartado),{
+        method:"DELETE",headers:headersSupabase
+      });
+      msg("mensajeApartado",'<div class="mensaje-error">❌ No se pudo crear el apartado.<br><br>'+escaparHTML(e.message||String(e))+'</div>');
+    }
+  };
+
+  /*
+   * Historial activo: los apartados totalmente pagados desaparecen,
+   * pero los cancelados siguen visibles como histórico.
+   */
+  window.cargarHistorialApartados=async function(){
+    const contenedor=document.getElementById("historialApartados");
+    if(!contenedor)return;
+    contenedor.innerHTML="🔄 Cargando apartados...";
+    try{
+      const [ra,rc]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&order=fecha.desc",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/clientes?select=id,nombre,codigo_cliente",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!ra.ok)throw new Error(await ra.text());
+      const apartados=await ra.json();
+      const clientesDb=rc.ok?await rc.json():[];
+      const mapaClientes={};
+      clientesDb.forEach(c=>mapaClientes[String(c.id)]=c.nombre||c.codigo_cliente||"Cliente");
+
+      const activos=apartados.filter(a=>!["pagado","liquidado"].includes(estadoNormal(a.estado)));
+      if(!activos.length){
+        contenedor.innerHTML='<div class="tarjeta">No hay apartados pendientes. Los apartados totalmente pagados ya no aparecen aquí.</div>';
+        return;
+      }
+
+      const mapaArticulos={};
+      articulos.forEach(a=>mapaArticulos[String(a.id)]=a);
+
+      contenedor.innerHTML=activos.map(function(a){
+        const est=estadoNormal(a.estado);
+        const art=mapaArticulos[String(a.articulo_id)]||{};
+        const cancelado=["cancelada","cancelado"].includes(est);
+        let botones='<button type="button" onclick="mostrarHistorialAbonosApartado(\''+a.id+'\')">📜 Ver historial de adelantos</button>';
+        if(!cancelado){
+          botones+='<button type="button" class="eliminar" onclick="cancelarApartado(\''+a.id+'\')">❌ Cancelar apartado y devolver stock</button>';
+          if(est==="pendiente"&&Number(a.saldo||0)>0){
+            botones+='<button type="button" onclick="registrarAbonoApartado(\''+a.id+'\')">💵 Registrar adelanto</button>';
+          }
+        }else{
+          botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
+        }
+        return '<div class="historial">'+
+          '<strong>📋 Apartado</strong>'+
+          '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
+          '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
+          '<div class="dato">Cliente: <strong>'+escaparHTML(mapaClientes[String(a.cliente_id)]||"Cliente no disponible")+'</strong></div>'+
+          '<div class="dato">Artículo: <strong>'+escaparHTML(art.nombre||"Artículo no disponible")+'</strong></div>'+
+          '<div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div>'+
+          '<div class="dato">Precio por unidad: '+dinero(a.precio_unitario)+'</div>'+
+          '<div class="dato">Total: <strong>'+dinero(a.total)+'</strong></div>'+
+          '<div class="dato">Pagado: <strong>'+dinero(a.pagado)+'</strong></div>'+
+          '<div class="dato">Saldo: <strong>'+dinero(a.saldo)+'</strong></div>'+
+          '<div class="dato">Estado: <strong class="'+(cancelado?'':'estado-ok')+'">'+escaparHTML(a.estado||"pendiente")+'</strong></div>'+
+          (a.notas?'<div class="dato">📝 '+escaparHTML(a.notas)+'</div>':'')+
+          '<div class="separador"></div>'+botones+
+          '</div>';
+      }).join("");
+    }catch(e){
+      console.error("Error historial apartados:",e);
+      contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de apartados.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
+    }
+  };
+
+  window.registrarAbonoApartado=async function(id){
+    const importe=Number(prompt("Importe del nuevo adelanto:","0"));
+    if(!Number.isFinite(importe)||importe<=0)return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const datos=await r.json();
+      if(!datos.length)throw new Error("No se encontró el apartado.");
+      const a=datos[0], est=estadoNormal(a.estado), saldo=Number(a.saldo||0);
+      if(["cancelada","cancelado"].includes(est))throw new Error("Este apartado está cancelado.");
+      if(["pagado","liquidado"].includes(est)||saldo<=0)throw new Error("Este apartado ya está pagado.");
+      if(importe>saldo)throw new Error("El adelanto no puede superar el saldo pendiente.");
+      const fecha=prompt("Fecha del adelanto (AAAA-MM-DD):",hoyMexico());
+      if(!fecha||!/^\d{4}-\d{2}-\d{2}$/.test(fecha))return;
+      const fechaObj=new Date(fecha+"T12:00:00Z");
+      if(Number.isNaN(fechaObj.getTime()))throw new Error("La fecha no es válida.");
+      const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+      if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo))throw new Error("Método no válido.");
+      const nuevoPagado=Number(a.pagado||0)+importe;
+      const nuevoSaldo=Math.max(0,Number(a.total||0)-nuevoPagado);
+      const nuevoEstado=nuevoSaldo<=0?"pagado":"pendiente";
+      const pagoId=crypto.randomUUID();
+
+      const rp=await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos",{
+        method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({id:pagoId,apartado_id:a.id,fecha:fechaObj.toISOString(),importe:importe,metodo_pago:metodo,notas:"Adelanto posterior"})
+      });
+      if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
+
+      const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})
+      });
+      if(!ru.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?id=eq."+encodeURIComponent(pagoId),{method:"DELETE",headers:headersSupabase});
+        throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
+      }
+
+      alert("✅ Adelanto registrado.\n\nImporte: "+dinero(importe)+"\nNuevo saldo: "+dinero(nuevoSaldo));
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error registrando adelanto:",e);
+      alert("❌ No se pudo registrar el adelanto.\n\n"+(e.message||String(e)));
+    }
+  };
+
+  window.cancelarApartado=async function(id){
+    if(!confirm("¿Seguro que quieres cancelar este apartado?\n\nEl artículo regresará al stock."))return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const datos=await r.json();
+      if(!datos.length)throw new Error("No se encontró el apartado.");
+      const a=datos[0], est=estadoNormal(a.estado);
+      if(["cancelada","cancelado"].includes(est))throw new Error("Este apartado ya está cancelado.");
+      if(["pagado","liquidado"].includes(est))throw new Error("Este apartado ya está pagado/liquidado y no se puede cancelar.");
+
+      const articuloId=a.articulo_id, cantidad=Number(a.cantidad||0);
+      if(!articuloId||!Number.isInteger(cantidad)||cantidad<1)throw new Error("El apartado no tiene una cantidad válida para devolver al stock.");
+
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId)+"&select=id,stock",{headers:headersSupabase,cache:"no-store"});
+      if(!ra.ok)throw new Error(await ra.text());
+      const arts=await ra.json();
+      if(!arts.length)throw new Error("No se encontró el artículo.");
+      const stockAnterior=Number(arts[0].stock||0);
+      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:stockAnterior+cantidad})
+      });
+      if(!rs.ok)throw new Error("No se pudo devolver el stock: "+await rs.text());
+
+      const rc=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({estado:"cancelada"})
+      });
+      if(!rc.ok){
+        await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
+          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({stock:stockAnterior})
+        });
+        throw new Error("No se pudo marcar el apartado como cancelado: "+await rc.text());
+      }
+
+      alert("✅ Apartado cancelado. El stock fue devuelto.");
+      await cargarArticulos();
+      await cargarHistorialApartados();
+      await cargarResumenVentasDia();
+    }catch(e){
+      console.error("Error cancelando apartado:",e);
+      alert("❌ No se pudo cancelar el apartado.\n\n"+(e.message||String(e)));
+    }
+  };
+})();
+</script>
+
+
+<script>
+async function cargarResumenStockProveedores(){
+ const cont=document.getElementById("reporteStockProveedores");
+ if(!cont)return;
+ cont.innerHTML="🔄 Cargando stock por proveedor...";
+ try{
+  const [ra,rp]=await Promise.all([
+   fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo,stock,proveedor_id&activo=eq.true",{headers:headersSupabase,cache:"no-store"}),
+   fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"})
+  ]);
+  if(!ra.ok)throw new Error("Artículos: "+await ra.text());
+  if(!rp.ok)throw new Error("Proveedores: "+await rp.text());
+  const arts=await ra.json(), provs=await rp.json();
+  const mapa={};
+  provs.forEach(p=>mapa[String(p.id)]={nombre:p.nombre||"Sin nombre",articulos:0,unidades:0});
+  let sin=0, sinUnidades=0;
+  arts.forEach(a=>{
+   const id=String(a.proveedor_id||"");
+   if(mapa[id]){mapa[id].articulos++;mapa[id].unidades+=Number(a.stock||0);}
+   else{sin++;sinUnidades+=Number(a.stock||0);}
+  });
+  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial" style="background:'+colorProveedorStock(p.id)+';"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>'<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong> — Stock: <strong>'+Number(a.stock||0)+'</strong></div>').join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
+  const sinFila=sin?'<div class="historial" style="background:#f0f0f0"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
+  cont.innerHTML=(filas||'<div class="ayuda">No hay proveedores registrados.</div>')+sinFila;
+ }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
+}
+</script>
+
+<script id="compras-agrupacion-credito-20261006">
+(function(){
+  function hoyMexicoCompra(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function sumarDiasCompra(fecha,dias){
+    const d=new Date(fecha+"T12:00:00-06:00");
+    d.setDate(d.getDate()+Number(dias||0));
+    return new Intl.DateTimeFormat("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
+  }
+  function actualizarFormaPagoCompraNueva(){
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const info=document.getElementById("compraCreditoInfo");
+    const box=document.getElementById("compraPlazoBox");
+    if(info) info.innerHTML=forma==="credito"
+      ?"La compra quedará como deuda pendiente con el proveedor. Se registrará por separado de las compras de contado."
+      :"La compra se registrará pagada de contado y se agrupará con las demás compras de contado del mismo proveedor y día.";
+    if(box){
+      const mostrar=forma==="credito";
+      box.classList.toggle("oculto",!mostrar);
+      box.style.display=mostrar?"block":"none";
+    }
+  }
+  window.actualizarFormaPagoCompra=actualizarFormaPagoCompraNueva;
+
+  window.registrarCompra=async function(){
+    const mensaje=document.getElementById("mensajeCompra");
+    const proveedorId=(document.getElementById("compraProveedorId")?.value||"").trim();
+    if(!proveedorId){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';
+      return;
+    }
+
+    let articulo=articuloCompraSeleccionado;
+    const codigo=(document.getElementById("compraCodigo")?.value||"").trim();
+    const nombre=(document.getElementById("compraNombre")?.value||"").trim();
+    const cantidad=Number(document.getElementById("compraCantidad")?.value||0);
+    const costo=Number(document.getElementById("compraCosto")?.value||0);
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const plazo=Number(document.getElementById("compraPlazoDias")?.value||30);
+
+    if(!articulo&&codigo) articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
+    if(!articulo&&nombre) articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo){mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos ese articulo.</div>';return;}
+    if(!Number.isInteger(cantidad)||cantidad<1){mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad recibida válida.</div>';return;}
+    if(!Number.isFinite(costo)||costo<0){mensaje.innerHTML='<div class="mensaje-error">❌ El costo no puede ser negativo.</div>';return;}
+    if(!["contado","credito"].includes(forma)){mensaje.innerHTML='<div class="mensaje-error">❌ Forma de pago no válida.</div>';return;}
+    if(forma==="credito" && ![7,15,30,60,90].includes(plazo)){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un plazo de crédito válido.</div>';return;}
+
+    const subtotal=cantidad*costo;
+    const fechaActual=new Date();
+    const fechaMexico=hoyMexicoCompra();
+    const inicio=fechaMexico+"T00:00:00-06:00";
+    const siguiente=new Date(new Date(fechaMexico+"T12:00:00-06:00").getTime()+86400000);
+    const finFecha=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(siguiente);
+    const fin=finFecha+"T00:00:00-06:00";
+
+    try{
+      mensaje.innerHTML="🔄 Guardando compra...";
+
+      let compraId=null;
+      let compraGuardada=null;
+      let agrupada=false;
+
+      if(forma==="contado"){
+        const q=await fetch(
+          SUPABASE_URL+"/rest/v1/compras?select=*&proveedor_id=eq."+encodeURIComponent(proveedorId)+"&metodo_pago=eq.contado&fecha=gte."+encodeURIComponent(inicio)+"&fecha=lt."+encodeURIComponent(fin)+"&estado=neq.cancelada&estado=neq.cancelado&order=fecha.asc&limit=1",
+          {headers:headersSupabase,cache:"no-store"}
+        );
+        if(!q.ok)throw new Error("No se pudieron consultar las compras de contado del día: "+await q.text());
+        const existentes=await q.json();
+
+        if(existentes.length){
+          compraGuardada=existentes[0];
+          compraId=compraGuardada.id;
+          const nuevoTotal=Number(compraGuardada.total||0)+subtotal;
+          const nuevoPagado=Number(compraGuardada.pagado||0)+subtotal;
+          const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{
+            method:"PATCH",
+            headers:{...headersSupabase,"Prefer":"return=minimal"},
+            body:JSON.stringify({total:nuevoTotal,pagado:nuevoPagado,saldo:0,metodo_pago:"contado"})
+          });
+          if(!ru.ok)throw new Error("No se pudo actualizar la compra agrupada: "+await ru.text());
+          agrupada=true;
+        }
+      }
+
+      if(!compraId){
+        const datosCompra={
+          proveedor_id:proveedorId,
+          id_proveedor:proveedorId,
+          fecha:fechaActual.toISOString(),
+          total:subtotal,
+          estado:"completada",
+          metodo_pago:forma,
+          pagado:forma==="contado"?subtotal:0,
+          saldo:forma==="contado"?0:subtotal,
+          notas:forma==="credito"
+            ?("Crédito a "+plazo+" días | Vence: "+sumarDiasCompra(fechaMexico,plazo))
+            :"Compra registrada desde la aplicacion"
+        };
+        const rc=await fetch(SUPABASE_URL+"/rest/v1/compras",{
+          method:"POST",
+          headers:{...headersSupabase,"Prefer":"return=representation"},
+          body:JSON.stringify(datosCompra)
+        });
+        if(!rc.ok)throw new Error("No se pudo guardar la compra: "+await rc.text());
+        const arr=await rc.json();
+        compraGuardada=arr[0];
+        compraId=compraGuardada?.id;
+        if(!compraId)throw new Error("La compra no devolvió un identificador válido.");
+      }
+
+      const rd=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles",{
+        method:"POST",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({
+          id:crypto.randomUUID(),
+          compra_id:compraId,
+          articulo_id:articulo.id,
+          cantidad:cantidad,
+          costo_unitario:costo,
+          subtotal:subtotal
+        })
+      });
+      if(!rd.ok)throw new Error("La compra se guardó, pero no se pudo guardar el detalle: "+await rd.text());
+
+      const nuevoStock=Number(articulo.stock||0)+cantidad;
+      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articulo.id),{
+        method:"PATCH",
+        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        body:JSON.stringify({stock:nuevoStock,costo:costo})
+      });
+      if(!ra.ok)throw new Error("La compra se guardó, pero no se pudo actualizar el stock: "+await ra.text());
+
+      const totalFinal=Number(compraGuardada?.total||subtotal);
+      mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Compra registrada correctamente.</strong><br><br>'+
+        (agrupada
+          ?'Se agregó a la compra de contado del mismo proveedor y día.<br>'
+          :(forma==="credito"?'Compra a crédito separada.<br>':'Nueva compra de contado.<br>'))+
+        (forma==="credito"?'Plazo: <strong>'+plazo+' días</strong><br>Vence: <strong>'+sumarDiasCompra(fechaMexico,plazo)+'</strong><br>':'')+
+        'Artículo: <strong>'+escaparHTML(articulo.nombre||"")+'</strong><br>'+
+        'Cantidad: <strong>'+cantidad+'</strong><br>'+
+        'Nuevo stock: <strong>'+nuevoStock+'</strong><br>'+
+        'Importe agregado: <strong>'+subtotal.toFixed(2)+'</strong><br>'+
+        'Total de la compra: <strong>'+totalFinal.toFixed(2)+'</strong></div>';
+
+      articuloCompraSeleccionado=null;
+      if(document.getElementById("compraCodigo"))document.getElementById("compraCodigo").value="";
+      if(document.getElementById("compraNombre"))document.getElementById("compraNombre").value="";
+      if(document.getElementById("compraCantidad"))document.getElementById("compraCantidad").value="";
+      if(document.getElementById("compraCosto"))document.getElementById("compraCosto").value="";
+      if(document.getElementById("compraFormaPago"))document.getElementById("compraFormaPago").value="contado";
+      if(document.getElementById("compraPlazoDias"))document.getElementById("compraPlazoDias").value="30";
+      actualizarFormaPagoCompraNueva();
+      ["estadoCodigo","estadoNombre","resultadoCompra","estadoProveedorCompra","resultadoProveedorCompra"].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML="";});
+      const cp=document.getElementById("compraProveedor"), cpi=document.getElementById("compraProveedorId");
+      if(cp)cp.value="";
+      if(cpi)cpi.value="";
+      await cargarArticulos();
+      await cargarHistorialCompras();
+      if(typeof cargarDeudasProveedores==="function")await cargarDeudasProveedores();
+    }catch(error){
+      console.error("Error registrando compra:",error);
+      mensaje.innerHTML='<div class="mensaje-error">❌ No se pudo registrar la compra.<br><br>'+escaparHTML(error.message||String(error))+'</div>';
+    }
+  };
+
+  document.addEventListener("DOMContentLoaded",actualizarFormaPagoCompraNueva);
+  actualizarFormaPagoCompraNueva();
+})();
+</script>
+
+
+<script id="codigos-automaticos-20261006">
+(function(){
+  function quitarAcentos(t){
+    return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+
+  // El código siempre toma las 3 primeras letras del nombre del mueble.
+  // La numeración es global entre todos los artículos, independientemente
+  // del proveedor, para que nunca se repita un código.
+  function prefijoArticulo(nombre){
+    const limpio=quitarAcentos(nombre).replace(/[^a-zA-Z]/g,"").toUpperCase();
+    return limpio.slice(0,3);
+  }
+
+  async function siguienteCodigoArticulo(prefijo){
+    if(!prefijo)return "";
+    try{
+      // Consulta todos los códigos que empiezan por el mismo prefijo,
+      // incluidos artículos inactivos, para no reutilizar códigos antiguos.
+      const r=await fetch(
+        SUPABASE_URL+"/rest/v1/articulos?select=codigo&codigo=ilike."+encodeURIComponent(prefijo+"*"),
+        {headers:headersSupabase,cache:"no-store"}
+      );
+      if(r.ok){
+        const filas=await r.json();
+        let max=0;
+        filas.forEach(function(a){
+          const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"(\\d+)$"));
+          if(m)max=Math.max(max,Number(m[1]));
+        });
+        return prefijo+String(max+1).padStart(3,"0");
+      }
+    }catch(e){
+      console.error("No se pudo consultar la secuencia de códigos:",e);
+    }
+
+    let max=0;
+    (Array.isArray(articulos)?articulos:[]).forEach(function(a){
+      const m=String(a.codigo||"").toUpperCase().match(new RegExp("^"+prefijo+"(\\d+)$"));
+      if(m)max=Math.max(max,Number(m[1]));
+    });
+    return prefijo+String(max+1).padStart(3,"0");
+  }
+
+  async function actualizarCodigoAutomatico(){
+    if(typeof articuloEditando!=="undefined" && articuloEditando)return;
+    const nombre=document.getElementById("nombreArticulo");
+    const codigo=document.getElementById("codigoArticulo");
+    if(!nombre||!codigo)return;
+
+    const nombreActual=nombre.value.trim();
+    const prefijo=prefijoArticulo(nombreActual);
+    if(!prefijo)return;
+
+    if(codigo.dataset.generadoNombre===nombreActual)return;
+
+    codigo.dataset.generando="1";
+    const nuevo=await siguienteCodigoArticulo(prefijo);
+
+    if((document.getElementById("nombreArticulo")?.value||"").trim()===nombreActual &&
+       !(typeof articuloEditando!=="undefined" && articuloEditando)){
+      codigo.value=nuevo;
+      codigo.dataset.generadoNombre=nombreActual;
+    }
+    codigo.dataset.generando="";
+  }
+
+  const nombre=document.getElementById("nombreArticulo");
+  if(nombre){
+    nombre.addEventListener("blur",actualizarCodigoAutomatico);
+  }
+
+  const formularioOriginal=window.mostrarFormularioArticulo;
+  if(formularioOriginal){
+    window.mostrarFormularioArticulo=async function(){
+      await formularioOriginal.apply(this,arguments);
+      const codigo=document.getElementById("codigoArticulo");
+      if(codigo){
+        codigo.removeAttribute("readonly");
+        delete codigo.dataset.generadoNombre;
+      }
+      await actualizarCodigoAutomatico();
+    };
+  }
+
+  const editarOriginal=window.editarArticulo;
+  if(editarOriginal){
+    window.editarArticulo=function(){
+      const r=editarOriginal.apply(this,arguments);
+      const codigo=document.getElementById("codigoArticulo");
+      if(codigo)codigo.removeAttribute("readonly");
+      return r;
+    };
+  }
+})();
+</script>
+
+<script id="administracion-periodos-20261006">
+(function(){
+  function fechaMexicoAdmin(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function rango(periodo,fecha){
+    const d=new Date((fecha||fechaMexicoAdmin())+"T12:00:00-06:00");
+    let inicio=new Date(d), fin=new Date(d);
+    if(periodo==="dia"){ }
+    else if(periodo==="semana"){
+      const dia=d.getDay();
+      const diff=(dia+6)%7;
+      inicio.setDate(d.getDate()-diff);
+      fin=new Date(inicio); fin.setDate(inicio.getDate()+7);
+    }else{
+      inicio=new Date(d.getFullYear(),d.getMonth(),1,12);
+      fin=new Date(d.getFullYear(),d.getMonth()+1,1,12);
+    }
+    const fmt=x=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(x);
+    return {inicio:fmt(inicio),fin:fmt(fin),etiqueta:periodo==="dia"?fmt(inicio):periodo==="semana"?fmt(inicio)+" al "+fmt(new Date(fin.getTime()-86400000)):inicio.toLocaleDateString("es-MX",{month:"long",year:"numeric"})};
+  }
+  async function cargarNumerosAdministracion(){
+    const box=document.getElementById("resumenAdministracion"); if(!box)return;
+    const periodo=document.getElementById("adminPeriodo")?.value||"dia";
+    const fecha=document.getElementById("adminFecha")?.value||fechaMexicoAdmin();
+    const r=rango(periodo,fecha);
+    box.innerHTML="🔄 Cargando...";
+    try{
+      const q="&fecha=gte."+encodeURIComponent(r.inicio+"T00:00:00-06:00")+"&fecha=lt."+encodeURIComponent(r.fin+"T00:00:00-06:00");
+      const [rv,rg,rc]=await Promise.all([
+        fetch(SUPABASE_URL+"/rest/v1/ventas?select=total,fecha,estado&estado=neq.cancelada"+q,{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/gastos?select=importe,fecha"+q,{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/compras?select=total,fecha,estado"+q+"&estado=neq.cancelada",{headers:headersSupabase,cache:"no-store"})
+      ]);
+      if(!rv.ok)throw new Error("Ventas: "+await rv.text());
+      if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+      if(!rc.ok)throw new Error("Compras: "+await rc.text());
+      const ventas=await rv.json(), gastos=await rg.json(), compras=await rc.json();
+      const totalVentas=ventas.reduce((s,x)=>s+Number(x.total||0),0);
+      const totalGastos=gastos.reduce((s,x)=>s+Number(x.importe||0),0);
+      const totalCompras=compras.reduce((s,x)=>s+Number(x.total||0),0);
+      const resultado=totalVentas-totalGastos-totalCompras;
+      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(2)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(2)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(2)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(2)+"</strong></div></div>";
+    }catch(e){box.innerHTML="<div class='mensaje-error'>❌ No se pudo cargar el resumen.<br><br>"+escaparHTML(e.message||String(e))+"</div>";}
+  }
+  window.cargarResumenAdministracion=async function(){
+    const box=document.getElementById("resumenAdministracion");
+    if(!box)return;
+    const panel=box.parentElement;
+    if(panel && !document.getElementById("adminPeriodo")){
+      const controles=document.createElement("div");
+      controles.innerHTML="<label>Periodo</label><select id='adminPeriodo'><option value='dia'>Día</option><option value='semana'>Semana</option><option value='mes'>Mes</option></select><label>Selecciona la fecha</label><input id='adminFecha' type='date' value='"+fechaMexicoAdmin()+"'>";
+      panel.insertBefore(controles,box);
+      document.getElementById("adminPeriodo").addEventListener("change",cargarNumerosAdministracion);
+      document.getElementById("adminFecha").addEventListener("change",cargarNumerosAdministracion);
+    }
+    await cargarNumerosAdministracion();
+  };
+})();
+</script>
+\n
+
+
+
+<!-- compras-vencimientos-alerta-20261009 -->
+<script>
+(function(){
+  function fechaLocalMexico(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function fechaISOCompra(valor){
+    if(!valor)return "";
+    const m=String(valor).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m)return m[3]+"-"+m[2]+"-"+m[1];
+    const d=new Date(valor);
+    if(Number.isNaN(d.getTime()))return "";
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  }
+  function calcularVencimientoCompra(c){
+    const notas=String(c.notas||"");
+    const guardada=notas.match(/Vence:\s*(\d{2}\/\d{2}\/\d{4})/i);
+    if(guardada)return {iso:fechaISOCompra(guardada[1]),texto:guardada[1]};
+    const plazo=notas.match(/(?:cr[eé]dito\s+a\s*)(7|15|30|60|90)\s*d[ií]as/i);
+    if(!plazo||!c.fecha)return null;
+    const d=new Date(c.fecha);
+    if(Number.isNaN(d.getTime()))return null;
+    d.setDate(d.getDate()+Number(plazo[1]));
+    const iso=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+    const p=iso.split("-");
+    return {iso:iso,texto:p[2]+"/"+p[1]+"/"+p[0]};
+  }
+  const original=window.cargarHistorialCompras;
+  if(typeof original!=="function")return;
+  window.cargarHistorialCompras=async function(){
+    await original.apply(this,arguments);
+    const cont=document.getElementById("historialCompras");
+    if(!cont)return;
+    try{
+      const r=await fetch(SUPABASE_URL+"/rest/v1/compras?select=id,fecha,notas,metodo_pago,pagado,saldo,total,estado&estado=neq.cancelada&estado=neq.cancelado&order=fecha.desc",{headers:headersSupabase,cache:"no-store"});
+      if(!r.ok)throw new Error(await r.text());
+      const compras=await r.json();
+      const mapa={};
+      compras.forEach(c=>mapa[String(c.id||"").substring(0,8)]=c);
+      const hoy=fechaLocalMexico();
+      cont.querySelectorAll(".historial").forEach(card=>{
+        const idEl=card.querySelector(".operacion-id");
+        if(!idEl)return;
+        const m=(idEl.textContent||"").match(/Operación:\s*(\S+)/);
+        if(!m)return;
+        const c=mapa[m[1]];
+        if(!c)return;
+        card.classList.remove("compra-vencida","compra-pendiente");
+        card.querySelectorAll(".fecha-vencimiento").forEach(el=>el.remove());
+        const credito=/credito/i.test(String(c.metodo_pago||""))||Number(c.saldo||0)>0;
+        if(!credito)return;
+        const venc=calcularVencimientoCompra(c);
+        if(!venc)return;
+        const pendiente=Number(c.saldo||0)>0;
+        const vencida=pendiente&&venc.iso&&venc.iso<hoy;
+        card.classList.add(vencida?"compra-vencida":"compra-pendiente");
+        const saldoEl=Array.from(card.querySelectorAll(".dato")).find(el=>(el.textContent||"").includes("Saldo pendiente"));
+        const linea=document.createElement("div");
+        linea.className="dato fecha-vencimiento";
+        linea.textContent=(vencida?"⚠️ PLAZO VENCIDO · ":"📅 Vence: ")+venc.texto+(pendiente?"":" · Pagado");
+        if(saldoEl)saldoEl.insertAdjacentElement("beforebegin",linea);
+        else card.appendChild(linea);
+      });
+    }catch(e){console.error("No se pudieron actualizar los vencimientos visuales:",e);}
+  };
+})();
+</script>
+
+
+<!-- compras-proveedor-automatico-20261009 -->
+<script id="compras-proveedor-automatico-20261009">
+(function(){
+  function el(id){return document.getElementById(id);}
+  function pintarOpcionesProveedor(texto){
+    const campo=el("compraProveedor");
+    const resultados=el("resultadoProveedorCompra");
+    if(!campo||!resultados)return;
+    const lista=window.proveedoresCompra||[];
+    const q=String(texto||"").trim().toLocaleLowerCase("es");
+    const encontrados=q?lista.filter(function(p){
+      return String(p.nombre||"").toLocaleLowerCase("es").includes(q);
+    }):lista;
+    if(!encontrados.length){
+      resultados.innerHTML=q
+        ?'<div class="ayuda">No se encontró ese proveedor.</div>'
+        :'<div class="ayuda">No hay proveedores disponibles. Comprueba que estén cargados en Proveedores.</div>';
+      return;
+    }
+    resultados.innerHTML='<div class="info-articulo"><strong>🔎 Selecciona el proveedor:</strong>'+
+      encontrados.slice(0,12).map(function(p){
+        return '<button type="button" class="opcion" onclick="seleccionarProveedorCompra(\''+
+          String(p.id).replace(/\\/g,"\\\\").replace(/'/g,"\\'")+
+          '\')">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</button>';
+      }).join("")+'</div>';
+  }
+
+  const cargarOriginal=window.cargarProveedoresEnCompra;
+  if(typeof cargarOriginal==="function"){
+    window.cargarProveedoresEnCompra=async function(){
+      await cargarOriginal.apply(this,arguments);
+      const campo=el("compraProveedor");
+      if(!campo)return;
+      campo.onfocus=function(){
+        pintarOpcionesProveedor("");
+      };
+      campo.onclick=function(){
+        if(!campo.value.trim())pintarOpcionesProveedor("");
+      };
+    };
+  }
+
+  const seleccionarOriginal=window.seleccionarArticuloCompra;
+  if(typeof seleccionarOriginal==="function"){
+    window.seleccionarArticuloCompra=function(articulo){
+      const proveedorArticulo=String(articulo&&articulo.proveedor_id||"");
+      const proveedorActual=String(el("compraProveedorId")?.value||"");
+      const panel=el("compraItemsLista");
+      const hayArticulosAgregados=!!(panel&&panel.querySelector(".info-articulo strong"));
+      if(proveedorArticulo && hayArticulosAgregados && proveedorActual && proveedorArticulo!==proveedorActual){
+        alert("Esta compra ya tiene artículos de otro proveedor. Registra una compra distinta para cada proveedor.");
+        return;
+      }
+
+      seleccionarOriginal.apply(this,arguments);
+
+      if(!proveedorArticulo)return;
+      const lista=window.proveedoresCompra||[];
+      const proveedor=lista.find(function(p){return String(p.id)===proveedorArticulo;});
+      if(proveedor){
+        if(typeof window.seleccionarProveedorCompra==="function"){
+          window.seleccionarProveedorCompra(proveedor.id);
+        }
+      }else{
+        fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&id=eq."+encodeURIComponent(proveedorArticulo),{
+          headers:headersSupabase,cache:"no-store"
+        }).then(function(resp){
+          if(!resp.ok)throw new Error("No se pudo consultar el proveedor del artículo.");
+          return resp.json();
+        }).then(function(datos){
+          if(!datos.length)return;
+          window.proveedoresCompra=lista.concat(datos.filter(function(p){
+            return !lista.some(function(x){return String(x.id)===String(p.id);});
+          }));
+          if(typeof window.seleccionarProveedorCompra==="function"){
+            window.seleccionarProveedorCompra(datos[0].id);
+          }
+        }).catch(function(e){console.error("No se pudo seleccionar el proveedor del artículo:",e);});
+      }
+    };
+  }
+})();
+</script>
+
+<!-- orden-stock-bajo-proveedor-20261007 -->
+<!-- colores-stock-bajo-proveedor-20261007 -->
+</body>
+</html>
++Number(g.saldo||0).toFixed(2)+'</div></div>').join("");
   }catch(e){
     console.error("Error cargando deudas de proveedores:",e);
     box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
