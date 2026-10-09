@@ -1,1 +1,0 @@
-Ejecutar parche corregido del costo total del inventario.
