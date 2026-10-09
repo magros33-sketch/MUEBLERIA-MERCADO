@@ -7699,6 +7699,16 @@ function cambiarPinAdministracion(){
   function el(id){ return document.getElementById(id); }
   function money(n){ return "$"+Number(n||0).toFixed(2); }
 
+  function fechaHoyMexicoCompra(){
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  }
+  function vencimientoCreditoCompra(plazo){
+    const base=fechaHoyMexicoCompra();
+    const d=new Date(base+"T12:00:00-06:00");
+    d.setDate(d.getDate()+Number(plazo||0));
+    return new Intl.DateTimeFormat("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
+  }
+
   function renderCompraItems(){
     const box=el("compraItemsLista");
     if(!box)return;
@@ -7848,6 +7858,8 @@ function cambiarPinAdministracion(){
       },0);
 
       const formaPago=(el("compraFormaPago")?.value||"contado").toLowerCase();
+      const plazoCompra=Number(el("compraPlazoDias")?.value||30);
+      if(formaPago==="credito" && ![7,15,30,60,90].includes(plazoCompra))throw new Error("Selecciona un plazo de crédito válido.");
       const pagadoInicial=formaPago==="credito" ? 0 : total;
       const saldoInicial=total-pagadoInicial;
 
@@ -7866,7 +7878,7 @@ function cambiarPinAdministracion(){
           metodo_pago:formaPago,
           pagado:pagadoInicial,
           saldo:saldoInicial,
-          notas:formaPago==="credito" ? "Compra a crédito" : "Compra pagada de contado"
+          notas:formaPago==="credito" ? ("Crédito a "+plazoCompra+" días | Vence: "+vencimientoCreditoCompra(plazoCompra)) : "Compra pagada de contado"
         })
       });
 
@@ -8923,7 +8935,7 @@ async function cargarResumenStockProveedores(){
     const notas=String(c.notas||"");
     const guardada=notas.match(/Vence:\s*(\d{2}\/\d{2}\/\d{4})/i);
     if(guardada)return {iso:fechaISOCompra(guardada[1]),texto:guardada[1]};
-    const plazo=notas.match(/(?:cr[eé]dito\s+a\s*)(15|30|60|90)\s*d[ií]as/i);
+    const plazo=notas.match(/(?:cr[eé]dito\s+a\s*)(7|15|30|60|90)\s*d[ií]as/i);
     if(!plazo||!c.fecha)return null;
     const d=new Date(c.fecha);
     if(Number.isNaN(d.getTime()))return null;
@@ -8964,7 +8976,7 @@ async function cargarResumenStockProveedores(){
         const saldoEl=Array.from(card.querySelectorAll(".dato")).find(el=>(el.textContent||"").includes("Saldo pendiente"));
         const linea=document.createElement("div");
         linea.className="dato fecha-vencimiento";
-        linea.textContent=(vencida?"⚠️ CRÉDITO VENCIDO · ":"📅 Vence: ")+venc.texto+(pendiente?"":" · Pagado");
+        linea.textContent=(vencida?"⚠️ PLAZO VENCIDO · ":"📅 Vence: ")+venc.texto+(pendiente?"":" · Pagado");
         if(saldoEl)saldoEl.insertAdjacentElement("beforebegin",linea);
         else card.appendChild(linea);
       });
