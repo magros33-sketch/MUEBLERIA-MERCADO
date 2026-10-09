@@ -8968,6 +8968,91 @@ async function cargarResumenStockProveedores(){
 })();
 </script>
 
+
+<!-- compras-proveedor-automatico-20261009 -->
+<script id="compras-proveedor-automatico-20261009">
+(function(){
+  function el(id){return document.getElementById(id);}
+  function pintarOpcionesProveedor(texto){
+    const campo=el("compraProveedor");
+    const resultados=el("resultadoProveedorCompra");
+    if(!campo||!resultados)return;
+    const lista=window.proveedoresCompra||[];
+    const q=String(texto||"").trim().toLocaleLowerCase("es");
+    const encontrados=q?lista.filter(function(p){
+      return String(p.nombre||"").toLocaleLowerCase("es").includes(q);
+    }):lista;
+    if(!encontrados.length){
+      resultados.innerHTML=q
+        ?'<div class="ayuda">No se encontró ese proveedor.</div>'
+        :'<div class="ayuda">No hay proveedores disponibles. Comprueba que estén cargados en Proveedores.</div>';
+      return;
+    }
+    resultados.innerHTML='<div class="info-articulo"><strong>🔎 Selecciona el proveedor:</strong>'+
+      encontrados.slice(0,12).map(function(p){
+        return '<button type="button" class="opcion" onclick="seleccionarProveedorCompra(\''+
+          String(p.id).replace(/\\/g,"\\\\").replace(/'/g,"\\'")+
+          '\')">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</button>';
+      }).join("")+'</div>';
+  }
+
+  const cargarOriginal=window.cargarProveedoresEnCompra;
+  if(typeof cargarOriginal==="function"){
+    window.cargarProveedoresEnCompra=async function(){
+      await cargarOriginal.apply(this,arguments);
+      const campo=el("compraProveedor");
+      if(!campo)return;
+      campo.onfocus=function(){
+        pintarOpcionesProveedor(campo.value);
+      };
+      campo.onclick=function(){
+        if(!campo.value.trim())pintarOpcionesProveedor("");
+      };
+    };
+  }
+
+  const seleccionarOriginal=window.seleccionarArticuloCompra;
+  if(typeof seleccionarOriginal==="function"){
+    window.seleccionarArticuloCompra=function(articulo){
+      const proveedorArticulo=String(articulo&&articulo.proveedor_id||"");
+      const proveedorActual=String(el("compraProveedorId")?.value||"");
+      const panel=el("compraItemsLista");
+      const hayArticulosAgregados=!!(panel&&panel.querySelector(".info-articulo strong"));
+      if(proveedorArticulo && hayArticulosAgregados && proveedorActual && proveedorArticulo!==proveedorActual){
+        alert("Esta compra ya tiene artículos de otro proveedor. Registra una compra distinta para cada proveedor.");
+        return;
+      }
+
+      seleccionarOriginal.apply(this,arguments);
+
+      if(!proveedorArticulo)return;
+      const lista=window.proveedoresCompra||[];
+      const proveedor=lista.find(function(p){return String(p.id)===proveedorArticulo;});
+      if(proveedor){
+        if(typeof window.seleccionarProveedorCompra==="function"){
+          window.seleccionarProveedorCompra(proveedor.id);
+        }
+      }else{
+        fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&id=eq."+encodeURIComponent(proveedorArticulo),{
+          headers:headersSupabase,cache:"no-store"
+        }).then(function(resp){
+          if(!resp.ok)throw new Error("No se pudo consultar el proveedor del artículo.");
+          return resp.json();
+        }).then(function(datos){
+          if(!datos.length)return;
+          window.proveedoresCompra=lista.concat(datos.filter(function(p){
+            return !lista.some(function(x){return String(x.id)===String(p.id);});
+          }));
+          if(typeof window.seleccionarProveedorCompra==="function"){
+            window.seleccionarProveedorCompra(datos[0].id);
+          }
+        }).catch(function(e){console.error("No se pudo seleccionar el proveedor del artículo:",e);});
+      }
+    };
+  }
+})();
+</script>
+
 <!-- orden-stock-bajo-proveedor-20261007 -->
 <!-- colores-stock-bajo-proveedor-20261007 -->
 </body>
