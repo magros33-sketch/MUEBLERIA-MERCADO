@@ -9003,7 +9003,7 @@ async function cargarResumenStockProveedores(){
       const campo=el("compraProveedor");
       if(!campo)return;
       campo.onfocus=function(){
-        pintarOpcionesProveedor(campo.value);
+        pintarOpcionesProveedor("");
       };
       campo.onclick=function(){
         if(!campo.value.trim())pintarOpcionesProveedor("");
