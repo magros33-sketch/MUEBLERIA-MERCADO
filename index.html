@@ -2704,9 +2704,11 @@ try{
 function actualizarFormaPagoCompra(){
   const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
   const info=document.getElementById("compraCreditoInfo");
+  const box=document.getElementById("compraPlazoBox");
   if(info) info.innerHTML=forma==="credito"
     ?"La compra quedará como deuda pendiente con el proveedor. Podrás registrar abonos desde el historial."
     :"La compra se registrará pagada de contado y no generará deuda.";
+  if(box){const mostrar=forma==="credito";box.classList.toggle("oculto",!mostrar);box.style.display=mostrar?"block":"none";}
 }
 async function cargarDeudasProveedores(){
   const box=document.getElementById("deudasProveedores"); if(!box)return;
@@ -2728,7 +2730,7 @@ async function cargarDeudasProveedores(){
     box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: '+money(g.saldo)+'</div></div>').join("");
   }catch(e){
     console.error("Error cargando deudas de proveedores:",e);
-    box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.</div>';
+    box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
   }
 }
 
