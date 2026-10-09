@@ -1,1 +1,1 @@
-Activar actualización del costo total del inventario. Ejecutar parche.
+Ejecutar parche corregido del costo total del inventario.
