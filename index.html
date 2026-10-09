@@ -8724,12 +8724,8 @@ async function cargarResumenStockProveedores(){
         'Artículo: <strong>'+escaparHTML(articulo.nombre||"")+'</strong><br>'+
         'Cantidad: <strong>'+cantidad+'</strong><br>'+
         'Nuevo stock: <strong>'+nuevoStock+'</strong><br>'+
-        'Importe agregado: <strong>
-</html>
-+subtotal.toFixed(2)+'</strong><br>'+
-        'Total de la compra: <strong>
-</html>
-+totalFinal.toFixed(2)+'</strong></div>';
+        'Importe agregado: <strong>'+subtotal.toFixed(2)+'</strong><br>'+
+        'Total de la compra: <strong>'+totalFinal.toFixed(2)+'</strong></div>';
 
       articuloCompraSeleccionado=null;
       if(document.getElementById("compraCodigo"))document.getElementById("compraCodigo").value="";
