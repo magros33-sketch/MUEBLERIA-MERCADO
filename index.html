@@ -7584,7 +7584,14 @@ function cambiarPinAdministracion(){
           'Código: '+escaparHTML(x.codigo||"")+
           '<br>Cantidad: '+x.cantidad+
           ' × '+money(x.precio)+
-          ' = <strong>'+money(x.subtotal)+'</strong>'+
+          ' = <strong>'+money(x.subtotal)+'</strong><br>'+
+          '<label for="metodoPagoArticulo_'+i+'">Forma de pago de este artículo</label>'+
+          '<select id="metodoPagoArticulo_'+i+'" onchange="cambiarMetodoPagoArticulo('+i+',this.value)">'+
+            '<option value="efectivo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="efectivo"?" selected":"")+'>Efectivo</option>'+
+            '<option value="tarjeta"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="tarjeta"?" selected":"")+'>Tarjeta</option>'+
+            '<option value="transferencia"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="transferencia"?" selected":"")+'>Transferencia</option>'+
+            '<option value="aplazo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="aplazo"?" selected":"")+'>Aplazo</option>'+
+          '</select>'+
           '<button type="button" class="eliminar" onclick="quitarArticuloVenta('+i+')">🗑️ Quitar</button>'+
           '</div>';
       }).join("");
@@ -7603,6 +7610,13 @@ function cambiarPinAdministracion(){
     const totalItems=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
     const total=totalItems+totalPendiente();
     if(el("totalVenta"))el("totalVenta").innerHTML=money(total);
+  };
+
+  window.cambiarMetodoPagoArticulo=function(i,metodo){
+    if(!ventaItems[i])return;
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(String(metodo)))return;
+    ventaItems[i].metodo_pago=String(metodo);
+    renderVentaItems();
   };
 
   window.quitarArticuloVenta=function(i){
@@ -7629,7 +7643,8 @@ function cambiarPinAdministracion(){
       return;
     }
 
-    const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id));
+    const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+    const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
     const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
 
     if(nuevaCantidad>Number(a.stock||0)){
@@ -7648,7 +7663,8 @@ function cambiarPinAdministracion(){
         codigo:a.codigo||"",
         cantidad:cantidad,
         precio:precio,
-        subtotal:cantidad*precio
+        subtotal:cantidad*precio,
+        metodo_pago:metodoArticulo
       });
     }
 
@@ -7690,7 +7706,8 @@ function cambiarPinAdministracion(){
     const cantidad=Number(el("ventaCantidad")?.value||0);
     const precio=Number(el("ventaPrecio")?.value||0);
     if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
-      const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id));
+      const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+      const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
       const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
       if(nuevaCantidad>Number(a.stock||0)){
         mensaje.innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||"")+'. Disponible: '+Number(a.stock||0)+'</div>';
@@ -7701,7 +7718,7 @@ function cambiarPinAdministracion(){
         existente.precio=precio;
         existente.subtotal=nuevaCantidad*precio;
       }else{
-        ventaItems.push({articulo_id:a.id,nombre:a.nombre||"",codigo:a.codigo||"",cantidad:cantidad,precio:precio,subtotal:cantidad*precio});
+        ventaItems.push({articulo_id:a.id,nombre:a.nombre||"",codigo:a.codigo||"",cantidad:cantidad,precio:precio,subtotal:cantidad*precio,metodo_pago:metodoArticulo});
       }
       el("ventaCodigo").value="";
       el("ventaNombre").value="";
@@ -7747,6 +7764,9 @@ function cambiarPinAdministracion(){
     }
 
     const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+    const metodosVenta=[...new Set(ventaItems.map(x=>String(x.metodo_pago||metodoPago)))];
+    const metodoPagoVenta=metodosVenta.length>1?"mixto":(metodosVenta[0]||metodoPago);
+    const desglosePago=ventaItems.map(x=>(x.nombre||"Artículo")+" — "+money(x.subtotal)+" ("+(x.metodo_pago||metodoPago)+")").join("; ");
     const idVenta=crypto.randomUUID();
 
     try{
@@ -7758,10 +7778,10 @@ function cambiarPinAdministracion(){
           cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
           fecha:fechaVentaISO,
           tipo_cliente:tipoCliente,
-          metodo_pago:metodoPago,
+          metodo_pago:metodoPagoVenta,
           total:total,
           estado:"completada",
-          notas:"Venta registrada desde la aplicacion"
+          notas:"Venta registrada desde la aplicacion | Pago por artículo: "+desglosePago
         })
       });
 
@@ -7774,7 +7794,8 @@ function cambiarPinAdministracion(){
           articulo_id:x.articulo_id,
           cantidad:x.cantidad,
           precio_unitario:x.precio,
-          subtotal:x.subtotal
+          subtotal:x.subtotal,
+          metodo_pago:x.metodo_pago||metodoPago
         };
       });
 
@@ -7815,14 +7836,15 @@ function cambiarPinAdministracion(){
       }
 
       if(fechaVentaSeleccionada===fechaVentaHoy){
-        const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago,tipoCliente};
+        const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago:metodoPagoVenta,tipoCliente};
         registrarVentaEnSesion(registroSesion);
       }
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
         'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
         'Artículos: <strong>'+ventaItems.length+'</strong><br>'+
         'Total: <strong>'+money(total)+'</strong><br>'+
-        'Método de pago: '+escaparHTML(metodoPago)+
+        'Métodos de pago: '+escaparHTML(metodoPagoVenta)+
+        '<br>Desglose: '+escaparHTML(desglosePago)+
         '</div>';
 
       ventaItems=[];
