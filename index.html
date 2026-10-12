@@ -9226,8 +9226,9 @@ async function cargarResumenStockProveedores(){
     const cantidad=Number(el('compraCantidad')?.value||0), costo=Number(el('compraCosto')?.value||0);
     if(!Number.isInteger(cantidad)||cantidad<1){if(msg)msg.innerHTML='<div class="mensaje-error">❌ Indica una cantidad válida.</div>';return false}
     if(!Number.isFinite(costo)||costo<0){if(msg)msg.innerHTML='<div class="mensaje-error">❌ Indica un costo válido.</div>';return false}
-    const existente=window.compraItems.find(x=>String(x.articulo_id)===String(a.id));
-    if(existente){existente.cantidad+=cantidad;existente.costo=costo;existente.subtotal=existente.cantidad*costo}
+    // Mantener líneas separadas cuando el mismo modelo se compra a costes distintos.
+    const existente=window.compraItems.find(x=>String(x.articulo_id)===String(a.id)&&Number(x.costo)===costo);
+    if(existente){existente.cantidad+=cantidad;existente.subtotal=Number(existente.subtotal||0)+(cantidad*costo)}
     else window.compraItems.push({articulo_id:a.id,nombre:a.nombre||'',codigo:a.codigo||'',cantidad,costo,subtotal:cantidad*costo,proveedor_id:a.proveedor_id||null});
     ['compraCodigo','compraNombre','compraCantidad','compraCosto'].forEach(id=>{if(el(id))el(id).value=''});
     ['resultadoCompra','estadoCodigo','estadoNombre'].forEach(id=>{if(el(id))el(id).innerHTML=''});
@@ -9257,11 +9258,21 @@ async function cargarResumenStockProveedores(){
       const detalles=window.compraItems.map(x=>({id:crypto.randomUUID(),compra_id:compra.id,articulo_id:x.articulo_id,cantidad:x.cantidad,costo_unitario:x.costo,subtotal:x.subtotal}));
       const rd=await fetch(SUPABASE_URL+'/rest/v1/compra_detalles',{method:'POST',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(detalles)});
       if(!rd.ok)throw new Error('No se pudieron guardar los modelos de la compra: '+await rd.text());
+      // Actualizar una sola vez cada artículo, sumando todas sus líneas para no pisar cantidades.
+      const cantidadesPorArticulo=new Map();
       for(const x of window.compraItems){
-        const art=(Array.isArray(articulos)?articulos:[]).find(a=>String(a.id)===String(x.articulo_id));
-        if(!art)throw new Error('No se encontró el artículo '+x.nombre);
-        const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(x.articulo_id),{method:'PATCH',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({stock:Number(art.stock||0)+Number(x.cantidad||0),costo:x.costo})});
-        if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+x.nombre+': '+await ra.text());
+        const id=String(x.articulo_id);
+        const grupo=cantidadesPorArticulo.get(id)||{cantidad:0,ultimoCosto:Number(x.costo||0),nombre:x.nombre||''};
+        grupo.cantidad+=Number(x.cantidad||0);
+        grupo.ultimoCosto=Number(x.costo||0);
+        if(!grupo.nombre)grupo.nombre=x.nombre||'';
+        cantidadesPorArticulo.set(id,grupo);
+      }
+      for(const [id,grupo] of cantidadesPorArticulo){
+        const art=(Array.isArray(articulos)?articulos:[]).find(a=>String(a.id)===id);
+        if(!art)throw new Error('No se encontró el artículo '+grupo.nombre);
+        const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({stock:Number(art.stock||0)+grupo.cantidad,costo:grupo.ultimoCosto})});
+        if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+grupo.nombre+': '+await ra.text());
       }
       const n=window.compraItems.length; window.compraItems=[];window.articuloCompraSeleccionado=null;render();
       if(msg)msg.innerHTML='<div class="mensaje-exito">✅ Compra registrada con '+n+' modelo(s). Total: '+money(total)+'</div>';
