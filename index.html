@@ -3931,7 +3931,7 @@ contenedor.innerHTML="🔄 Cargando historial de ventas...";
 
 try{
 
-const [respuesta, respuestaGastos]=await Promise.all([
+const [respuesta, respuestaGastos, respuestaApartados]=await Promise.all([
 fetch(
 SUPABASE_URL+
 "/rest/v1/ventas?select=*&limit=1000",
@@ -3945,7 +3945,8 @@ headers:{
 cache:"no-store"
 }
 ),
-fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
 ]);
 
 if(!respuesta.ok){
@@ -3969,17 +3970,24 @@ return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase().tr
 });
 
 if(!respuestaGastos.ok)throw new Error("Gastos: "+await respuestaGastos.text());
+if(!respuestaApartados.ok)throw new Error("Apartados: "+await respuestaApartados.text());
 const gastos=await respuestaGastos.json();
+let apartados=await respuestaApartados.json();
+apartados=(Array.isArray(apartados)?apartados:[]).filter(function(a){
+return !["cancelada","cancelado"].includes(String(a.estado||"").toLowerCase().trim());
+});
+function fechaLocalHistorial(valor){
+const d=new Date(valor||"");
+return !Number.isNaN(d.getTime())?new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d):"";
+}
 if(fechaFiltro){
-ventas.splice(0,ventas.length,...ventas.filter(v=>{
-const d=new Date(v.fecha||"");
-return !Number.isNaN(d.getTime())&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaFiltro;
-}));
+ventas=ventas.filter(v=>fechaLocalHistorial(v.fecha)===fechaFiltro);
+apartados=apartados.filter(a=>fechaLocalHistorial(a.fecha)===fechaFiltro);
 }
 
-if(!Array.isArray(ventas)||!ventas.length){
+if((!Array.isArray(ventas)||!ventas.length)&&!apartados.length){
 contenedor.innerHTML=`
-<div class="tarjeta">Todavia no hay ventas registradas.</div>`;
+<div class="tarjeta">No hay ventas ni apartados registrados para esta fecha.</div>`;
 return;
 }
 
@@ -4020,20 +4028,33 @@ const mapa={};
 ventas.forEach(function(v){
 const clave=claveGrupo(v.fecha);
 if(!mapa[clave]){
-mapa[clave]=[];
+mapa[clave]={ventas:[],apartados:[]};
 grupos.push(clave);
 }
-mapa[clave].push(v);
+mapa[clave].ventas.push(v);
+});
+apartados.forEach(function(a){
+const clave=claveGrupo(a.fecha);
+if(!mapa[clave]){
+mapa[clave]={ventas:[],apartados:[]};
+grupos.push(clave);
+}
+mapa[clave].apartados.push(a);
 });
 
 contenedor.innerHTML=grupos.map(function(grupo){
 
-const lista=mapa[grupo];
+const grupoDatos=mapa[grupo];
+const lista=grupoDatos.ventas;
+const listaApartados=grupoDatos.apartados;
 const ventasValidasGrupo=lista.filter(function(v){
 return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase());
 });
 const totalGrupo=ventasValidasGrupo.reduce(function(s,v){
 return s+Number(v.total||0);
+},0);
+const totalApartadosGrupo=listaApartados.reduce(function(s,a){
+return s+Number(a.total||0);
 },0);
 
 const gastosGrupo=gastos.filter(function(g){
@@ -4044,15 +4065,39 @@ return s+Number(g.importe||0);
 },0);
 const netoGrupo=totalGrupo-totalGastosGrupo;
 
+const tarjetasApartados=listaApartados.map(function(a){
+const clienteRelacionado=clientes.find(function(c){return String(c.id)===String(a.cliente_id||"");});
+const articuloRelacionado=articulos.find(function(x){return String(x.id)===String(a.articulo_id||"");});
+const nombreCliente=clienteRelacionado?((clienteRelacionado.codigo_cliente?clienteRelacionado.codigo_cliente+" — ":"")+(clienteRelacionado.nombre||"Cliente")):"Cliente no disponible";
+const nombreArticulo=articuloRelacionado?(articuloRelacionado.nombre||"Artículo"):"Artículo no disponible";
+return `
+<div class="historial">
+<strong>📋 Apartado</strong>
+<div class="fecha-operacion">📅 ${formatearFecha(a.fecha)}</div>
+<div class="operacion-id">Operación: ${escaparHTML(String(a.id||"").substring(0,8))}</div>
+<div class="dato">Cliente: <strong>${escaparHTML(nombreCliente)}</strong></div>
+<div class="dato">Artículo: <strong>${escaparHTML(nombreArticulo)}</strong></div>
+<div class="dato">Cantidad: ${Number(a.cantidad||0)}</div>
+<div class="dato">Total del apartado: <strong>$${Number(a.total||0).toFixed(2)}</strong></div>
+<div class="dato">Anticipos pagados: <strong>$${Number(a.pagado||0).toFixed(2)}</strong></div>
+<div class="dato">Saldo pendiente: <strong>$${Number(a.saldo||0).toFixed(2)}</strong></div>
+<div class="dato">Estado: ${escaparHTML(a.estado||"pendiente")}</div>
+<div class="ayuda">El valor del apartado no se suma a las ventas cobradas ni al efectivo del día.</div>
+</div>`;
+}).join("");
+
 return `
 <div class="tarjeta">
 <h3>📅 ${escaparHTML(grupo)}</h3>
 <div class="dato">
 <strong>${lista.length}</strong> venta(s) ·
-<strong>${totalGrupo.toFixed(2)}</strong> ventas
+<strong>$${totalGrupo.toFixed(2)}</strong> ventas
+<br>
+<strong>${listaApartados.length}</strong> apartado(s) ·
+<strong>$${totalApartadosGrupo.toFixed(2)}</strong> valor de apartados (no cobrado)
 </div>
 <div class="dato">
-💸 Gastos: <strong>-${totalGastosGrupo.toFixed(2)}</strong>
+💸 Gastos: <strong>-$${totalGastosGrupo.toFixed(2)}</strong>
 </div>
 <div class="dato">
 🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(2)}</strong>
@@ -4110,7 +4155,7 @@ ${String(v.estado||"").toLowerCase()!=="cancelada"&&String(v.estado||"").toLower
 :'<div class="ayuda">Venta cancelada. El stock ya fue devuelto.</div>'}
 
 </div>`;
-}).join("")}`;
+}).join("")}${tarjetasApartados}`;
 }).join("");
 
 }catch(error){
