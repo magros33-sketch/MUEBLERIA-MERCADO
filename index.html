@@ -1150,7 +1150,7 @@ try{
   if(!ventas.length)throw new Error("No se encontró la venta.");
 
   const venta=ventas[0];
-  const estado=String(venta.estado||"").toLowerCase().trim();
+  const estado=String(venta.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
   if(estado==="cancelada"||estado==="cancelado"){
     alert("Esta venta está cancelada y no se puede editar.");
     return;
@@ -1737,11 +1737,11 @@ function filtrarArticulos(){
 const campo=document.getElementById("buscarArticulo");
 const resultados=document.getElementById("resultadoBusquedaArticulo");
 if(!campo)return;
-const texto=campo.value.trim().toLowerCase();
+const texto=campo.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 const porProveedor=articulosDelProveedorSeleccionado(articulos);
 const filtrados=porProveedor.filter(function(a){
-return !texto || String(a.codigo||"").toLowerCase().includes(texto)
-||String(a.nombre||"").toLowerCase().includes(texto);
+return !texto || String(a.codigo||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto)
+||String(a.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);
 });
 if(resultados){
 if(texto && filtrados.length){
@@ -2086,7 +2086,7 @@ campoCompraCodigo.addEventListener(
 "input",
 function(){
 
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloCompraSeleccionado=null;
 
@@ -2100,7 +2100,7 @@ const exacto=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -2115,7 +2115,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -2143,7 +2143,7 @@ campoCompraNombre.addEventListener(
 "input",
 function(){
 
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloCompraSeleccionado=null;
 
@@ -2157,7 +2157,7 @@ const exacto=
 articulos.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -2172,7 +2172,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -2322,15 +2322,15 @@ const r=await fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=no
 if(!r.ok)throw new Error(await r.text());
 window.proveedoresCompra=await r.json();
 campo.oninput=function(){
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 document.getElementById("compraProveedorId").value="";
 if(!texto){resultados.innerHTML="";return;}
-const encontrados=window.proveedoresCompra.filter(function(p){return String(p.nombre||"").toLowerCase().includes(texto);});
+const encontrados=window.proveedoresCompra.filter(function(p){return String(p.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);});
 if(!encontrados.length){resultados.innerHTML='<div class="ayuda">No se encontró ese proveedor.</div>';return;}
 resultados.innerHTML='<div class="info-articulo"><strong>🔎 Selecciona el proveedor:</strong>'+encontrados.slice(0,8).map(function(p){
 return '<button type="button" class="opcion" onclick="seleccionarProveedorCompra(\''+p.id+'\')">🚚 '+escaparHTML(p.nombre||"Sin nombre")+'</button>';
 }).join("")+'</div>';
-if(encontrados.length===1 && String(encontrados[0].nombre||"").toLowerCase()===texto)seleccionarProveedorCompra(encontrados[0].id);
+if(encontrados.length===1 && String(encontrados[0].nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto)seleccionarProveedorCompra(encontrados[0].id);
 };
 }catch(e){console.error("Error cargando proveedores para compras:",e);}
 }
@@ -2380,7 +2380,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===codigo.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===codigo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -2392,7 +2392,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===nombre.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===nombre.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -2716,7 +2716,7 @@ try{
   const compras=await rc.json();
   if(!compras.length)throw new Error("No se encontró la compra.");
   const compra=compras[0];
-  const estado=String(compra.estado||"").toLowerCase().trim();
+  const estado=String(compra.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
   if(estado==="cancelada"||estado==="cancelado"){alert("Esta compra está cancelada y no se puede editar.");return;}
 
   const rd=await fetch(SUPABASE_URL+"/rest/v1/compra_detalles?compra_id=eq."+encodeURIComponent(id)+"&order=id.asc",{headers:headersSupabase,cache:"no-store"});
@@ -2755,7 +2755,7 @@ try{
     return;
   }
   const nuevoSaldo=Math.max(0,totalNuevo-pagadoActual);
-  const nuevoMetodo=pagadoActual>=totalNuevo?"credito_pagado":(String(compra.metodo_pago||"contado").toLowerCase()==="credito"?"credito":"contado");
+  const nuevoMetodo=pagadoActual>=totalNuevo?"credito_pagado":(String(compra.metodo_pago||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()==="credito"?"credito":"contado");
 
   if(!confirm("¿Guardar los cambios de esta compra?\\n\\nTotal anterior: $"+Number(compra.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)+"\\nSaldo: $"+nuevoSaldo.toFixed(2)))return;
 
@@ -2790,7 +2790,7 @@ try{
 
 
 function actualizarFormaPagoCompra(){
-  const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+  const forma=(document.getElementById("compraFormaPago")?.value||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
   const info=document.getElementById("compraCreditoInfo");
   const box=document.getElementById("compraPlazoBox");
   if(info) info.innerHTML=forma==="credito"
@@ -2864,7 +2864,7 @@ async function cargarHistorialCompras(){
       const operacion=String(c.id||"").substring(0,8);
       const pid=String(c.proveedor_id||c.id_proveedor||"");
       const nombreProveedor=mapaProveedores[pid]||"Proveedor no identificado";
-      const estadoCompra=String(c.estado||"").toLowerCase();
+      const estadoCompra=String(c.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
       let botones="";
       if(estadoCompra==="cancelada"||estadoCompra==="cancelado"){
         botones='<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';
@@ -2945,7 +2945,7 @@ campoVentaCliente.addEventListener(
 "input",
 function(){
 
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 clienteVentaSeleccionado=null;
 
@@ -2958,7 +2958,7 @@ const exactoCodigo=
 clientes.find(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -2973,10 +2973,10 @@ const exacto=
 clientes.find(function(c){
 
 return String(c.nombre||"")
-.toLowerCase()===texto
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto
 ||
 String(c.telefono||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -2991,15 +2991,15 @@ const encontrados=
 clientes.filter(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto)
 ||
 String(c.nombre||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto)
 ||
 String(c.telefono||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -3129,7 +3129,7 @@ campoVentaCodigo.addEventListener(
 "input",
 function(){
 
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloVentaSeleccionado=null;
 
@@ -3152,7 +3152,7 @@ const exacto=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -3167,7 +3167,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -3195,7 +3195,7 @@ campoVentaNombre.addEventListener(
 "input",
 function(){
 
-const texto=this.value.trim().toLowerCase();
+const texto=this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloVentaSeleccionado=null;
 
@@ -3218,7 +3218,7 @@ const exacto=
 articulos.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -3233,7 +3233,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -3440,7 +3440,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===codigo.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===codigo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -3452,7 +3452,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===nombre.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===nombre.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -3464,13 +3464,13 @@ const clienteEncontrado=
 clientes.find(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase()===clienteTexto.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 ||
 String(c.nombre||"")
-.toLowerCase()===clienteTexto.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 ||
 String(c.telefono||"")
-.toLowerCase()===clienteTexto.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -3833,13 +3833,13 @@ if(Number.isNaN(d.getTime()))return false;
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaSeleccionada;
 }
 
-const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()));
+const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()));
 const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha));
-const ah=apartados.filter(a=>esFechaMexico(a.fecha)&&!["cancelada","cancelado"].includes(String(a.estado||"").toLowerCase()));
+const ah=apartados.filter(a=>esFechaMexico(a.fecha)&&!["cancelada","cancelado"].includes(String(a.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()));
 const gh=gastos.filter(g=>esFechaMexico(g.fecha));
 
 function sumarMetodo(lista,metodo){
-return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo)
+return lista.filter(v=>String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo)
 .reduce((s,v)=>s+Number(v.total??v.importe??0),0);
 }
 const detallesPorVenta=new Map();
@@ -3851,16 +3851,16 @@ detallesVentas.forEach(d=>{
 function sumarMetodoVentas(metodo){
   return vh.reduce((s,v)=>{
     const lineas=detallesPorVenta.get(String(v.id||""))||[];
-    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>String(d.metodo_pago||"").trim().toLowerCase()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
-    return s+(String(v.metodo_pago||"").trim().toLowerCase()===metodo?Number(v.total||0):0);
+    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
+    return s+(String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo?Number(v.total||0):0);
   },0);
 }
 function sumarOtrosVentas(){
   const conocidos=["efectivo","tarjeta","transferencia","aplazo"];
   return vh.reduce((s,v)=>{
     const lineas=detallesPorVenta.get(String(v.id||""))||[];
-    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>!conocidos.includes(String(d.metodo_pago||"").trim().toLowerCase())).reduce((a,d)=>a+Number(d.subtotal||0),0);
-    return s+(!conocidos.includes(String(v.metodo_pago||"").trim().toLowerCase())?Number(v.total||0):0);
+    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>!conocidos.includes(String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim())).reduce((a,d)=>a+Number(d.subtotal||0),0);
+    return s+(!conocidos.includes(String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim())?Number(v.total||0):0);
   },0);
 }
 
@@ -3869,7 +3869,7 @@ const tarjeta=sumarMetodoVentas("tarjeta")+sumarMetodo(ph,"tarjeta");
 const transferencia=sumarMetodoVentas("transferencia")+sumarMetodo(ph,"transferencia");
 const aplazo=sumarMetodoVentas("aplazo")+sumarMetodo(ph,"aplazo");
 const otros=sumarOtrosVentas()+
-ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().toLowerCase()))
+ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()))
 .reduce((s,p)=>s+Number(p.importe||0),0);
 // Se muestra el anticipo de apartados por separado como referencia,
 // pero no se vuelve a sumar al total porque ya está incluido en su método de pago.
@@ -3975,7 +3975,7 @@ let ventas=await respuesta.json();
    interno, pero NO deben aparecer en el historial visible ni contar
    como ventas del día. */
 ventas=ventas.filter(function(v){
-return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase().trim());
+return !["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim());
 });
 
 if(!respuestaGastos.ok)throw new Error("Gastos: "+await respuestaGastos.text());
@@ -4057,7 +4057,7 @@ const grupoDatos=mapa[grupo];
 const lista=grupoDatos.ventas;
 const listaPagosApartados=grupoDatos.pagosApartados;
 const ventasValidasGrupo=lista.filter(function(v){
-return !["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase());
+return !["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
 });
 const totalGrupo=ventasValidasGrupo.reduce(function(s,v){
 return s+Number(v.total||0);
@@ -4152,7 +4152,7 @@ Estado:
 
 <div class="separador"></div>
 
-${String(v.estado||"").toLowerCase()!=="cancelada"&&String(v.estado||"").toLowerCase()!=="cancelado"
+${String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()!=="cancelada"&&String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()!=="cancelado"
 ?'<button onclick="editarVenta(\''+id+'\')">✏️ Editar venta</button><button class="eliminar" onclick="cancelarVenta(\''+id+'\')">🗑️ Eliminar venta y devolver stock</button>'
 :'<div class="ayuda">Venta cancelada. El stock ya fue devuelto.</div>'}
 
@@ -4189,7 +4189,7 @@ campoApartadoCliente.addEventListener(
 function(){
 
 const texto=
-this.value.trim().toLowerCase();
+this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 clienteApartadoSeleccionado=null;
 
@@ -4202,7 +4202,7 @@ const exactoCodigo=
 clientes.find(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -4217,10 +4217,10 @@ const exacto=
 clientes.find(function(c){
 
 return String(c.nombre||"")
-.toLowerCase()===texto
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto
 ||
 String(c.telefono||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -4235,13 +4235,13 @@ const encontrados=
 clientes.filter(function(c){
 
 return String(c.codigo_cliente||"")
-.toLowerCase().includes(texto)
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto)
 ||
 String(c.nombre||"")
-.toLowerCase().includes(texto)
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto)
 ||
 String(c.telefono||"")
-.toLowerCase().includes(texto);
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);
 
 });
 
@@ -4380,7 +4380,7 @@ campoApartadoCodigo.addEventListener(
 function(){
 
 const texto=
-this.value.trim().toLowerCase();
+this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloApartadoSeleccionado=null;
 
@@ -4402,7 +4402,7 @@ const exacto=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -4417,7 +4417,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -4446,7 +4446,7 @@ campoApartadoNombre.addEventListener(
 function(){
 
 const texto=
-this.value.trim().toLowerCase();
+this.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 articuloApartadoSeleccionado=null;
 
@@ -4469,7 +4469,7 @@ const encontrados=
 articulos.filter(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .includes(texto);
 
 });
@@ -4478,7 +4478,7 @@ const exacto=
 encontrados.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===texto;
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===texto;
 
 });
 
@@ -4745,7 +4745,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.codigo||"")
-.toLowerCase()===codigo.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===codigo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -4757,7 +4757,7 @@ articulo=
 articulos.find(function(a){
 
 return String(a.nombre||"")
-.toLowerCase()===nombre.toLowerCase();
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===nombre.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 });
 
@@ -5352,7 +5352,7 @@ articulo
 
 
 const estado=
-String(a.estado||"pendiente").toLowerCase();
+String(a.estado||"pendiente").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
 
 let estadoHTML=
@@ -5561,7 +5561,7 @@ async function registrarAbonoApartado(id){
     const datos=await r.json();
     if(!datos.length)throw new Error("No se encontró el apartado.");
     const apartado=datos[0];
-    const estado=String(apartado.estado||"").toLowerCase().trim();
+    const estado=String(apartado.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
     if(["cancelada","cancelado"].includes(estado)){alert("Este apartado está cancelado.");return;}
     if(["pagado","liquidado"].includes(estado)){alert("Este apartado ya está pagado.");return;}
     const saldoActual=Number(apartado.saldo||0);
@@ -5571,7 +5571,7 @@ async function registrarAbonoApartado(id){
     if(!fecha||!/\d{4}-\d{2}-\d{2}$/.test(fecha)){alert("La fecha no es válida.");return;}
     const fechaComprobada=new Date(fecha+"T12:00:00Z");
     if(Number.isNaN(fechaComprobada.getTime())){alert("La fecha no es válida.");return;}
-    const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+    const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
     if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo)){alert("Método no válido.");return;}
     const nuevoPagado=Number(apartado.pagado||0)+importe;
     const nuevoSaldo=Math.max(0,Number(apartado.total||0)-nuevoPagado);
@@ -5626,7 +5626,7 @@ const venta=ventas[0];
 
 const estado=
 String(venta.estado||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .trim();
 
 if(
@@ -5887,8 +5887,8 @@ return;
 const compra=compras[0];
 
 if(
-String(compra.estado||"").toLowerCase().trim()==="cancelada" ||
-String(compra.estado||"").toLowerCase().trim()==="cancelado"
+String(compra.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim()==="cancelada" ||
+String(compra.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim()==="cancelado"
 ){
 alert("Esta compra ya estaba cancelada.");
 return;
@@ -6118,7 +6118,7 @@ const apartado=apartados[0];
 
 const estado=
 String(apartado.estado||"")
-.toLowerCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
 .trim();
 
 if(
@@ -6431,7 +6431,7 @@ function filtrarClientes(){
   const texto =
     (document.getElementById("buscarCliente")?.value || "")
     .trim()
-    .toLowerCase();
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 
   if(!texto){
     mostrarClientes(clientes);
@@ -6448,7 +6448,7 @@ function filtrarClientes(){
       c.direccion
     ].some(valor =>
       String(valor || "")
-      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
       .includes(texto)
     );
 
@@ -6737,7 +6737,7 @@ async function guardarCliente(){
         !clienteEditando &&
         (
           errorTexto.includes("23505") ||
-          errorTexto.toLowerCase()
+          errorTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
             .includes("duplicate")
         )
       ){
@@ -7214,9 +7214,9 @@ return html;
 }
 
 function filtrarProveedores(){
-const t=(document.getElementById("buscarProveedor")?.value||"").trim().toLowerCase();
+const t=(document.getElementById("buscarProveedor")?.value||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
 if(!t){mostrarProveedores(proveedores);return;}
-mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").toLowerCase().includes(t);});}));
+mostrarProveedores(proveedores.filter(function(p){return [p.nombre,p.contacto,p.telefono,p.email,p.direccion].some(function(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(t);});}));
 }
 
 function mostrarFormularioProveedor(){
@@ -7828,9 +7828,9 @@ function cambiarPinAdministracion(){
 
     if(tipoCliente==="cliente"&&!clienteVentaSeleccionado&&clienteTexto){
       const c=clientes.find(function(c){
-        return String(c.codigo_cliente||"").toLowerCase()===clienteTexto.toLowerCase() ||
-               String(c.nombre||"").toLowerCase()===clienteTexto.toLowerCase() ||
-               String(c.telefono||"").toLowerCase()===clienteTexto.toLowerCase();
+        return String(c.codigo_cliente||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim() ||
+               String(c.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim() ||
+               String(c.telefono||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
       });
       if(c)clienteVentaSeleccionado=c;
     }
@@ -8173,7 +8173,7 @@ function cambiarPinAdministracion(){
         return s+Number(x.subtotal||0);
       },0);
 
-      const formaPago=(el("compraFormaPago")?.value||"contado").toLowerCase();
+      const formaPago=(el("compraFormaPago")?.value||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
       const plazoCompra=Number(el("compraPlazoDias")?.value||30);
       if(formaPago==="credito" && ![7,15,30,60,90].includes(plazoCompra))throw new Error("Selecciona un plazo de crédito válido.");
       const pagadoInicial=formaPago==="credito" ? 0 : total;
@@ -8344,7 +8344,7 @@ async function registrarPagoProveedor(compraId){
     const compra=compras[0], saldo=Number(compra.saldo||0);
     if(saldo<=0){alert("Esta compra ya está pagada.");return;}
     if(importe>saldo){alert("El abono no puede superar la deuda.");return;}
-    const metodo=(prompt("Método: efectivo, tarjeta o transferencia","transferencia")||"transferencia").toLowerCase().trim();
+    const metodo=(prompt("Método: efectivo, tarjeta o transferencia","transferencia")||"transferencia").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
     if(!["efectivo","tarjeta","transferencia"].includes(metodo)){alert("Método no válido.");return;}
     const nuevoPagado=Number(compra.pagado||0)+importe, nuevoSaldo=Math.max(0,Number(compra.total||0)-nuevoPagado);
     const rp=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({compra_id:compra.id,proveedor_id:compra.proveedor_id||compra.id_proveedor||null,importe:importe,metodo_pago:metodo,notas:"Abono a compra a crédito"})});
@@ -8447,7 +8447,7 @@ async function registrarPagoProveedor(compraId){
       const mapa={};
 
       ventas.forEach(function(v){
-        if(["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase()))return;
+        if(["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()))return;
         const dia=diaComercial(v.fecha);
         if(!dia)return;
         if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,gastos:0};
@@ -8505,7 +8505,7 @@ async function registrarPagoProveedor(compraId){
       const articulos=await ra.json();
       const ventasValidas={};
       ventas.forEach(function(v){
-        if(!["cancelada","cancelado"].includes(String(v.estado||"").toLowerCase())){
+        if(!["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim())){
           ventasValidas[String(v.id)]=true;
         }
       });
@@ -8581,7 +8581,7 @@ async function registrarPagoProveedor(compraId){
     }).format(new Date());
   }
   function dinero(n){return "$"+Number(n||0).toFixed(2);}
-  function estadoNormal(v){return String(v||"").toLowerCase().trim();}
+  function estadoNormal(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();}
 
   /*
    * APARTADOS: creación transaccional por etapas.
@@ -8598,12 +8598,12 @@ async function registrarPagoProveedor(compraId){
     const anticipo=Number(document.getElementById("apartadoAnticipo")?.value||0);
     const fechaApartado=(document.getElementById("apartadoFecha")?.value||"").trim();
     const fechaAnticipo=(document.getElementById("apartadoFechaAnticipo")?.value||"").trim();
-    const metodoPago=(document.getElementById("apartadoMetodoPago")?.value||"efectivo").toLowerCase();
+    const metodoPago=(document.getElementById("apartadoMetodoPago")?.value||"efectivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
     const notas=(document.getElementById("apartadoNotas")?.value||"").trim();
 
     if(!cliente){msg("mensajeApartado",'<div class="mensaje-error">❌ Selecciona un cliente para el apartado.</div>');return;}
-    if(!articulo&&codigo)articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
-    if(!articulo&&nombre)articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo&&codigo)articulo=articulos.find(a=>String(a.codigo||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===codigo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
+    if(!articulo&&nombre)articulo=articulos.find(a=>String(a.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===nombre.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
     if(!articulo){msg("mensajeApartado",'<div class="mensaje-error">❌ No encontramos ese artículo.</div>');return;}
     if(!Number.isInteger(cantidad)||cantidad<1){msg("mensajeApartado",'<div class="mensaje-error">❌ Indica una cantidad válida.</div>');return;}
     const stockActual=Number(articulo.stock||0);
@@ -8780,11 +8780,11 @@ async function registrarPagoProveedor(compraId){
     const campo=document.getElementById("buscarHistorialApartados");
     const contenedor=document.getElementById("historialApartados");
     if(!campo||!contenedor)return;
-    const texto=campo.value.trim().toLocaleLowerCase("es-MX");
+    const texto=campo.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim();
     const tarjetas=contenedor.querySelectorAll(".historial");
     let visibles=0;
     tarjetas.forEach(function(tarjeta){
-      const coincide=tarjeta.textContent.toLocaleLowerCase("es-MX").includes(texto);
+      const coincide=tarjeta.textContent.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim().includes(texto);
       tarjeta.style.display=coincide?"":"none";
       if(coincide)visibles++;
     });
@@ -8815,7 +8815,7 @@ async function registrarPagoProveedor(compraId){
       if(!fecha||!/^\d{4}-\d{2}-\d{2}$/.test(fecha))return;
       const fechaObj=new Date(fecha+"T12:00:00Z");
       if(Number.isNaN(fechaObj.getTime()))throw new Error("La fecha no es válida.");
-      const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").toLowerCase().trim();
+      const metodo=(prompt("Método: efectivo, tarjeta, transferencia o aplazo","efectivo")||"efectivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
       if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodo))throw new Error("Método no válido.");
       const nuevoPagado=Number(a.pagado||0)+importe;
       const nuevoSaldo=Math.max(0,Number(a.total||0)-nuevoPagado);
@@ -8940,7 +8940,7 @@ async function cargarResumenStockProveedores(){
     return new Intl.DateTimeFormat("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
   }
   function actualizarFormaPagoCompraNueva(){
-    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
     const info=document.getElementById("compraCreditoInfo");
     const box=document.getElementById("compraPlazoBox");
     if(info) info.innerHTML=forma==="credito"
@@ -8967,11 +8967,11 @@ async function cargarResumenStockProveedores(){
     const nombre=(document.getElementById("compraNombre")?.value||"").trim();
     const cantidad=Number(document.getElementById("compraCantidad")?.value||0);
     const costo=Number(document.getElementById("compraCosto")?.value||0);
-    const forma=(document.getElementById("compraFormaPago")?.value||"contado").toLowerCase();
+    const forma=(document.getElementById("compraFormaPago")?.value||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
     const plazo=Number(document.getElementById("compraPlazoDias")?.value||30);
 
-    if(!articulo&&codigo) articulo=articulos.find(a=>String(a.codigo||"").toLowerCase()===codigo.toLowerCase());
-    if(!articulo&&nombre) articulo=articulos.find(a=>String(a.nombre||"").toLowerCase()===nombre.toLowerCase());
+    if(!articulo&&codigo) articulo=articulos.find(a=>String(a.codigo||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===codigo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
+    if(!articulo&&nombre) articulo=articulos.find(a=>String(a.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===nombre.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
     if(!articulo){mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos ese articulo.</div>';return;}
     if(!Number.isInteger(cantidad)||cantidad<1){mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad recibida válida.</div>';return;}
     if(!Number.isFinite(costo)||costo<0){mensaje.innerHTML='<div class="mensaje-error">❌ El costo no puede ser negativo.</div>';return;}
@@ -9342,9 +9342,9 @@ async function cargarResumenStockProveedores(){
     const resultados=el("resultadoProveedorCompra");
     if(!campo||!resultados)return;
     const lista=window.proveedoresCompra||[];
-    const q=String(texto||"").trim().toLocaleLowerCase("es");
+    const q=String(texto||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es").replace(/\s+/g," ").trim();
     const encontrados=q?lista.filter(function(p){
-      return String(p.nombre||"").toLocaleLowerCase("es").includes(q);
+      return String(p.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es").replace(/\s+/g," ").trim().includes(q);
     }):lista;
     if(!encontrados.length){
       resultados.innerHTML=q
@@ -9472,7 +9472,7 @@ async function cargarResumenStockProveedores(){
       if(!actual)throw new Error('No se encontró el modelo '+(x.nombre||''));
       if(String(actual.proveedor_id||'')&&String(actual.proveedor_id)!==proveedorId)throw new Error('El modelo '+(x.nombre||'')+' pertenece a otro proveedor.');
     }
-    const forma=String($('compraFormaPago')?.value||'contado').toLowerCase();
+    const forma=String($('compraFormaPago')?.value||'contado').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
     const plazo=Number($('compraPlazoDias')?.value||30);
     const total=compraItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
     const fecha=new Date();
@@ -9635,7 +9635,7 @@ async function cargarResumenStockProveedores(){
     if(!window.compraItems.length&&window.articuloCompraSeleccionado)window.agregarArticuloCompra();
     if(!window.compraItems.length){if(msg)msg.innerHTML='<div class="mensaje-error">❌ Añade al menos un modelo a la compra.</div>';return}
     if(!window.compraItems.every(x=>!x.proveedor_id||String(x.proveedor_id)===proveedorId)){if(msg)msg.innerHTML='<div class="mensaje-error">❌ Todos los modelos deben ser del mismo proveedor.</div>';return}
-    const total=window.compraItems.reduce((s,x)=>s+Number(x.subtotal||0),0), forma=String(el('compraFormaPago')?.value||'contado').toLowerCase(), plazo=Number(el('compraPlazoDias')?.value||30);
+    const total=window.compraItems.reduce((s,x)=>s+Number(x.subtotal||0),0), forma=String(el('compraFormaPago')?.value||'contado').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim(), plazo=Number(el('compraPlazoDias')?.value||30);
     try{
       const rc=await fetch(SUPABASE_URL+'/rest/v1/compras',{method:'POST',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({proveedor_id:proveedorId,id_proveedor:proveedorId,fecha:new Date().toISOString(),total,estado:'completada',metodo_pago:forma,pagado:forma==='contado'?total:0,saldo:forma==='contado'?0:total,notas:forma==='credito'?'Crédito a '+plazo+' días':'Compra de contado'})});
       if(!rc.ok)throw new Error('No se pudo registrar la compra: '+await rc.text());
