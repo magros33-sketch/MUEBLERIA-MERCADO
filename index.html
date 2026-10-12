@@ -841,6 +841,15 @@ placeholder="Notas del apartado"
 
 <h3>📋 Historial de apartados</h3>
 
+<label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
+<input
+id="buscarHistorialApartados"
+type="text"
+placeholder="Escribe el nombre del cliente o artículo"
+autocomplete="off"
+oninput="filtrarHistorialApartados()"
+>
+
 <button onclick="cargarHistorialApartados()">
 🔄 Actualizar apartados
 </button>
@@ -8703,6 +8712,29 @@ async function registrarPagoProveedor(compraId){
       console.error("Error historial apartados:",e);
       contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de apartados.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
     }
+  };
+
+  window.filtrarHistorialApartados=function(){
+    const campo=document.getElementById("buscarHistorialApartados");
+    const contenedor=document.getElementById("historialApartados");
+    if(!campo||!contenedor)return;
+    const texto=campo.value.trim().toLocaleLowerCase("es-MX");
+    const tarjetas=contenedor.querySelectorAll(".historial");
+    let visibles=0;
+    tarjetas.forEach(function(tarjeta){
+      const coincide=tarjeta.textContent.toLocaleLowerCase("es-MX").includes(texto);
+      tarjeta.style.display=coincide?"":"none";
+      if(coincide)visibles++;
+    });
+    let aviso=document.getElementById("sinResultadosHistorialApartados");
+    if(!aviso){
+      aviso=document.createElement("div");
+      aviso.id="sinResultadosHistorialApartados";
+      aviso.className="tarjeta";
+      contenedor.appendChild(aviso);
+    }
+    aviso.textContent=texto&&visibles===0?"No se encontraron apartados con ese nombre.": "";
+    aviso.style.display=texto&&visibles===0?"":"none";
   };
 
   window.registrarAbonoApartado=async function(id){
