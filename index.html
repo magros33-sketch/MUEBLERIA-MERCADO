@@ -8566,7 +8566,7 @@ async function cargarResumenStockProveedores(){
  cont.innerHTML="🔄 Cargando stock por proveedor...";
  try{
   const [ra,rp]=await Promise.all([
-   fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo,stock,proveedor_id&activo=eq.true",{headers:headersSupabase,cache:"no-store"}),
+   fetch(SUPABASE_URL+"/rest/v1/articulos?select=id,nombre,codigo,stock,stock_minimo,proveedor_id&activo=eq.true",{headers:headersSupabase,cache:"no-store"}),
    fetch(SUPABASE_URL+"/rest/v1/proveedores?select=id,nombre&order=nombre.asc",{headers:headersSupabase,cache:"no-store"})
   ]);
   if(!ra.ok)throw new Error("Artículos: "+await ra.text());
@@ -8580,7 +8580,7 @@ async function cargarResumenStockProveedores(){
    if(mapa[id]){mapa[id].articulos++;mapa[id].unidades+=Number(a.stock||0);}
    else{sin++;sinUnidades+=Number(a.stock||0);}
   });
-  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial" style="background:'+colorProveedorStock(p.id)+';"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>'<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong> — Stock: <strong>'+Number(a.stock||0)+'</strong></div>').join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
+  const filas=provs.map(p=>{const x=mapa[String(p.id)];const articulosProveedor=arts.filter(a=>String(a.proveedor_id||"")===String(p.id));return '<div class="historial" style="background:'+colorProveedorStock(p.id)+';"><strong>🚚 '+escaparHTML(x.nombre)+'</strong>'+ (articulosProveedor.length?articulosProveedor.map(a=>{const stock=Number(a.stock||0),minimo=Number(a.stock_minimo||0),faltan=Math.max(minimo-stock,0);return '<div class="dato">📦 <strong>'+escaparHTML(a.nombre||"Sin nombre")+'</strong></div><div class="dato">Stock actual: <strong>'+stock+'</strong></div><div class="dato">Stock mínimo deseado: <strong>'+minimo+'</strong></div><div class="dato">'+(faltan>0?'Faltan para completar: <strong>'+faltan+' unidades</strong>':'Faltante: <strong>0 unidades</strong>')+'</div>';}).join(""):'<div class="ayuda">No hay artículos registrados con este proveedor.</div>')+'</div>';}).join("");
   const sinFila=sin?'<div class="historial" style="background:#f0f0f0"><strong>⚠️ Sin proveedor</strong><div class="dato">Artículos: <strong>'+sin+'</strong></div><div class="dato">Unidades en stock: <strong>'+sinUnidades+'</strong></div></div>':"";
   cont.innerHTML=(filas||'<div class="ayuda">No hay proveedores registrados.</div>')+sinFila;
  }catch(e){console.error(e);cont.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el stock por proveedor.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
