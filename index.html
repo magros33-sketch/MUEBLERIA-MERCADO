@@ -9315,7 +9315,7 @@ async function cargarResumenStockProveedores(){
         const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({stock:Number(art.stock||0)+grupo.cantidad,costo:grupo.ultimoCosto})});
         if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+grupo.nombre+': '+await ra.text());
       }
-      const n=window.compraItems.length; limpiarBorradorCompra();window.compraItems=[];window.articuloCompraSeleccionado=null;render();
+      const n=window.compraItems.length; limpiarBorradorCompra();window.compraItems=[];window.articuloCompraSeleccionado=null;restaurandoBorrador=true;render();restaurandoBorrador=false;
       if(msg)msg.innerHTML='<div class="mensaje-exito">✅ Compra registrada con '+n+' modelo(s). Total: '+money(total)+'</div>';
       if(typeof cargarArticulos==='function')await cargarArticulos();
       if(typeof cargarHistorialCompras==='function')await cargarHistorialCompras();
