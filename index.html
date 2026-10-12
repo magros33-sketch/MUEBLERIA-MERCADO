@@ -8539,6 +8539,7 @@ async function registrarPagoProveedor(compraId){
     const cantidad=Number(document.getElementById("apartadoCantidad")?.value||0);
     const precio=Number(document.getElementById("apartadoPrecio")?.value||0);
     const anticipo=Number(document.getElementById("apartadoAnticipo")?.value||0);
+    const fechaApartado=(document.getElementById("apartadoFecha")?.value||"").trim();
     const fechaAnticipo=(document.getElementById("apartadoFechaAnticipo")?.value||"").trim();
     const metodoPago=(document.getElementById("apartadoMetodoPago")?.value||"efectivo").toLowerCase();
     const notas=(document.getElementById("apartadoNotas")?.value||"").trim();
@@ -8552,6 +8553,9 @@ async function registrarPagoProveedor(compraId){
     if(cantidad>stockActual){msg("mensajeApartado",'<div class="mensaje-error">❌ No hay suficiente stock. Disponible: <strong>'+stockActual+'</strong>.</div>');return;}
     if(!Number.isFinite(precio)||precio<0){msg("mensajeApartado",'<div class="mensaje-error">❌ El precio no es válido.</div>');return;}
     if(!Number.isFinite(anticipo)||anticipo<0||anticipo>cantidad*precio){msg("mensajeApartado",'<div class="mensaje-error">❌ El anticipo no puede ser negativo ni superar el total.</div>');return;}
+    if(fechaApartado && Number.isNaN(new Date(fechaApartado+"T12:00:00Z").getTime())){
+      msg("mensajeApartado",'<div class="mensaje-error">❌ La fecha del apartado no es válida.</div>');return;
+    }
     if(anticipo>0 && fechaAnticipo){
       const d=new Date(fechaAnticipo+"T12:00:00Z");
       if(Number.isNaN(d.getTime())){msg("mensajeApartado",'<div class="mensaje-error">❌ La fecha del anticipo no es válida.</div>');return;}
@@ -8574,7 +8578,8 @@ async function registrarPagoProveedor(compraId){
         headers:{...headersSupabase,"Prefer":"return=minimal"},
         body:JSON.stringify({
           id:idApartado,cliente_id:cliente.id,articulo_id:articulo.id,
-          cantidad:cantidad,precio_unitario:precio,fecha:new Date().toISOString(),
+          cantidad:cantidad,precio_unitario:precio,
+          fecha:fechaApartado?new Date(fechaApartado+"T12:00:00Z").toISOString():new Date().toISOString(),
           total:total,pagado:anticipo,saldo:saldo,
           estado:saldo<=0?"pagado":"pendiente",metodo_pago:metodoPago,notas:notas
         })
