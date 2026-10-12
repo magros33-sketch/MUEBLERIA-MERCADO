@@ -9204,6 +9204,7 @@ async function cargarResumenStockProveedores(){
         proveedor:el('compraProveedorId')?.value||'',
         formaPago:el('compraFormaPago')?.value||'contado',
         plazo:el('compraPlazoDias')?.value||'30',
+        campos:{codigo:el('compraCodigo')?.value||'',nombre:el('compraNombre')?.value||'',cantidad:el('compraCantidad')?.value||'',costo:el('compraCosto')?.value||''},
         actualizado:new Date().toISOString()
       };
       if(borrador.items.length||borrador.proveedor){
@@ -9223,6 +9224,7 @@ async function cargarResumenStockProveedores(){
     if(prov&&b.proveedor&&Array.from(prov.options).some(o=>o.value===String(b.proveedor)))prov.value=String(b.proveedor);
     const forma=el('compraFormaPago');if(forma&&b.formaPago)forma.value=b.formaPago;
     const plazo=el('compraPlazoDias');if(plazo&&b.plazo)plazo.value=String(b.plazo);
+    if(b.campos){if(el('compraCodigo'))el('compraCodigo').value=b.campos.codigo||'';if(el('compraNombre'))el('compraNombre').value=b.campos.nombre||'';if(el('compraCantidad'))el('compraCantidad').value=b.campos.cantidad||'';if(el('compraCosto'))el('compraCosto').value=b.campos.costo||'';}
     restaurandoBorrador=false;
     render();
     const msg=el('mensajeCompra');
