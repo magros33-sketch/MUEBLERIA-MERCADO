@@ -9425,5 +9425,68 @@ async function cargarResumenStockProveedores(){
   setTimeout(iniciar,500);setTimeout(iniciar,1500);
 })();
 </script>
+
+<!-- historial-compras-por-mes-y-dia-20261012 -->
+<script id="historial-compras-por-mes-y-dia-20261012">
+(function(){
+  const original=window.cargarHistorialCompras;
+  if(typeof original!=="function")return;
+  window.cargarHistorialCompras=async function(){
+    await original.apply(this,arguments);
+    const cont=document.getElementById("historialCompras");
+    if(!cont)return;
+    const tarjetas=Array.from(cont.querySelectorAll(":scope > .historial"));
+    if(!tarjetas.length)return;
+    const meses=new Map();
+    tarjetas.forEach(function(tarjeta){
+      const fechaEl=tarjeta.querySelector(".fecha-operacion");
+      const texto=(fechaEl&&fechaEl.textContent||"").trim();
+      const m=texto.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+      let diaKey="sin-fecha",mesKey="sin-fecha",etiquetaDia="Fecha no identificada",etiquetaMes="Fecha no identificada";
+      if(m){
+        const dia=String(m[1]).padStart(2,"0");
+        const mes=String(m[2]).padStart(2,"0");
+        let anio=String(m[3]);
+        if(anio.length===2)anio=String(Number(anio)>=70?1900+Number(anio):2000+Number(anio));
+        diaKey=anio+"-"+mes+"-"+dia;
+        mesKey=anio+"-"+mes;
+        etiquetaDia=dia+"/"+mes+"/"+anio;
+        etiquetaMes=new Intl.DateTimeFormat("es-MX",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Number(anio),Number(mes)-1,1));
+        etiquetaMes=etiquetaMes.charAt(0).toLocaleUpperCase("es-MX")+etiquetaMes.slice(1);
+      }
+      if(!meses.has(mesKey))meses.set(mesKey,{etiqueta:etiquetaMes,dias:new Map()});
+      const grupo=meses.get(mesKey);
+      if(!grupo.dias.has(diaKey))grupo.dias.set(diaKey,{etiqueta:etiquetaDia,tarjetas:[]});
+      grupo.dias.get(diaKey).tarjetas.push(tarjeta);
+    });
+    const fragmento=document.createDocumentFragment();
+    Array.from(meses.entries()).sort((a,b)=>b[0].localeCompare(a[0])).forEach(function(parMes){
+      const [mesKey,grupoMes]=parMes;
+      const totalMes=Array.from(grupoMes.dias.values()).reduce((n,d)=>n+d.tarjetas.length,0);
+      const detalleMes=document.createElement("details");
+      detalleMes.className="tarjeta historial-compras-mes";
+      detalleMes.style.cssText="padding:10px;margin:10px 0;border:1px solid #d0ddd5";
+      const resumenMes=document.createElement("summary");
+      resumenMes.style.cssText="cursor:pointer;font-weight:bold;padding:8px";
+      resumenMes.textContent="📅 "+grupoMes.etiqueta+" · "+totalMes+" compra(s)";
+      detalleMes.appendChild(resumenMes);
+      Array.from(grupoMes.dias.entries()).sort((a,b)=>b[0].localeCompare(a[0])).forEach(function(parDia){
+        const grupoDia=parDia[1];
+        const detalleDia=document.createElement("details");
+        detalleDia.style.cssText="margin:8px 0;padding:8px;background:#f4f7f5;border-radius:8px";
+        const resumenDia=document.createElement("summary");
+        resumenDia.style.cssText="cursor:pointer;font-weight:600;padding:8px";
+        resumenDia.textContent="🗓️ "+grupoDia.etiqueta+" · "+grupoDia.tarjetas.length+" compra(s)";
+        detalleDia.appendChild(resumenDia);
+        grupoDia.tarjetas.forEach(function(tarjeta){detalleDia.appendChild(tarjeta);});
+        detalleMes.appendChild(detalleDia);
+      });
+      fragmento.appendChild(detalleMes);
+    });
+    cont.replaceChildren(fragmento);
+  };
+})();
+</script>
+
 </body>
 </html>
