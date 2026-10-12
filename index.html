@@ -8154,6 +8154,8 @@ async function registrarPagoProveedor(compraId){
     if(!ru.ok)throw new Error("No se pudo actualizar la deuda: "+await ru.text());
     alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(2));
     await cargarHistorialCompras();
+    // Actualizar explícitamente todas las vistas de deuda tras registrar el abono.
+    await cargarDeudasProveedores();
   }catch(e){alert("❌ No se pudo registrar el abono.\n\n"+(e.message||String(e)));}
 }
 
