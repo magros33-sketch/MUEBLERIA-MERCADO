@@ -4063,6 +4063,7 @@ Cliente:
 Metodo:
 ${escaparHTML(v.metodo_pago||"")}
 </div>
+${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
 
 <div class="dato">
 Total:
@@ -7645,9 +7646,10 @@ function cambiarPinAdministracion(){
 
     const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
     const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
+    const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
     const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
 
-    if(nuevaCantidad>Number(a.stock||0)){
+    if(cantidadArticuloEnVenta+cantidad>Number(a.stock||0)){
       mensaje.innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||"")+'. Disponible: '+Number(a.stock||0)+'</div>';
       return;
     }
@@ -7708,8 +7710,9 @@ function cambiarPinAdministracion(){
     if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
       const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
       const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
+      const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
       const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
-      if(nuevaCantidad>Number(a.stock||0)){
+      if(cantidadArticuloEnVenta+cantidad>Number(a.stock||0)){
         mensaje.innerHTML='<div class="mensaje-error">❌ No hay suficiente stock de '+escaparHTML(a.nombre||"")+'. Disponible: '+Number(a.stock||0)+'</div>';
         return;
       }
