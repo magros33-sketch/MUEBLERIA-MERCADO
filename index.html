@@ -770,6 +770,13 @@ $0.00
 </div>
 
 
+<label>Fecha del apartado</label>
+<input
+id="apartadoFecha"
+type="date"
+>
+<div class="ayuda">Puedes registrar el apartado con la fecha real, aunque sea de un día anterior.</div>
+
 <label>Anticipo</label>
 
 <input
@@ -1369,6 +1376,8 @@ if(id==="apartados"){
 cargarArticulos();
 cargarClientes();
 
+const fechaApartado=document.getElementById("apartadoFecha");
+if(fechaApartado&&!fechaApartado.value)fechaApartado.value=fechaHoyMexicoApartado();
 const fechaAnticipo=document.getElementById("apartadoFechaAnticipo");
 if(fechaAnticipo&&!fechaAnticipo.value)fechaAnticipo.value=fechaHoyMexicoApartado();
 
@@ -4635,8 +4644,11 @@ Number(
 document.getElementById("apartadoAnticipo").value||0
 );
 
+const fechaApartado=
+document.getElementById("apartadoFecha")?.value||fechaHoyMexicoApartado();
+
 const fechaAnticipo=
-document.getElementById("apartadoFechaAnticipo")?.value||"";
+document.getElementById("apartadoFechaAnticipo")?.value||fechaApartado;
 
 const metodoPago=
 document.getElementById("apartadoMetodoPago").value;
@@ -4759,6 +4771,10 @@ return;
 const total=
 cantidad*precio;
 
+if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fechaApartado)||Number.isNaN(new Date(fechaApartado+"T12:00:00Z").getTime())){
+mensaje.innerHTML=`<div class="mensaje-error">❌ Indica una fecha válida para el apartado.</div>`;
+return;
+}
 
 if(anticipo<0){
 
@@ -4828,7 +4844,7 @@ cantidad:cantidad,
 
 precio_unitario:precio,
 
-fecha:new Date().toISOString(),
+fecha:new Date(fechaApartado+"T12:00:00Z").toISOString(),
 
 total:total,
 
@@ -5121,6 +5137,7 @@ campoApartadoNombre.value="";
 document.getElementById("apartadoCantidad").value="1";
 document.getElementById("apartadoPrecio").value="";
 document.getElementById("apartadoAnticipo").value="0";
+if(document.getElementById("apartadoFecha"))document.getElementById("apartadoFecha").value=fechaHoyMexicoApartado();
 if(document.getElementById("apartadoFechaAnticipo"))document.getElementById("apartadoFechaAnticipo").value=fechaHoyMexicoApartado();
 document.getElementById("apartadoNotas").value="";
 
@@ -5136,6 +5153,8 @@ actualizarTotalApartado();
 await cargarArticulos();
 
 await cargarHistorialApartados();
+
+await cargarResumenVentasDia();
 
 
 }catch(error){
