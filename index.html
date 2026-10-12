@@ -9194,6 +9194,43 @@ async function cargarResumenStockProveedores(){
   const money=(n)=>'$'+Number(n||0).toFixed(2);
   window.compraItems=Array.isArray(window.compraItems)?window.compraItems:[];
   window.articuloCompraSeleccionado=window.articuloCompraSeleccionado||null;
+  const CLAVE_BORRADOR_COMPRA='muebleria_compra_borrador_v1';
+  let restaurandoBorrador=false;
+  function guardarBorradorCompra(){
+    if(restaurandoBorrador)return;
+    try{
+      const borrador={
+        items:window.compraItems,
+        proveedor:el('compraProveedorId')?.value||'',
+        formaPago:el('compraFormaPago')?.value||'contado',
+        plazo:el('compraPlazoDias')?.value||'30',
+        actualizado:new Date().toISOString()
+      };
+      if(borrador.items.length||borrador.proveedor){
+        localStorage.setItem(CLAVE_BORRADOR_COMPRA,JSON.stringify(borrador));
+      }else{
+        localStorage.removeItem(CLAVE_BORRADOR_COMPRA);
+      }
+    }catch(e){console.warn('No se pudo guardar el borrador de compra en este dispositivo.',e)}
+  }
+  function restaurarBorradorCompra(){
+    let b;
+    try{b=JSON.parse(localStorage.getItem(CLAVE_BORRADOR_COMPRA)||'null')}catch(e){return}
+    if(!b)return;
+    restaurandoBorrador=true;
+    if(Array.isArray(b.items))window.compraItems=b.items;
+    const prov=el('compraProveedorId');
+    if(prov&&b.proveedor&&Array.from(prov.options).some(o=>o.value===String(b.proveedor)))prov.value=String(b.proveedor);
+    const forma=el('compraFormaPago');if(forma&&b.formaPago)forma.value=b.formaPago;
+    const plazo=el('compraPlazoDias');if(plazo&&b.plazo)plazo.value=String(b.plazo);
+    restaurandoBorrador=false;
+    render();
+    const msg=el('mensajeCompra');
+    if(msg&&(window.compraItems.length||b.proveedor))msg.innerHTML='<div class="mensaje-exito">📝 Se recuperó la compra pendiente de este dispositivo. Continúa y regístrala cuando esté lista.</div>';
+  }
+  function limpiarBorradorCompra(){
+    try{localStorage.removeItem(CLAVE_BORRADOR_COMPRA)}catch(e){}
+  }
 
   function render(){
     const box=el('compraItemsListaFinal'), totalBox=el('compraTotalMultipleFinal');
@@ -9202,6 +9239,7 @@ async function cargarResumenStockProveedores(){
     else box.innerHTML=window.compraItems.map((x,i)=>'<div class="info-articulo"><strong>📦 '+esc(x.nombre)+'</strong><br>Código: '+esc(x.codigo||'Sin código')+'<br>Cantidad: <strong>'+Number(x.cantidad)+'</strong> × '+money(x.costo)+' = <strong>'+money(x.subtotal)+'</strong><button type="button" class="eliminar" data-quitar-compra="'+i+'">🗑️ Quitar modelo</button></div>').join('');
     if(totalBox)totalBox.innerHTML='<strong>Total de esta compra: '+money(window.compraItems.reduce((s,x)=>s+Number(x.subtotal||0),0))+'</strong>';
     box.querySelectorAll('[data-quitar-compra]').forEach(b=>b.onclick=()=>{window.compraItems.splice(Number(b.dataset.quitarCompra),1);render()});
+    guardarBorradorCompra();
   }
 
   function asegurarUI(){
@@ -9277,7 +9315,7 @@ async function cargarResumenStockProveedores(){
         const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({stock:Number(art.stock||0)+grupo.cantidad,costo:grupo.ultimoCosto})});
         if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+grupo.nombre+': '+await ra.text());
       }
-      const n=window.compraItems.length; window.compraItems=[];window.articuloCompraSeleccionado=null;render();
+      const n=window.compraItems.length; limpiarBorradorCompra();window.compraItems=[];window.articuloCompraSeleccionado=null;render();
       if(msg)msg.innerHTML='<div class="mensaje-exito">✅ Compra registrada con '+n+' modelo(s). Total: '+money(total)+'</div>';
       if(typeof cargarArticulos==='function')await cargarArticulos();
       if(typeof cargarHistorialCompras==='function')await cargarHistorialCompras();
@@ -9285,7 +9323,14 @@ async function cargarResumenStockProveedores(){
     }catch(e){console.error(e);if(msg)msg.innerHTML='<div class="mensaje-error">❌ '+esc(e.message||String(e))+'</div>'}
   };
 
-  function iniciar(){envolverSeleccion();asegurarUI()}
+  function iniciar(){
+    envolverSeleccion();asegurarUI();
+    const campos=['compraProveedorId','compraFormaPago','compraPlazoDias','compraCantidad','compraCosto','compraCodigo','compraNombre'];
+    campos.forEach(id=>{const campo=el(id);if(campo&&!campo.dataset.borradorCompraListener){campo.dataset.borradorCompraListener='1';campo.addEventListener('input',guardarBorradorCompra);campo.addEventListener('change',guardarBorradorCompra)}});
+    restaurarBorradorCompra();
+    // Algunos proveedores se cargan de forma asíncrona; volver a intentar asociar el seleccionado.
+    [500,1500,3000].forEach(ms=>setTimeout(()=>{const raw=localStorage.getItem(CLAVE_BORRADOR_COMPRA);if(!raw)return;try{const b=JSON.parse(raw),p=el('compraProveedorId');if(p&&b.proveedor&&p.value!==String(b.proveedor)&&Array.from(p.options).some(o=>o.value===String(b.proveedor))){restaurandoBorrador=true;p.value=String(b.proveedor);restaurandoBorrador=false;guardarBorradorCompra()}}catch(e){}},ms));
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(iniciar,50));else setTimeout(iniciar,50);
   setTimeout(iniciar,500);setTimeout(iniciar,1500);
 })();
