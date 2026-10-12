@@ -1052,6 +1052,14 @@ Cargando artículos vendidos...
 <button type="button" onclick="cargarCostoTotalInventario()">🔄 Actualizar costo del inventario</button>
 </div>
 
+<!-- deudas-administracion-20261012 -->
+<div class="tarjeta">
+<h3>💳 Deudas pendientes con proveedores</h3>
+<div class="ayuda">Importe pendiente de las compras a crédito, agrupado por proveedor. Se actualiza con los abonos registrados.</div>
+<div id="deudasProveedoresAdmin">Cargando deudas...</div>
+<button type="button" onclick="cargarDeudasProveedores()">🔄 Actualizar deudas</button>
+</div>
+
 <div class="tarjeta">
 <h3>🔑 Cambiar PIN</h3>
 <label>PIN actual</label>
@@ -2718,7 +2726,9 @@ function actualizarFormaPagoCompra(){
   if(box){const mostrar=forma==="credito";box.classList.toggle("oculto",!mostrar);box.style.display=mostrar?"block":"none";}
 }
 async function cargarDeudasProveedores(){
-  const box=document.getElementById("deudasProveedores"); if(!box)return;
+  const cajas=["deudasProveedores","deudasProveedoresAdmin"]
+    .map(id=>document.getElementById(id)).filter(Boolean);
+  if(!cajas.length)return;
   try{
     const [rc,rp]=await Promise.all([
       fetch(SUPABASE_URL+"/rest/v1/compras?select=*&saldo=gt.0&order=fecha.asc",{headers:headersSupabase,cache:"no-store"}),
@@ -2727,17 +2737,25 @@ async function cargarDeudasProveedores(){
     if(!rc.ok)throw new Error(await rc.text());
     const compras=await rc.json(), proveedores=rp.ok?await rp.json():[], mapa={};
     proveedores.forEach(p=>mapa[String(p.id)]=p.nombre||"Sin nombre");
-    if(!compras.length){box.innerHTML='<div class="tarjeta">✅ No hay deudas pendientes con proveedores.</div>';return;}
-    const grupos={};
-    compras.forEach(c=>{
-      const pid=String(c.proveedor_id||c.id_proveedor||"");
-      if(!grupos[pid])grupos[pid]={nombre:mapa[pid]||"Proveedor no identificado",saldo:0};
-      grupos[pid].saldo+=Number(c.saldo||0);
-    });
-    box.innerHTML=Object.values(grupos).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Deuda: $'+Number(g.saldo||0).toFixed(2)+'</div></div>').join("");
+    let html="";
+    if(!compras.length){
+      html='<div class="tarjeta">✅ No hay deudas pendientes con proveedores.</div>';
+    }else{
+      const grupos={};
+      compras.forEach(c=>{
+        const pid=String(c.proveedor_id||c.id_proveedor||"");
+        if(!grupos[pid])grupos[pid]={nombre:mapa[pid]||"Proveedor no identificado",saldo:0};
+        grupos[pid].saldo+=Number(c.saldo||0);
+      });
+      const total=Object.values(grupos).reduce((s,g)=>s+Number(g.saldo||0),0);
+      html='<div class="info-articulo"><strong>Deuda total pendiente</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>'+
+        Object.values(grupos).sort((a,b)=>a.nombre.localeCompare(b.nombre,"es")).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Pendiente: '+dineroAdmin(g.saldo)+'</div></div>').join("");
+    }
+    cajas.forEach(box=>box.innerHTML=html);
   }catch(e){
     console.error("Error cargando deudas de proveedores:",e);
-    box.innerHTML='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
+    const html='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
+    cajas.forEach(box=>box.innerHTML=html);
   }
 }
 
@@ -7224,6 +7242,8 @@ async function entrarAdministracion(){
   if(mensaje) mensaje.innerHTML = "🔄 Cargando administración...";
   try{
     await cargarResumenAdministracion();
+    await cargarDeudasProveedores();
+    if(typeof cargarCostoTotalInventario==="function") await cargarCostoTotalInventario();
     document.getElementById("adminLogin").style.display = "none";
     document.getElementById("adminPanel").style.display = "block";
     if(mensaje) mensaje.innerHTML = "";
