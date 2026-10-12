@@ -238,6 +238,14 @@ background:#fff4d6;
 }
 .fecha-vencimiento{margin:7px 0;}
 </style>
+
+<meta name="theme-color" content="#123b2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mueblería Mercado">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
 </head>
 
 <body>
@@ -9734,5 +9742,15 @@ async function cargarResumenStockProveedores(){
 })();
 </script>
 
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./service-worker.js").catch(function (error) {
+      console.warn("No se pudo activar el soporte de instalación:", error);
+    });
+  });
+}
+</script>
 </body>
 </html>
