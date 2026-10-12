@@ -1152,16 +1152,23 @@ try{
     const cantidadAnterior=Number(detalle.cantidad||0);
     const precioAnterior=Number(detalle.precio_unitario||0);
 
-    const nuevaCantidad=Number(prompt("Artículo: "+nombre+"\\nCantidad:",String(cantidadAnterior)));
-    if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<1){
-      alert("Cantidad no válida para "+nombre+".");
+    const nuevaCantidadTexto=prompt("Artículo: "+nombre+"\\nCantidad actual: "+cantidadAnterior+"\\nEscribe la nueva cantidad. Escribe 0 para quitar este artículo de la venta:",String(cantidadAnterior));
+    if(nuevaCantidadTexto===null)return;
+    const nuevaCantidad=Number(nuevaCantidadTexto);
+    if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<0){
+      alert("Cantidad no válida para "+nombre+". Usa un número entero igual o mayor que 0.");
       return;
     }
 
-    const nuevoPrecio=Number(prompt("Artículo: "+nombre+"\\nPrecio por unidad:",precioAnterior.toFixed(2)));
-    if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0){
-      alert("Precio no válido para "+nombre+".");
-      return;
+    let nuevoPrecio=precioAnterior;
+    if(nuevaCantidad>0){
+      const nuevoPrecioTexto=prompt("Artículo: "+nombre+"\\nPrecio por unidad:",precioAnterior.toFixed(2));
+      if(nuevoPrecioTexto===null)return;
+      nuevoPrecio=Number(nuevoPrecioTexto);
+      if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0){
+        alert("Precio no válido para "+nombre+".");
+        return;
+      }
     }
 
     if(stockPorArticulo[articuloId]===undefined){
@@ -1192,7 +1199,12 @@ try{
     });
   }
 
-  if(!confirm("¿Guardar los cambios de esta venta?\\n\\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)))return;
+  if(!cambios.some(c=>c.nuevaCantidad>0)){
+    alert("La venta no puede quedarse sin artículos. Para anularla completa, usa «Eliminar venta y devolver stock».");
+    return;
+  }
+
+  if(!confirm("¿Guardar los cambios de esta venta?\\n\\nPuedes escribir 0 en la cantidad para quitar un artículo.\\n\\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)))return;
 
   const aplicados=[];
   const stockInicial={};
