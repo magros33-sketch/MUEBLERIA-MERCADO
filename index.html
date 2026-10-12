@@ -4399,21 +4399,6 @@ return;
 
 }
 
-const exacto=
-articulos.find(function(a){
-
-return String(a.nombre||"")
-.toLowerCase()===texto;
-
-});
-
-if(exacto){
-
-seleccionarArticuloApartado(exacto);
-return;
-
-}
-
 const encontrados=
 articulos.filter(function(a){
 
@@ -4422,6 +4407,23 @@ return String(a.nombre||"")
 .includes(texto);
 
 });
+
+const exacto=
+encontrados.find(function(a){
+
+return String(a.nombre||"")
+.toLowerCase()===texto;
+
+});
+
+// Solo seleccionar automaticamente si hay un unico resultado.
+// Si hay varios modelos que coinciden, mostrar todos para elegir.
+if(exacto && encontrados.length===1){
+
+seleccionarArticuloApartado(exacto);
+return;
+
+}
 
 if(encontrados.length){
 
