@@ -4771,7 +4771,7 @@ return;
 const total=
 cantidad*precio;
 
-if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fechaApartado)||Number.isNaN(new Date(fechaApartado+"T12:00:00Z").getTime())){
+if(!/^\d{4}-\d{2}-\d{2}$/.test(fechaApartado)||Number.isNaN(new Date(fechaApartado+"T12:00:00Z").getTime())){
 mensaje.innerHTML=`<div class="mensaje-error">❌ Indica una fecha válida para el apartado.</div>`;
 return;
 }
