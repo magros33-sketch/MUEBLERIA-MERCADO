@@ -9207,6 +9207,9 @@ async function cargarResumenStockProveedores(){
   function asegurarUI(){
     const guardar=document.querySelector('#compras button[onclick="registrarCompra()"]');
     if(!guardar)return;
+    // Ocultar el total antiguo, que suma otra vez los campos del artículo ya añadido.
+    const totalAntiguo=el('totalCompraPanel');
+    if(totalAntiguo)totalAntiguo.remove();
     let wrap=el('compraItemsFinal');
     if(!wrap){
       wrap=document.createElement('div'); wrap.id='compraItemsFinal'; wrap.className='tarjeta';
