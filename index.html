@@ -316,6 +316,12 @@ autocomplete="off"
 oninput="filtrarArticulos()"
 >
 
+<label>Filtrar toda la página por proveedor</label>
+<select id="filtroProveedorInventario" onchange="aplicarFiltroProveedorInventario()">
+<option value="">Todos los proveedores</option>
+</select>
+<div class="ayuda">Selecciona un proveedor para ver únicamente sus artículos en el inventario, los productos por pedir y el resumen de stock. También puedes buscar por código o nombre.</div>
+
 <div id="resultadoBusquedaArticulo"></div>
 
 <div id="formArticulo" class="tarjeta oculto">
@@ -1481,7 +1487,8 @@ return;
 articulos=await respuesta.json();
 
 actualizarSelectorProveedoresArticulo();
-mostrarArticulos(articulos);
+actualizarFiltroProveedorInventario();
+filtrarArticulos();
 mostrarProductosStockBajo();
 
 }catch(error){
@@ -1599,7 +1606,7 @@ function mostrarProductosStockBajo(){
 const contenedor=document.getElementById("productosStockBajo");
 if(!contenedor)return;
 
-const bajos=(Array.isArray(articulos)?articulos:[])
+const bajos=articulosDelProveedorSeleccionado(articulos)
 .filter(function(a){
   const stock=Number(a.stock||0);
   const minimo=Number(a.stock_minimo||0);
@@ -1650,37 +1657,55 @@ contenedor.innerHTML=bajos.map(function(a){
 }).join("");
 }
 
-function filtrarArticulos(){
+function actualizarFiltroProveedorInventario(){
+const select=document.getElementById("filtroProveedorInventario");
+if(!select)return;
+const actual=select.value;
+const lista=Array.isArray(proveedores)?proveedores:[];
+select.innerHTML='<option value="">Todos los proveedores</option>'+lista.map(function(p){
+return '<option value="'+escaparHTML(String(p.id||""))+'">'+escaparHTML(p.nombre||"Sin nombre")+'</option>';
+}).join("");
+if(actual && lista.some(function(p){return String(p.id)===String(actual);}))select.value=actual;
+}
 
+function articulosDelProveedorSeleccionado(lista){
+const select=document.getElementById("filtroProveedorInventario");
+const id=select?String(select.value||""):"";
+return (Array.isArray(lista)?lista:[]).filter(function(a){
+return !id || String(a.proveedor_id||"")===id;
+});
+}
+
+function aplicarFiltroProveedorInventario(){
+const resultados=document.getElementById("resultadoBusquedaArticulo");
+if(resultados)resultados.innerHTML="";
+filtrarArticulos();
+mostrarProductosStockBajo();
+cargarResumenStockProveedores();
+}
+
+function filtrarArticulos(){
 const campo=document.getElementById("buscarArticulo");
 const resultados=document.getElementById("resultadoBusquedaArticulo");
 if(!campo)return;
-
 const texto=campo.value.trim().toLowerCase();
-
-if(!texto){
-if(resultados)resultados.innerHTML="";
-mostrarArticulos(articulos);
-return;
-}
-
-const filtrados=articulos.filter(function(a){
-return String(a.codigo||"").toLowerCase().includes(texto)
+const porProveedor=articulosDelProveedorSeleccionado(articulos);
+const filtrados=porProveedor.filter(function(a){
+return !texto || String(a.codigo||"").toLowerCase().includes(texto)
 ||String(a.nombre||"").toLowerCase().includes(texto);
 });
-
 if(resultados){
-if(filtrados.length){
+if(texto && filtrados.length){
 resultados.innerHTML='<div class="info-articulo"><strong>🔎 Artículos encontrados:</strong>'+filtrados.slice(0,8).map(function(a){
 return '<button type="button" class="opcion" onclick="seleccionarArticuloDesdeBusqueda(\''+a.id+'\')">📦 '+escaparHTML(a.nombre||"Sin nombre")+'<br><strong>Código: '+escaparHTML(a.codigo||"Sin código")+'</strong></button>';
 }).join("")+'</div>';
+}else if(texto){
+resultados.innerHTML='<div class="ayuda">No se encontró ese artículo con el proveedor seleccionado.</div>';
 }else{
-resultados.innerHTML='<div class="ayuda">No se encontró ese artículo.</div>';
+resultados.innerHTML="";
 }
 }
-
 mostrarArticulos(filtrados);
-
 }
 
 function seleccionarArticuloDesdeBusqueda(id){
@@ -1692,7 +1717,6 @@ const resultados=document.getElementById("resultadoBusquedaArticulo");
 if(resultados)resultados.innerHTML='<div class="estado-ok">✅ '+escaparHTML(articulo.nombre||"Artículo")+' — Código: '+escaparHTML(articulo.codigo||"Sin código")+'</div>';
 mostrarArticulos([articulo]);
 }
-
 
 async function mostrarFormularioArticulo(){
 
@@ -7031,7 +7055,8 @@ if(!r.ok)throw new Error(txt||("HTTP "+r.status));
 proveedores=txt?JSON.parse(txt):[];
 mostrarProveedores(proveedores);
 actualizarSelectorProveedoresArticulo();
-if(Array.isArray(articulos))mostrarArticulos(articulos);
+actualizarFiltroProveedorInventario();
+if(Array.isArray(articulos))filtrarArticulos();
 }catch(e){
 console.error("Error cargando proveedores:",e); proveedores=[];
 const c=document.getElementById("listaProveedores");
@@ -8681,7 +8706,12 @@ async function cargarResumenStockProveedores(){
   ]);
   if(!ra.ok)throw new Error("Artículos: "+await ra.text());
   if(!rp.ok)throw new Error("Proveedores: "+await rp.text());
-  const arts=await ra.json(), provs=await rp.json();
+  let arts=await ra.json(), provs=await rp.json();
+  const proveedorSeleccionado=String(document.getElementById("filtroProveedorInventario")?.value||"");
+  if(proveedorSeleccionado){
+    arts=arts.filter(function(a){return String(a.proveedor_id||"")===proveedorSeleccionado;});
+    provs=provs.filter(function(p){return String(p.id||"")===proveedorSeleccionado;});
+  }
   const mapa={};
   provs.forEach(p=>mapa[String(p.id)]={nombre:p.nombre||"Sin nombre",articulos:0,unidades:0});
   let sin=0, sinUnidades=0;
