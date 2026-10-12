@@ -3779,18 +3779,21 @@ const contenedor=document.getElementById("resumenVentasDia");
 if(!contenedor)return;
 contenedor.innerHTML="🔄 Cargando resumen...";
 try{
-const [rv,rp,rg]=await Promise.all([
+const [rv,rp,rg,rdv]=await Promise.all([
 fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
 fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
-fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"})
+fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=1000",{headers:headersSupabase,cache:"no-store"}),
+fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?select=venta_id,subtotal,metodo_pago&limit=10000",{headers:headersSupabase,cache:"no-store"})
 ]);
 if(!rv.ok)throw new Error("Ventas: "+await rv.text());
 if(!rp.ok)throw new Error("Pagos de apartados: "+await rp.text());
 if(!rg.ok)throw new Error("Gastos: "+await rg.text());
+if(!rdv.ok)throw new Error("Detalles de ventas: "+await rdv.text());
 
 const ventas=await rv.json();
 const pagosApartados=await rp.json();
 const gastos=await rg.json();
+const detallesVentas=await rdv.json();
 
 const fechaSeleccionada=document.getElementById("fechaResumenVentas")?.value||new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 
@@ -3809,13 +3812,33 @@ function sumarMetodo(lista,metodo){
 return lista.filter(v=>String(v.metodo_pago||"").trim().toLowerCase()===metodo)
 .reduce((s,v)=>s+Number(v.total??v.importe??0),0);
 }
+const detallesPorVenta=new Map();
+detallesVentas.forEach(d=>{
+  const id=String(d.venta_id||"");
+  if(!detallesPorVenta.has(id))detallesPorVenta.set(id,[]);
+  detallesPorVenta.get(id).push(d);
+});
+function sumarMetodoVentas(metodo){
+  return vh.reduce((s,v)=>{
+    const lineas=detallesPorVenta.get(String(v.id||""))||[];
+    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>String(d.metodo_pago||"").trim().toLowerCase()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
+    return s+(String(v.metodo_pago||"").trim().toLowerCase()===metodo?Number(v.total||0):0);
+  },0);
+}
+function sumarOtrosVentas(){
+  const conocidos=["efectivo","tarjeta","transferencia","aplazo"];
+  return vh.reduce((s,v)=>{
+    const lineas=detallesPorVenta.get(String(v.id||""))||[];
+    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>!conocidos.includes(String(d.metodo_pago||"").trim().toLowerCase())).reduce((a,d)=>a+Number(d.subtotal||0),0);
+    return s+(!conocidos.includes(String(v.metodo_pago||"").trim().toLowerCase())?Number(v.total||0):0);
+  },0);
+}
 
-const contado=sumarMetodo(vh,"efectivo")+sumarMetodo(ph,"efectivo");
-const tarjeta=sumarMetodo(vh,"tarjeta")+sumarMetodo(ph,"tarjeta");
-const transferencia=sumarMetodo(vh,"transferencia")+sumarMetodo(ph,"transferencia");
-const aplazo=sumarMetodo(vh,"aplazo")+sumarMetodo(ph,"aplazo");
-const otros=vh.filter(v=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(v.metodo_pago||"").trim().toLowerCase()))
-.reduce((s,v)=>s+Number(v.total||0),0)+
+const contado=sumarMetodoVentas("efectivo")+sumarMetodo(ph,"efectivo");
+const tarjeta=sumarMetodoVentas("tarjeta")+sumarMetodo(ph,"tarjeta");
+const transferencia=sumarMetodoVentas("transferencia")+sumarMetodo(ph,"transferencia");
+const aplazo=sumarMetodoVentas("aplazo")+sumarMetodo(ph,"aplazo");
+const otros=sumarOtrosVentas()+
 ph.filter(p=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(p.metodo_pago||"").trim().toLowerCase()))
 .reduce((s,p)=>s+Number(p.importe||0),0);
 
