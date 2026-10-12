@@ -612,6 +612,10 @@ oninput="actualizarTotalVenta()"
 
 <div id="infoPrecioVenta"></div>
 
+<label>Fecha de la venta</label>
+<input type="date" id="fechaVentaRegistro" aria-label="Fecha real de la venta">
+<div class="ayuda">Puedes registrar hoy una venta que hiciste en papel hace varios días. Se guardará con la fecha real de la venta.</div>
+
 <label>Metodo de pago</label>
 
 <select id="ventaMetodoPago">
@@ -1334,6 +1338,11 @@ cargarClientes();
 
 setTimeout(function(){
 inicializarHistorialVentas();
+const campoFechaVentaRegistro=document.getElementById("fechaVentaRegistro");
+if(campoFechaVentaRegistro){
+campoFechaVentaRegistro.max=fechaMexicoHoyVentas();
+if(!campoFechaVentaRegistro.value)campoFechaVentaRegistro.value=fechaMexicoHoyVentas();
+}
 cargarHistorialVentas();
 cargarResumenVentasDia();
 },100);
@@ -7637,6 +7646,19 @@ function cambiarPinAdministracion(){
     const tipoCliente=el("ventaTipoCliente").value;
     const clienteTexto=el("ventaCliente").value.trim();
     const metodoPago=el("ventaMetodoPago").value;
+    const fechaVentaCampo=el("fechaVentaRegistro");
+    const fechaVentaSeleccionada=fechaVentaCampo?.value||fechaMexicoHoyVentas();
+    const fechaVentaHoy=fechaMexicoHoyVentas();
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fechaVentaSeleccionada)){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona una fecha válida para la venta.</div>';
+      return;
+    }
+    if(fechaVentaSeleccionada>fechaVentaHoy){
+      mensaje.innerHTML='<div class="mensaje-error">❌ La fecha de la venta no puede ser futura.</div>';
+      return;
+    }
+    // Guardar la fecha real de la venta, aunque se capture después.
+    const fechaVentaISO=new Date(fechaVentaSeleccionada+"T12:00:00-06:00").toISOString();
 
     // Si hay un artículo seleccionado en los campos, se añade automáticamente.
     const a=articuloVentaSeleccionado;
@@ -7709,7 +7731,7 @@ function cambiarPinAdministracion(){
         body:JSON.stringify({
           id:idVenta,
           cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
-          fecha:new Date().toISOString(),
+          fecha:fechaVentaISO,
           tipo_cliente:tipoCliente,
           metodo_pago:metodoPago,
           total:total,
@@ -7767,8 +7789,10 @@ function cambiarPinAdministracion(){
         throw errorStock;
       }
 
-      const registroSesion={id:idVenta.substring(0,8),fecha:new Date().toISOString(),hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago,tipoCliente};
-      registrarVentaEnSesion(registroSesion);
+      if(fechaVentaSeleccionada===fechaVentaHoy){
+        const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago,tipoCliente};
+        registrarVentaEnSesion(registroSesion);
+      }
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
         'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
         'Artículos: <strong>'+ventaItems.length+'</strong><br>'+
@@ -7783,6 +7807,7 @@ function cambiarPinAdministracion(){
       el("estadoClienteVenta").innerHTML="";
       el("resultadoClienteVenta").innerHTML="";
       renderVentaItems();
+      if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
 
       await cargarArticulos();
       await cargarHistorialVentas();
