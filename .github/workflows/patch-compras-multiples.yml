@@ -1,0 +1,150 @@
+name: Corregir compras con varios modelos
+
+on:
+  push:
+    paths:
+      - '__patch_compras__'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Añadir corrección de compras múltiples
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='<script id="compras-multiples-correction-20261012">'
+          if marker in s:
+              print('La corrección ya estaba aplicada')
+              raise SystemExit(0)
+          js=r'''<script id="compras-multiples-correction-20261012">
+          (function(){
+            let compraItems=[];
+            const $=id=>document.getElementById(id);
+            const money=n=>'$'+Number(n||0).toFixed(2);
+            function hoy(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+            function fechaVencimiento(fecha,dias){const d=new Date(fecha+'T12:00:00-06:00');d.setDate(d.getDate()+Number(dias||0));return new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
+            function render(){
+              let box=$('compraItemsLista');
+              if(!box)return;
+              if(!compraItems.length){box.innerHTML='<div class="ayuda">Todavía no hay modelos añadidos a esta compra.</div>';return;}
+              box.innerHTML=compraItems.map((x,i)=>'<div class="info-articulo"><strong>📦 '+escaparHTML(x.nombre||'')+'</strong><br>Código: '+escaparHTML(x.codigo||'')+'<br>Cantidad: <strong>'+x.cantidad+'</strong> × '+money(x.costo)+' = <strong>'+money(x.subtotal)+'</strong><button type="button" class="eliminar" onclick="window.quitarArticuloCompra('+i+')">🗑️ Quitar modelo</button></div>').join('');
+            }
+            window.quitarArticuloCompra=function(i){compraItems.splice(i,1);render();};
+            window.agregarArticuloCompra=function(){
+              const a=window.articuloCompraSeleccionado;
+              const cantidad=Number($('compraCantidad')?.value||0);
+              const costo=Number($('compraCosto')?.value||0);
+              const mensaje=$('mensajeCompra');
+              if(!a){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona primero el modelo que vas a añadir.</div>';return false;}
+              if(!Number.isInteger(cantidad)||cantidad<1){mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad válida.</div>';return false;}
+              if(!Number.isFinite(costo)||costo<0){mensaje.innerHTML='<div class="mensaje-error">❌ El costo no puede ser negativo.</div>';return false;}
+              const proveedorActual=String($('compraProveedorId')?.value||'');
+              const proveedorArticulo=String(a.proveedor_id||'');
+              if(proveedorActual&&proveedorArticulo&&proveedorActual!==proveedorArticulo&&compraItems.length){mensaje.innerHTML='<div class="mensaje-error">❌ Esta compra ya tiene modelos de otro proveedor. Registra una compra distinta para cada proveedor.</div>';return false;}
+              const existente=compraItems.find(x=>String(x.articulo_id)===String(a.id));
+              if(existente){existente.cantidad+=cantidad;existente.costo=costo;existente.subtotal=existente.cantidad*costo;}
+              else compraItems.push({articulo_id:a.id,nombre:a.nombre||'',codigo:a.codigo||'',cantidad,costo,subtotal:cantidad*costo,proveedor_id:a.proveedor_id||null});
+              mensaje.innerHTML='';
+              if($('compraCodigo'))$('compraCodigo').value='';
+              if($('compraNombre'))$('compraNombre').value='';
+              if($('compraCantidad'))$('compraCantidad').value='';
+              if($('compraCosto'))$('compraCosto').value='';
+              if($('estadoCodigo'))$('estadoCodigo').innerHTML='';
+              if($('estadoNombre'))$('estadoNombre').innerHTML='';
+              if($('resultadoCompra'))$('resultadoCompra').innerHTML='';
+              window.articuloCompraSeleccionado=null;
+              render();
+              return true;
+            };
+            window.registrarCompra=async function(){
+              const mensaje=$('mensajeCompra');
+              const proveedorId=String($('compraProveedorId')?.value||'').trim();
+              if(!proveedorId){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona el proveedor de esta compra.</div>';return;}
+              const a=window.articuloCompraSeleccionado;
+              if(a){window.agregarArticuloCompra();}
+              if(!compraItems.length){mensaje.innerHTML='<div class="mensaje-error">❌ Añade al menos un modelo a la compra.</div>';return;}
+              for(const x of compraItems){
+                const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
+                if(!actual)throw new Error('No se encontró el modelo '+(x.nombre||''));
+                if(String(actual.proveedor_id||'')&&String(actual.proveedor_id)!==proveedorId)throw new Error('El modelo '+(x.nombre||'')+' pertenece a otro proveedor.');
+              }
+              const forma=String($('compraFormaPago')?.value||'contado').toLowerCase();
+              const plazo=Number($('compraPlazoDias')?.value||30);
+              const total=compraItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
+              const fecha=new Date();
+              const fechaMexico=hoy();
+              const inicio=fechaMexico+'T00:00:00-06:00';
+              const dFin=new Date(fechaMexico+'T12:00:00-06:00');dFin.setDate(dFin.getDate()+1);
+              const fin=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(dFin)+'T00:00:00-06:00';
+              try{
+                mensaje.innerHTML='🔄 Guardando todos los modelos de la compra...';
+                let compraId=null, compra=null, agrupada=false;
+                if(forma==='contado'){
+                  const q=await fetch(SUPABASE_URL+'/rest/v1/compras?select=*&proveedor_id=eq.'+encodeURIComponent(proveedorId)+'&metodo_pago=eq.contado&fecha=gte.'+encodeURIComponent(inicio)+'&fecha=lt.'+encodeURIComponent(fin)+'&estado=neq.cancelada&estado=neq.cancelado&order=fecha.asc&limit=1',{headers:headersSupabase,cache:'no-store'});
+                  if(!q.ok)throw new Error('No se pudieron consultar las compras de contado: '+await q.text());
+                  const existentes=await q.json();
+                  if(existentes.length){
+                    compra=existentes[0];compraId=compra.id;agrupada=true;
+                    const ru=await fetch(SUPABASE_URL+'/rest/v1/compras?id=eq.'+encodeURIComponent(compraId),{method:'PATCH',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify({total:Number(compra.total||0)+total,pagado:Number(compra.pagado||0)+total,saldo:0,metodo_pago:'contado'})});
+                    if(!ru.ok)throw new Error('No se pudo actualizar la compra agrupada: '+await ru.text());
+                  }
+                }
+                if(!compraId){
+                  const datos={proveedor_id:proveedorId,id_proveedor:proveedorId,fecha:fecha.toISOString(),total,estado:'completada',metodo_pago:forma,pagado:forma==='contado'?total:0,saldo:forma==='contado'?0:total,notas:forma==='credito'?('Crédito a '+plazo+' días | Vence: '+fechaVencimiento(fechaMexico,plazo)):'Compra registrada desde la aplicacion'};
+                  const rc=await fetch(SUPABASE_URL+'/rest/v1/compras',{method:'POST',headers:{...headersSupabase,'Prefer':'return=representation'},body:JSON.stringify(datos)});
+                  if(!rc.ok)throw new Error('No se pudo guardar la compra: '+await rc.text());
+                  const arr=await rc.json();compra=arr[0];compraId=compra?.id;
+                  if(!compraId)throw new Error('La compra no devolvió un identificador válido.');
+                }
+                const detalles=compraItems.map(x=>({id:crypto.randomUUID(),compra_id:compraId,articulo_id:x.articulo_id,cantidad:x.cantidad,costo_unitario:x.costo,subtotal:x.subtotal}));
+                const rd=await fetch(SUPABASE_URL+'/rest/v1/compra_detalles',{method:'POST',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify(detalles)});
+                if(!rd.ok)throw new Error('No se pudieron guardar todos los modelos de la compra: '+await rd.text());
+                for(const x of compraItems){
+                  const art=articulos.find(a=>String(a.id)===String(x.articulo_id));
+                  const ra=await fetch(SUPABASE_URL+'/rest/v1/articulos?id=eq.'+encodeURIComponent(x.articulo_id),{method:'PATCH',headers:{...headersSupabase,'Prefer':'return=minimal'},body:JSON.stringify({stock:Number(art.stock||0)+x.cantidad,costo:x.costo})});
+                  if(!ra.ok)throw new Error('No se pudo actualizar el stock de '+(x.nombre||'')+': '+await ra.text());
+                }
+                mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Compra registrada correctamente.</strong><br><br>Modelos registrados: <strong>'+compraItems.length+'</strong><br>Total: <strong>'+money(total)+'</strong><br>'+ (agrupada?'Se añadió a la compra de contado del mismo proveedor y día.':forma==='credito'?'Crédito a '+plazo+' días.':'Compra de contado.')+'</div>';
+                compraItems=[];render();window.articuloCompraSeleccionado=null;
+                if($('compraCodigo'))$('compraCodigo').value='';if($('compraNombre'))$('compraNombre').value='';if($('compraCantidad'))$('compraCantidad').value='';if($('compraCosto'))$('compraCosto').value='';
+                await cargarArticulos();await cargarHistorialCompras();if(typeof cargarDeudasProveedores==='function')await cargarDeudasProveedores();
+              }catch(e){console.error('Error registrando compra múltiple:',e);mensaje.innerHTML='<div class="mensaje-error">❌ No se pudo registrar la compra.<br><br>'+escaparHTML(e.message||String(e))+'</div>';}
+            };
+            function instalar(){
+              const botonGuardar=document.querySelector('#compras button[onclick="registrarCompra()"]');
+              if(!botonGuardar)return;
+              if($('compraItemsLista'))return;
+              const wrap=document.createElement('div');wrap.className='tarjeta';wrap.id='compraItems';
+              wrap.innerHTML='<strong>🧾 Modelos de esta compra</strong><div class="ayuda">Puedes añadir varios modelos del mismo proveedor antes de registrar la compra.</div><div id="compraItemsLista"><div class="ayuda">Todavía no hay modelos añadidos a esta compra.</div></div>';
+              botonGuardar.parentNode.insertBefore(wrap,botonGuardar);
+              const add=document.createElement('button');add.type='button';add.textContent='➕ Añadir modelo a la compra';add.onclick=window.agregarArticuloCompra;
+              botonGuardar.parentNode.insertBefore(add,botonGuardar);
+              render();
+            }
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',instalar);else instalar();
+          })();
+          </script>'''
+          s=s.replace('</body>',js+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Guardar cambios
+        run: |
+          git config user.name 'ChatGPT'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corregir compras para varios modelos' || exit 0
+          git push
+      - name: Eliminar parche temporal
+        if: always()
+        run: |
+          rm -f .github/workflows/patch-compras-multiples.yml
+          git add -A
+          git commit -m 'Eliminar parche temporal de compras múltiples' || true
+          git push || true
