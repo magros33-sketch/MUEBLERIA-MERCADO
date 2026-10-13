@@ -1197,8 +1197,8 @@ try{
     if(!lista.length)throw new Error("Falta un artículo del ticket.");
     return lista[0];
   }));
-  const opciones=detalles.map((d,i)=>(i+1)+". "+(articulosTicket[i].nombre||"Artículo")+" — "+d.cantidad+" × $"+Number(d.precio_unitario||0).toFixed(2)).join("\\n");
-  const eleccionTexto=prompt("¿Qué artículo deseas modificar?\\n\\n"+opciones+"\\n\\nEscribe el número del artículo. Cancelar no cambia nada.");
+  const opciones=detalles.map((d,i)=>(i+1)+". "+(articulosTicket[i].nombre||"Artículo")+" — "+d.cantidad+" × $"+Number(d.precio_unitario||0).toFixed(2)).join("\n");
+  const eleccionTexto=prompt("¿Qué artículo deseas modificar?\n\n"+opciones+"\n\nEscribe el número del artículo. Cancelar no cambia nada.");
   if(eleccionTexto===null)return;
   const eleccion=Number(eleccionTexto);
   if(!Number.isInteger(eleccion)||eleccion<1||eleccion>detalles.length){alert("Selecciona un número válido de la lista.");return;}
@@ -1298,7 +1298,7 @@ try{
       });
       if(!rs.ok)throw new Error("No se pudo actualizar el stock de "+(cambio.articulo.nombre||"")+".");
 
-      const filtroDetalle="/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId);
+      const filtroDetalle="/rest/v1/ventas_detalle?id=eq."+encodeURIComponent(cambio.detalle.id);
       const rd2=await fetch(SUPABASE_URL+filtroDetalle,{
         method:cambio.nuevaCantidad===0?"DELETE":"PATCH",
         headers:{...headersSupabase,"Prefer":"return=minimal"},
@@ -1330,11 +1330,11 @@ try{
         headers:{...headersSupabase,"Prefer":"return=minimal"},
         body:JSON.stringify({stock:stockOriginal})
       });
-      await fetch(SUPABASE_URL+(cambio.nuevaCantidad===0?"/rest/v1/ventas_detalle":"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId)),{
+      await fetch(SUPABASE_URL+(cambio.nuevaCantidad===0?"/rest/v1/ventas_detalle":"/rest/v1/ventas_detalle?id=eq."+encodeURIComponent(cambio.detalle.id)),{
         method:cambio.nuevaCantidad===0?"POST":"PATCH",
         headers:{...headersSupabase,"Prefer":"return=minimal"},
         body:JSON.stringify({
-          ...(cambio.nuevaCantidad===0?{venta_id:id,articulo_id:articuloId,metodo_pago:cambio.detalle.metodo_pago||"efectivo"}:{}),
+          ...(cambio.nuevaCantidad===0?{id:cambio.detalle.id,venta_id:id,articulo_id:articuloId,metodo_pago:cambio.detalle.metodo_pago||"efectivo"}:{}),
           cantidad:cambio.cantidadAnterior,
           precio_unitario:cambio.precioAnterior,
           subtotal:cambio.cantidadAnterior*cambio.precioAnterior
