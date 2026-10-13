@@ -9786,6 +9786,57 @@ async function cargarResumenStockProveedores(){
 </script>
 
 
+
+<script id="muebleria-pwa-install-safe-v1">
+(function(){
+  let installPrompt=null;
+  function crearBoton(){
+    if(document.getElementById('botonInstalarMuebleria'))return;
+    const b=document.createElement('button');
+    b.id='botonInstalarMuebleria';
+    b.type='button';
+    b.textContent='📲 Instalar aplicación';
+    b.style.cssText='display:block;max-width:700px;width:calc(100% - 28px);margin:12px auto;background:#d7b77b;color:#123b2a;font-weight:bold;border:0;border-radius:10px;padding:14px;font-size:16px;cursor:pointer';
+    b.addEventListener('click',async function(){
+      try{
+        if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
+          alert('Mueblería Mercado ya está instalada en este dispositivo.');
+          return;
+        }
+        if(installPrompt){
+          const promptActual=installPrompt;
+          installPrompt=null;
+          await promptActual.prompt();
+          const choice=await promptActual.userChoice;
+          if(choice && choice.outcome==='accepted')b.textContent='✅ Aplicación instalada';
+          else b.textContent='📲 Instalar aplicación';
+          return;
+        }
+        alert('Chrome no ha habilitado la instalación automática todavía. Abre el menú ⋮ de Chrome y busca “Instalar aplicación” o “Añadir a pantalla principal”. Si no aparece, recarga la página y vuelve a intentarlo.');
+      }catch(error){
+        console.error('Error al instalar Mueblería Mercado:',error);
+        alert('Chrome no pudo iniciar la instalación. Abre el menú ⋮ de Chrome y selecciona “Instalar aplicación” o “Añadir a pantalla principal”.');
+      }
+    });
+    const header=document.querySelector('header');
+    if(header)header.insertAdjacentElement('afterend',b);
+    else document.body.insertBefore(b,document.body.firstChild);
+  }
+  window.addEventListener('beforeinstallprompt',function(event){
+    event.preventDefault();
+    installPrompt=event;
+    crearBoton();
+  });
+  window.addEventListener('appinstalled',function(){
+    installPrompt=null;
+    const b=document.getElementById('botonInstalarMuebleria');
+    if(b)b.textContent='✅ Aplicación instalada';
+  });
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',crearBoton);
+  else crearBoton();
+})();
+</script>
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
