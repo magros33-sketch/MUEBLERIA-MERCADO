@@ -1272,8 +1272,8 @@ try{
 
   if(cambios[0].nuevaCantidad===cambios[0].cantidadAnterior && cambios[0].nuevoPrecio===cambios[0].precioAnterior){alert("No hay cambios que guardar.");return;}
 
-  const avisoPagos=String(venta.notas||"").includes("Pago por artículo:")?"\n\nAviso: el desglose histórico de formas de pago se conserva; revísalo si cambia el importe.":"";
-  if(!confirm("¿Guardar los cambios de esta venta?\n\nPuedes escribir 0 en la cantidad para quitar un artículo.\n\nTotal anterior: $"+Number(venta.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})+"\nTotal nuevo: $"+totalNuevo.toLocaleString("es-MX",{maximumFractionDigits:0})+avisoPagos))return;
+
+  if(!confirm("¿Guardar los cambios de esta venta?\n\nPuedes escribir 0 en la cantidad para quitar un artículo.\n\nTotal anterior: $"+Number(venta.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})+"\nTotal nuevo: $"+totalNuevo.toLocaleString("es-MX",{maximumFractionDigits:0})))return;
 
   // Una sola transacción en PostgreSQL: detalle, stock y total se guardan juntos.
   const cambio=cambios[0];
@@ -4147,7 +4147,7 @@ Cliente:
 Metodo:
 ${escaparHTML(v.metodo_pago||"")}
 </div>
-${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose de pago al registrar (puede no reflejar ediciones posteriores): '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
+${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose de pagos por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
 
 <div class="dato">
 Total:
