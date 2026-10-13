@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#123b2a"/><g transform="translate(112 126) scale(.5625)"><g fill="none" stroke="#fff" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"><path d="M136 249v-52c0-36 29-65 65-65h110c36 0 65 29 65 65v52"/><path d="M137 258h-9c-19 0-34 15-34 34v82h324v-82c0-19-15-34-34-34h-9"/><path d="M145 373v26m222-26v26"/></g><rect x="146" y="236" width="220" height="102" rx="27" fill="#fff"/><path d="M256 248v75" stroke="#123b2a" stroke-width="12"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs><linearGradient id="bg" x2=".8" y2="1"><stop stop-color="#d10b20"/><stop offset="1" stop-color="#70000b"/></linearGradient><linearGradient id="gold" x2="0" y2="1"><stop stop-color="#ffe49a"/><stop offset="1" stop-color="#df9d25"/></linearGradient></defs>
+<rect width="512" height="512" rx="105" fill="url(#bg)"/>
+<g stroke="url(#gold)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M95 180 256 91 417 180"/></g>
+<text x="256" y="245" font-family="Arial,sans-serif" font-size="112" font-weight="900" text-anchor="middle" fill="#fff">M<tspan fill="#ffd16a">M</tspan></text>
+<rect x="128" y="276" width="256" height="91" rx="23" fill="#f9ecd4" stroke="#e4c99c" stroke-width="5"/>
+<rect x="112" y="304" width="38" height="79" rx="17" fill="#f9ecd4"/><rect x="362" y="304" width="38" height="79" rx="17" fill="#f9ecd4"/>
+<path d="M256 298v63" stroke="#c8ae8e" stroke-width="5"/>
+<path d="M158 316 194 308 208 339 171 348Z" fill="#bc2631"/><path d="M318 339 331 308 367 316 354 348Z" fill="#e9aa30"/>
+<path d="M148 381v12m216-12v12" stroke="#a86d37" stroke-width="12" stroke-linecap="round"/>
+<text x="256" y="442" font-family="Arial,sans-serif" font-size="53" font-weight="900" text-anchor="middle" fill="#ffcf69">MERCADO</text>
+</svg>
