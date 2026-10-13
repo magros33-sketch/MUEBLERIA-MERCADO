@@ -1,21 +1,25 @@
 {
-  "id": "./",
+  "id": "/",
   "name": "Mueblería Mercado",
   "short_name": "Mueblería",
-  "description": "Gestión de inventario, ventas, compras y apartados de Mueblería Mercado.",
-  "start_url": "./",
-  "scope": "./",
+  "description": "Gestión de Mueblería Mercado",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#ee101b",
+  "theme_color": "#123b2a",
   "icons": [
     {
-      "src": "./icon.svg?v=5",
+      "src": "/icon.svg?v=6",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg?v=6",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ],
-  "prefer_related_applications": false
+  ]
 }
