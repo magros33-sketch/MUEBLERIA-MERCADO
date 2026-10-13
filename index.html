@@ -1204,7 +1204,7 @@ try{
   const eleccionTexto=prompt("¿Qué artículo deseas modificar?\n\n"+opciones+"\n\nEscribe el número del artículo. Cancelar no cambia nada.");
   if(eleccionTexto===null)return;
   const eleccion=Number(eleccionTexto);
-  if(!Number.isInteger(eleccion)||eleccion<1||eleccion>detalles.length){alert("Selecciona un número válido de la lista.");return;}
+  if(!eleccionTexto.trim()||!Number.isInteger(eleccion)||eleccion<1||eleccion>detalles.length){alert("Selecciona un número válido de la lista.");return;}
   const indiceElegido=eleccion-1;
   const cambios=[];
   const stockPorArticulo={};
@@ -1221,7 +1221,7 @@ try{
     const nuevaCantidadTexto=prompt("Artículo: "+nombre+"\nCantidad actual: "+cantidadAnterior+"\nEscribe la nueva cantidad. Escribe 0 para quitar este artículo de la venta:",String(cantidadAnterior));
     if(nuevaCantidadTexto===null)return;
     const nuevaCantidad=Number(nuevaCantidadTexto);
-    if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<0){
+    if(!nuevaCantidadTexto.trim()||!Number.isSafeInteger(nuevaCantidad)||nuevaCantidad<0){
       alert("Cantidad no válida para "+nombre+". Usa un número entero igual o mayor que 0.");
       return;
     }
@@ -1231,7 +1231,7 @@ try{
       const nuevoPrecioTexto=prompt("Artículo: "+nombre+"\nPrecio por unidad:",String(precioAnterior));
       if(nuevoPrecioTexto===null)return;
       nuevoPrecio=Number(nuevoPrecioTexto);
-      if(!Number.isSafeInteger(nuevoPrecio)||nuevoPrecio<0){
+      if(!nuevoPrecioTexto.trim()||!Number.isSafeInteger(nuevoPrecio)||nuevoPrecio<0){
         alert("Precio no válido para "+nombre+". En Mueblería Mercado los precios son en pesos completos, sin centavos.");
         return;
       }
@@ -1284,7 +1284,7 @@ try{
       p_venta_id:id,
       p_detalle_id:cambio.detalle.id,
       p_cantidad:cambio.nuevaCantidad,
-      p_precio:cambio.nuevoPrecio
+      p_precio:cambio.nuevaCantidad===0?0:cambio.nuevoPrecio
     })
   });
   if(!respuesta.ok){
@@ -1295,9 +1295,14 @@ try{
 
   const resultado=await respuesta.json();
   alert("✅ Artículo actualizado en este ticket.\nTotal confirmado: $"+Number(resultado.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})+"\nEl inventario se ajustó correctamente.");
-  await cargarArticulos();
-  await cargarHistorialVentas();
-  await cargarResumenVentasDia();
+  try{
+    await cargarArticulos();
+    await cargarHistorialVentas();
+    await cargarResumenVentasDia();
+  }catch(errorActualizacion){
+    console.error("La edición se guardó, pero falló la actualización de pantalla:",errorActualizacion);
+    alert("El cambio SÍ se guardó en la base de datos. No se pudo actualizar la pantalla; vuelve a abrir Ventas para ver los importes actuales.");
+  }
 
 }catch(error){
   console.error("Error editando venta:",error);
