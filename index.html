@@ -1292,7 +1292,8 @@ try{
     throw new Error(mensaje);
   }
 
-  alert("✅ Artículo actualizado en este ticket.\nEl stock y el total fueron ajustados.");
+  const resultado=await respuesta.json();
+  alert("✅ Artículo actualizado en este ticket.\\nTotal confirmado: $"+Number(resultado.total||0).toFixed(2)+"\\nEl inventario se ajustó correctamente.");
   await cargarArticulos();
   await cargarHistorialVentas();
   await cargarResumenVentasDia();
