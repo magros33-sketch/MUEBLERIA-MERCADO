@@ -1190,13 +1190,16 @@ try{
   }
 
   // Editar una línea concreta sin obligar a recorrer todos los artículos del ticket.
-  const articulosTicket=await Promise.all(detalles.map(async d=>{
-    const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{headers:headersSupabase,cache:"no-store"});
-    if(!ra.ok)throw new Error("No se pudo consultar un artículo del ticket.");
-    const lista=await ra.json();
-    if(!lista.length)throw new Error("Falta un artículo del ticket.");
-    return lista[0];
-  }));
+  const idsTicket=[...new Set(detalles.map(d=>String(d.articulo_id)))];
+  const raTicket=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=in.("+idsTicket.join(",")+")",{headers:headersSupabase,cache:"no-store"});
+  if(!raTicket.ok)throw new Error("No se pudieron consultar los artículos del ticket.");
+  const catalogoTicket=await raTicket.json();
+  const mapaTicket=new Map(catalogoTicket.map(art=>[String(art.id),art]));
+  const articulosTicket=detalles.map(d=>{
+    const articulo=mapaTicket.get(String(d.articulo_id));
+    if(!articulo)throw new Error("Falta un artículo del ticket.");
+    return articulo;
+  });
   const opciones=detalles.map((d,i)=>(i+1)+". "+(articulosTicket[i].nombre||"Artículo")+" — "+d.cantidad+" × $"+Number(d.precio_unitario||0).toFixed(2)).join("\n");
   const eleccionTexto=prompt("¿Qué artículo deseas modificar?\n\n"+opciones+"\n\nEscribe el número del artículo. Cancelar no cambia nada.");
   if(eleccionTexto===null)return;
