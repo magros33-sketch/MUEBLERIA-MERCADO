@@ -9748,7 +9748,7 @@ async function cargarResumenStockProveedores(){
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("./service-worker.js").catch(function (error) {
+    navigator.serviceWorker.register("./service-worker.js", {updateViaCache: "none"}).catch(function (error) {
       console.warn("No se pudo activar el soporte de instalación:", error);
     });
   });
