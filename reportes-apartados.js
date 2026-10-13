@@ -30,18 +30,26 @@
     if(!box)return;
     box.innerHTML="🔄 Cargando ventas por día...";
     try{
-      const [rv,rg,rp]=await Promise.all([
+      const [rv,rg,rp,ra]=await Promise.all([
         fetch(SUPABASE_URL+"/rest/v1/ventas?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
         fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&limit=5000",{headers:headersSupabase,cache:"no-store"}),
-        fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=10000",{headers:headersSupabase,cache:"no-store"})
+        fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=*&limit=10000",{headers:headersSupabase,cache:"no-store"}),
+        fetch(SUPABASE_URL+"/rest/v1/apartados?select=id,estado&limit=10000",{headers:headersSupabase,cache:"no-store"})
       ]);
       if(!rv.ok)throw new Error("Ventas: "+await rv.text());
       if(!rg.ok)throw new Error("Gastos: "+await rg.text());
       if(!rp.ok)throw new Error("Pagos de apartados: "+await rp.text());
+      if(!ra.ok)throw new Error("Apartados: "+await ra.text());
 
       const ventas=await rv.json();
       const gastos=await rg.json();
       const pagosApartados=await rp.json();
+      const apartados=await ra.json();
+      const apartadosCancelados=new Set(
+        apartados
+          .filter(function(a){return ["cancelada","cancelado"].includes(normalizar(a.estado));})
+          .map(function(a){return a.id;})
+      );
       const mapa={};
 
       ventas.forEach(function(v){
@@ -54,6 +62,8 @@
       });
 
       pagosApartados.forEach(function(p){
+        /* Un pago de un apartado cancelado no cuenta como dinero recibido. */
+        if(apartadosCancelados.has(p.apartado_id))return;
         const dia=diaComercial(p.fecha);
         if(!dia)return;
         if(!mapa[dia])mapa[dia]={ventas:0,cantidad:0,pagosApartados:0,gastos:0,cantidadPagosApartados:0};
