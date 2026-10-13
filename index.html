@@ -1210,12 +1210,7 @@ try{
   for(const [indice,detalle] of detalles.entries()){
     if(indice!==indiceElegido)continue;
     const articuloId=detalle.articulo_id;
-    const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{headers:headersSupabase,cache:"no-store"});
-    if(!ra.ok)throw new Error("No se pudo consultar uno de los artículos.");
-    const arts=await ra.json();
-    if(!arts.length)throw new Error("No se encontró uno de los artículos.");
-
-    const articulo=arts[0];
+    const articulo=articulosTicket[indice];
     const nombre=articulo.nombre||"Artículo";
     const cantidadAnterior=Number(detalle.cantidad||0);
     const precioAnterior=Number(detalle.precio_unitario||0);
