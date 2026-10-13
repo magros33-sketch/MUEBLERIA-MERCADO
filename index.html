@@ -3833,9 +3833,11 @@ if(Number.isNaN(d.getTime()))return false;
 return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)===fechaSeleccionada;
 }
 
-const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()));
-const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha));
-const ah=apartados.filter(a=>esFechaMexico(a.fecha)&&!["cancelada","cancelado"].includes(String(a.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()));
+const estadoNormalizado=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const vh=ventas.filter(v=>esFechaMexico(v.fecha)&&!["cancelada","cancelado"].includes(estadoNormalizado(v.estado)));
+const apartadosCancelados=new Set(apartados.filter(a=>["cancelada","cancelado"].includes(estadoNormalizado(a.estado))).map(a=>String(a.id)));
+const ph=pagosApartados.filter(p=>esFechaMexico(p.fecha)&&!apartadosCancelados.has(String(p.apartado_id)));
+const ah=apartados.filter(a=>esFechaMexico(a.fecha)&&!["cancelada","cancelado"].includes(estadoNormalizado(a.estado)));
 const gh=gastos.filter(g=>esFechaMexico(g.fecha));
 
 function sumarMetodo(lista,metodo){
