@@ -1,11 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="100" fill="#ee101b"/>
-<path d="M88 209 L256 75 L424 209" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M350 151 V110 H387 V181" fill="#fff"/>
-<rect x="165" y="208" width="182" height="145" rx="35" fill="#fff"/>
-<rect x="123" y="253" width="62" height="122" rx="28" fill="#fff"/>
-<rect x="327" y="253" width="62" height="122" rx="28" fill="#fff"/>
-<rect x="176" y="308" width="160" height="63" rx="13" fill="#fff" stroke="#ee101b" stroke-width="8"/>
-<text x="256" y="414" font-family="Arial,sans-serif" font-weight="800" font-size="37" letter-spacing="2" text-anchor="middle" fill="#fff">MUEBLERÍA</text>
-<text x="256" y="463" font-family="Arial,sans-serif" font-weight="900" font-size="52" letter-spacing="1" text-anchor="middle" fill="#fff">MERCADO</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" rx="108" fill="#123b2a"/><g fill="none" stroke="#fff" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"><path d="M136 249v-52c0-36 29-65 65-65h110c36 0 65 29 65 65v52"/><path d="M137 258h-9c-19 0-34 15-34 34v82h324v-82c0-19-15-34-34-34h-9"/><path d="M145 373v26m222-26v26"/></g><rect x="146" y="236" width="220" height="102" rx="27" fill="#fff"/><path d="M256 248v75" stroke="#123b2a" stroke-width="12"/></svg>
