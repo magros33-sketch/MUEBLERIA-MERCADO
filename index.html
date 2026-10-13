@@ -1330,10 +1330,11 @@ try{
         headers:{...headersSupabase,"Prefer":"return=minimal"},
         body:JSON.stringify({stock:stockOriginal})
       });
-      await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
+      await fetch(SUPABASE_URL+(cambio.nuevaCantidad===0?"/rest/v1/ventas_detalle":"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId)),{
+        method:cambio.nuevaCantidad===0?"POST":"PATCH",
         headers:{...headersSupabase,"Prefer":"return=minimal"},
         body:JSON.stringify({
+          ...(cambio.nuevaCantidad===0?{venta_id:id,articulo_id:articuloId,metodo_pago:cambio.detalle.metodo_pago||"efectivo"}:{}),
           cantidad:cambio.cantidadAnterior,
           precio_unitario:cambio.precioAnterior,
           subtotal:cambio.cantidadAnterior*cambio.precioAnterior
