@@ -4147,7 +4147,7 @@ Cliente:
 Metodo:
 ${escaparHTML(v.metodo_pago||"")}
 </div>
-${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
+${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose de pago al registrar (puede no reflejar ediciones posteriores): '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
 
 <div class="dato">
 Total:
