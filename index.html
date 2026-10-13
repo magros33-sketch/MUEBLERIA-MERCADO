@@ -3987,6 +3987,22 @@ const gastos=await respuestaGastos.json();
 const apartados=await respuestaApartados.json();
 let pagosApartados=await respuestaPagosApartados.json();
 pagosApartados=(Array.isArray(pagosApartados)?pagosApartados:[]);
+
+/* Los anticipos de apartados cancelados se conservan como historial,
+   pero no aparecen como dinero recibido ni se suman a las ventas. */
+const apartadosCanceladosHistorial=new Set(
+  apartados
+    .filter(function(a){
+      return ["cancelada","cancelado"].includes(
+        String(a.estado||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/\\s+/g," ").trim()
+      );
+    })
+    .map(function(a){return String(a.id);})
+);
+pagosApartados=pagosApartados.filter(function(p){
+  return !apartadosCanceladosHistorial.has(String(p.apartado_id||""));
+});
+
 function fechaLocalHistorial(valor){
 const d=new Date(valor||"");
 return !Number.isNaN(d.getTime())?new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d):"";
@@ -5457,23 +5473,23 @@ $${Number(a.precio_unitario||0).toFixed(2)}
 </div>
 
 <div class="dato">
-Total:
+${(estado==="cancelado"||estado==="cancelada")?"Importe original del apartado (cancelado, no contabiliza):":"Total:"}
 <strong>
-$${Number(a.total||0).toFixed(2)}
+${Number(a.total||0).toFixed(2)}
 </strong>
 </div>
 
 <div class="dato">
-Pagado:
+${(estado==="cancelado"||estado==="cancelada")?"Anticipos históricos (no cuentan como ingreso):":"Pagado:"}
 <strong>
-$${Number(a.pagado||0).toFixed(2)}
+${Number(a.pagado||0).toFixed(2)}
 </strong>
 </div>
 
 <div class="dato">
-Saldo:
+${(estado==="cancelado"||estado==="cancelada")?"Saldo original al cancelar:":"Saldo:"}
 <strong>
-$${Number(a.saldo||0).toFixed(2)}
+${Number(a.saldo||0).toFixed(2)}
 </strong>
 </div>
 
