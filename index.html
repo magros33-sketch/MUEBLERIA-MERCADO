@@ -1274,74 +1274,22 @@ try{
 
   if(!confirm("¿Guardar los cambios de esta venta?\\n\\nPuedes escribir 0 en la cantidad para quitar un artículo.\\n\\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)))return;
 
-  const aplicados=[];
-  const stockInicial={};
-  Object.keys(stockPorArticulo).forEach(function(idArticulo){
-    stockInicial[idArticulo]=null;
+  // Una sola transacción en PostgreSQL: detalle, stock y total se guardan juntos.
+  const cambio=cambios[0];
+  const respuesta=await fetch(SUPABASE_URL+"/rest/v1/rpc/editar_linea_ticket_segura",{
+    method:"POST",
+    headers:headersSupabase,
+    body:JSON.stringify({
+      p_venta_id:id,
+      p_detalle_id:cambio.detalle.id,
+      p_cantidad:cambio.nuevaCantidad,
+      p_precio:cambio.nuevoPrecio
+    })
   });
-
-  try{
-    for(const cambio of cambios){
-      const articuloId=cambio.detalle.articulo_id;
-      const stockActualAntes=stockInicial[articuloId]===null
-        ?Number(cambio.articulo.stock||0)
-        :stockInicial[articuloId];
-
-      if(stockInicial[articuloId]===null)stockInicial[articuloId]=stockActualAntes;
-
-      const stockNuevo=stockActualAntes-(cambio.nuevaCantidad-cambio.cantidadAnterior);
-
-      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({stock:stockNuevo})
-      });
-      if(!rs.ok)throw new Error("No se pudo actualizar el stock de "+(cambio.articulo.nombre||"")+".");
-
-      const filtroDetalle="/rest/v1/ventas_detalle?id=eq."+encodeURIComponent(cambio.detalle.id);
-      const rd2=await fetch(SUPABASE_URL+filtroDetalle,{
-        method:cambio.nuevaCantidad===0?"DELETE":"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        ...(cambio.nuevaCantidad===0?{}:{body:JSON.stringify({
-          cantidad:cambio.nuevaCantidad,
-          precio_unitario:cambio.nuevoPrecio,
-          subtotal:cambio.subtotal
-        })})
-      });
-      if(!rd2.ok)throw new Error("No se pudo actualizar el detalle de "+(cambio.articulo.nombre||"")+".");
-
-      aplicados.push(cambio);
-      stockInicial[articuloId]=stockNuevo;
-    }
-
-    const rv2=await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(id),{
-      method:"PATCH",
-      headers:{...headersSupabase,"Prefer":"return=minimal"},
-      body:JSON.stringify({total:totalNuevo})
-    });
-    if(!rv2.ok)throw new Error("No se pudo actualizar el total de la venta: "+await rv2.text());
-
-  }catch(e){
-    for(const cambio of aplicados){
-      const articuloId=cambio.detalle.articulo_id;
-      const stockOriginal=Number(cambio.articulo.stock||0);
-      await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({stock:stockOriginal})
-      });
-      await fetch(SUPABASE_URL+(cambio.nuevaCantidad===0?"/rest/v1/ventas_detalle":"/rest/v1/ventas_detalle?id=eq."+encodeURIComponent(cambio.detalle.id)),{
-        method:cambio.nuevaCantidad===0?"POST":"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({
-          ...(cambio.nuevaCantidad===0?{id:cambio.detalle.id,venta_id:id,articulo_id:articuloId,metodo_pago:cambio.detalle.metodo_pago||"efectivo"}:{}),
-          cantidad:cambio.cantidadAnterior,
-          precio_unitario:cambio.precioAnterior,
-          subtotal:cambio.cantidadAnterior*cambio.precioAnterior
-        })
-      });
-    }
-    throw e;
+  if(!respuesta.ok){
+    let mensaje="No se pudo guardar el cambio.";
+    try{const e=await respuesta.json();mensaje=e.message||mensaje;}catch(_e){}
+    throw new Error(mensaje);
   }
 
   alert("✅ Artículo actualizado en este ticket.\\nEl stock y el total fueron ajustados.");
