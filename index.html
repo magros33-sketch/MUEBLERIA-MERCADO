@@ -1231,7 +1231,7 @@ try{
       const nuevoPrecioTexto=prompt("Artículo: "+nombre+"\nPrecio por unidad:",precioAnterior.toFixed(2));
       if(nuevoPrecioTexto===null)return;
       nuevoPrecio=Number(nuevoPrecioTexto);
-      if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0||Math.round(nuevoPrecio*100)!==nuevoPrecio*100){
+      if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0||Math.abs(Math.round(nuevoPrecio*100)-nuevoPrecio*100)>0.000001){
         alert("Precio no válido para "+nombre+". Usa como máximo dos decimales.");
         return;
       }
