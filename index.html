@@ -209,6 +209,31 @@ margin:10px 0;
 box-shadow:0 2px 7px rgba(0,0,0,.08)
 }
 
+.historial.apartado-cancelado{
+position:relative;
+overflow:hidden;
+}
+.historial.apartado-cancelado::before{
+content:"CANCELADO";
+position:absolute;
+top:45%;
+left:-8%;
+width:116%;
+transform:rotate(-13deg);
+text-align:center;
+font-size:clamp(24px,5vw,38px);
+font-weight:900;
+letter-spacing:3px;
+color:#c00000;
+background:rgba(255,255,255,.78);
+border-top:4px solid #c00000;
+border-bottom:4px solid #c00000;
+padding:8px 0;
+opacity:.9;
+pointer-events:none;
+z-index:5;
+}
+
 .historial strong{
 font-size:17px
 }
@@ -8772,7 +8797,7 @@ async function registrarPagoProveedor(compraId){
         }else{
           botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
         }
-        return '<div class="historial">'+
+        return '<div class="historial'+(cancelado?' apartado-cancelado':'')+'">'+
           '<strong>📋 Apartado</strong>'+
           '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
           '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
