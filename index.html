@@ -1189,11 +1189,26 @@ try{
     return;
   }
 
+  // Editar una línea concreta sin obligar a recorrer todos los artículos del ticket.
+  const articulosTicket=await Promise.all(detalles.map(async d=>{
+    const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(d.articulo_id),{headers:headersSupabase,cache:"no-store"});
+    if(!ra.ok)throw new Error("No se pudo consultar un artículo del ticket.");
+    const lista=await ra.json();
+    if(!lista.length)throw new Error("Falta un artículo del ticket.");
+    return lista[0];
+  }));
+  const opciones=detalles.map((d,i)=>(i+1)+". "+(articulosTicket[i].nombre||"Artículo")+" — "+d.cantidad+" × $"+Number(d.precio_unitario||0).toFixed(2)).join("\\n");
+  const eleccionTexto=prompt("¿Qué artículo deseas modificar?\\n\\n"+opciones+"\\n\\nEscribe el número del artículo. Cancelar no cambia nada.");
+  if(eleccionTexto===null)return;
+  const eleccion=Number(eleccionTexto);
+  if(!Number.isInteger(eleccion)||eleccion<1||eleccion>detalles.length){alert("Selecciona un número válido de la lista.");return;}
+  const indiceElegido=eleccion-1;
   const cambios=[];
   const stockPorArticulo={};
-  let totalNuevo=0;
+  let totalNuevo=detalles.reduce((s,d)=>s+Number(d.subtotal??(Number(d.cantidad||0)*Number(d.precio_unitario||0))),0);
 
-  for(const detalle of detalles){
+  for(const [indice,detalle] of detalles.entries()){
+    if(indice!==indiceElegido)continue;
     const articuloId=detalle.articulo_id;
     const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{headers:headersSupabase,cache:"no-store"});
     if(!ra.ok)throw new Error("No se pudo consultar uno de los artículos.");
@@ -1239,7 +1254,7 @@ try{
     stockPorArticulo[articuloId]=stockDisponible-diferencia;
 
     const subtotal=nuevaCantidad*nuevoPrecio;
-    totalNuevo+=subtotal;
+    totalNuevo+=subtotal-Number(detalle.subtotal??(cantidadAnterior*precioAnterior));
 
     cambios.push({
       detalle:detalle,
@@ -1252,7 +1267,7 @@ try{
     });
   }
 
-  if(!cambios.some(c=>c.nuevaCantidad>0)){
+  if(detalles.length===1 && !cambios.some(c=>c.nuevaCantidad>0)){
     alert("La venta no puede quedarse sin artículos. Para anularla completa, usa «Eliminar venta y devolver stock».");
     return;
   }
@@ -1285,13 +1300,13 @@ try{
 
       const filtroDetalle="/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId);
       const rd2=await fetch(SUPABASE_URL+filtroDetalle,{
-        method:"PATCH",
+        method:cambio.nuevaCantidad===0?"DELETE":"PATCH",
         headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({
+        ...(cambio.nuevaCantidad===0?{}:{body:JSON.stringify({
           cantidad:cambio.nuevaCantidad,
           precio_unitario:cambio.nuevoPrecio,
           subtotal:cambio.subtotal
-        })
+        })})
       });
       if(!rd2.ok)throw new Error("No se pudo actualizar el detalle de "+(cambio.articulo.nombre||"")+".");
 
@@ -1328,7 +1343,7 @@ try{
     throw e;
   }
 
-  alert("✅ Venta editada correctamente.\\nEl stock y el total fueron ajustados.");
+  alert("✅ Artículo actualizado en este ticket.\\nEl stock y el total fueron ajustados.");
   await cargarArticulos();
   await cargarHistorialVentas();
   await cargarResumenVentasDia();
