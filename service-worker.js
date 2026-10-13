@@ -1,4 +1,4 @@
-const VERSION = "muebleria-mercado-pwa-v2-reportes-apartados";
+const VERSION = "muebleria-mercado-pwa-v3-resumen-apartados-cancelados";
 self.addEventListener("install", function(event) { self.skipWaiting(); });
 self.addEventListener("activate", function(event) { event.waitUntil(self.clients.claim()); });
 
