@@ -1272,7 +1272,8 @@ try{
 
   if(cambios[0].nuevaCantidad===cambios[0].cantidadAnterior && cambios[0].nuevoPrecio===cambios[0].precioAnterior){alert("No hay cambios que guardar.");return;}
 
-  if(!confirm("¿Guardar los cambios de esta venta?\n\nPuedes escribir 0 en la cantidad para quitar un artículo.\n\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\nTotal nuevo: $"+totalNuevo.toFixed(2)))return;
+  const avisoPagos=String(venta.notas||"").includes("Pago por artículo:")?"\n\nAviso: el desglose histórico de formas de pago se conserva; revísalo si cambia el importe.":"";
+  if(!confirm("¿Guardar los cambios de esta venta?\n\nPuedes escribir 0 en la cantidad para quitar un artículo.\n\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\nTotal nuevo: $"+totalNuevo.toFixed(2)+avisoPagos))return;
 
   // Una sola transacción en PostgreSQL: detalle, stock y total se guardan juntos.
   const cambio=cambios[0];
