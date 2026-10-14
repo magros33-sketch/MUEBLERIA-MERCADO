@@ -65,7 +65,7 @@
       coincidencias.slice(0, visibles).map(({venta: v, nombreCliente, lineas}) => {
         const d = new Date(v.fecha);
         const fecha = Number.isNaN(d.getTime()) ? 'Sin fecha' : new Intl.DateTimeFormat('es-MX', {timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short'}).format(d);
-        return '<div class="historial"><strong>💰 Venta · Ticket ' + esc(String(v.id).slice(0, 8)) + '</strong>' +
+        return '<div class="historial"><div class="operacion-encabezado"><strong>💰 Venta · Ticket ' + esc(String(v.id).slice(0, 8)) + '</strong>' + (typeof etiquetaOperacionPagada === 'function' ? etiquetaOperacionPagada(v, 'venta') : '') + '</div>' +
           '<div class="fecha-operacion">📅 ' + esc(fecha) + '</div><div class="dato">Cliente: <strong>' + esc(nombreCliente) + '</strong></div>' +
           '<div class="dato">Método: ' + esc(v.metodo_pago || '') + '</div>' +
           '<div class="dato">Total: <strong>' + dinero(v.total) + ' MXN</strong></div>' +

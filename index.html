@@ -263,6 +263,8 @@ background:#fff4d6;
 }
 .fecha-vencimiento{margin:7px 0;}
 .pantalla h2{font-size:28px;font-weight:900;color:#123b2a;border-bottom:3px solid #28784f;padding-bottom:10px}.pantalla h3{font-size:21px;font-weight:850;color:#123b2a;background:#eaf3ed;padding:10px;border-left:5px solid #28784f}.menu button{font-size:18px;font-weight:800}.tarjeta label{font-weight:800}
+.operacion-encabezado{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pagado-etiqueta{display:inline-block;background:#e3f5e9;color:#17652e;border:1px solid #b9dfc6;border-radius:20px;padding:4px 9px;font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap}
 </style>
 
 <meta name="theme-color" content="#123b2a">
@@ -2106,6 +2108,19 @@ alert(
 }
 
 
+
+function etiquetaOperacionPagada(registro,tipo){
+ const estado=String(registro.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+ if(["cancelada","cancelado"].includes(estado))return "";
+ const tieneSaldo=registro.saldo!==null&&registro.saldo!==undefined&&registro.saldo!=="";
+ const saldo=tieneSaldo?Number(registro.saldo):NaN;
+ let pagado=Number.isFinite(saldo)?saldo<=0:
+   ["pagado","pagada","liquidado","liquidada"].includes(estado)||
+   (Number(registro.total)>0&&Number(registro.pagado)>=Number(registro.total));
+ if(tipo==="venta"&&!tieneSaldo&&["completada","completado"].includes(estado))pagado=true;
+ return pagado?'<span class="pagado-etiqueta">✓ PAGADO</span>':"";
+}
+
 /* ================= COMPRAS ================= */
 
 const campoCompraCodigo=
@@ -2929,6 +2944,11 @@ async function cargarHistorialCompras(){
       const pid=String(c.proveedor_id||c.id_proveedor||"");
       const nombreProveedor=mapaProveedores[pid]||"Proveedor no identificado";
       const estadoCompra=String(c.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+      const saldoCompra=c.saldo!==null&&c.saldo!==undefined&&c.saldo!==""?Number(c.saldo):NaN;
+      const compraPagada=!["cancelada","cancelado"].includes(estadoCompra)&&(
+        Number.isFinite(saldoCompra)?saldoCompra<=0:
+        Number(c.total)>0&&Number(c.pagado)>=Number(c.total)
+      );
       let botones="";
       if(estadoCompra==="cancelada"||estadoCompra==="cancelado"){
         botones='<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';
@@ -2941,7 +2961,8 @@ async function cargarHistorialCompras(){
         botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
       }
       return '<div class="historial">'+
-        '<strong>🛒 Compra</strong>'+
+        '<div class="operacion-encabezado"><strong>🛒 Compra</strong>'+
+        (compraPagada?'<span class="pagado-etiqueta">✓ PAGADO</span>':'')+'</div>'+
         '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
         '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
         '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
@@ -4223,7 +4244,7 @@ const nombreClienteVenta=clienteRelacionado
 return `
 <div class="historial">
 
-<strong>💰 Venta</strong>
+<div class="operacion-encabezado"><strong>💰 Venta</strong>${etiquetaOperacionPagada(v,"venta")}</div>
 
 <div class="fecha-operacion">
 📅 ${formatearFecha(v.fecha)}
@@ -5392,7 +5413,7 @@ function filtrarHistorialApartados(){
   const dias=Math.floor((hoy-ultima)/86400000),vencido=activo&&dias>=60;
   const id=String(a.id||"").replace(/[^a-zA-Z0-9-]/g,"");
   const e=x=>escaparHTML(String(x??""));
-  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><strong>'+e(c?.nombre||"Cliente no disponible")+'</strong><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
+  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><div class="operacion-encabezado"><strong>'+e(c?.nombre||"Cliente no disponible")+'</strong>'+etiquetaOperacionPagada(a,"apartado")+'</div><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
  }
  destino.innerHTML=(!fecha&&!texto&&!mostrarActivos?'<p>📅 Elige una fecha, busca un cliente o pulsa «Ver activos».</p>':'<h3>📋 Apartados encontrados ('+lista.length+')</h3>'+(lista.map(tarjeta).join("")||'<p>No hay apartados para esta búsqueda.</p>'));
 }
@@ -8687,7 +8708,7 @@ async function registrarPagoProveedor(compraId){
           botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
         }
         return '<div class="historial'+(cancelado?' apartado-cancelado':'')+'">'+
-          '<strong>📋 Apartado</strong>'+
+          '<div class="operacion-encabezado"><strong>📋 Apartado</strong>'+etiquetaOperacionPagada(a,"apartado")+'</div>'+
           '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
           '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
           '<div class="dato">Cliente: <strong>'+escaparHTML(mapaClientes[String(a.cliente_id)]||"Cliente no disponible")+'</strong></div>'+
