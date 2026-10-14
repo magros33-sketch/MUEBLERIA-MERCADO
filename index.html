@@ -7712,7 +7712,7 @@ function cambiarPinAdministracion(){
 
   window.actualizarTotalVenta=function(){
     const totalItems=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
-    const total=totalItems+totalPendiente();
+    const total=totalItems; // Solo artículos realmente añadidos al ticket
     if(el("totalVenta"))el("totalVenta").innerHTML=money(total);
   };
 
@@ -8031,7 +8031,7 @@ function cambiarPinAdministracion(){
     el("ventaCantidad")?.addEventListener("input",actualizarTotalVenta);
     el("ventaPrecio")?.addEventListener("input",actualizarTotalVenta);
     ['ventaTipoCliente','ventaMetodoPago','ventaCliente','ventaCantidad','ventaPrecio','ventaCodigo','ventaNombre'].forEach(id=>{
-      const campo=el(id);if(campo&&!campo.dataset.ventaBorradorListener){campo.dataset.ventaBorradorListener='1';campo.addEventListener('input',guardarBorradorVenta);campo.addEventListener('change',guardarBorradorVenta)}
+      const campo=el(id);if(campo&&!campo.dataset.ventaBorradorListener){campo.dataset.ventaBorradorListener='1';campo.addEventListener('input',guardarBorradorVenta);campo.addEventListener('change',guardarBorradorVenta);if(id==='ventaMetodoPago')campo.addEventListener('change',()=>{const m=el('mensajeVenta');if(m&&m.textContent.includes('Selecciona la forma de pago antes de añadir el artículo'))m.innerHTML='';})}
     });
     renderVentaItems();
   }
