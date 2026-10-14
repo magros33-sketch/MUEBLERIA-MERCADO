@@ -2243,6 +2243,8 @@ onclick="seleccionarArticuloCompraPorId('${a.id}')"
 📦 ${escaparHTML(a.nombre||"")}
 
 <br>
+Proveedor: ${escaparHTML((proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"Sin proveedor")}
+<br>
 
 Codigo: ${escaparHTML(a.codigo||"")}
 
@@ -3308,7 +3310,8 @@ articulos.filter(function(a){
 
 return String(a.nombre||"")
 .normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()
-.includes(texto);
+.includes(texto) || String((proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"")
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);
 
 });
 
