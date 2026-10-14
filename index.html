@@ -7880,15 +7880,20 @@ function cambiarPinAdministracion(){
       return;
     }
 
-    // Comprobar nuevamente el stock real antes de guardar.
+    // Sumar todas las líneas del mismo artículo, incluso con distintos pagos.
+    const cantidadesPorArticulo=new Map();
     for(const x of ventaItems){
-      const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
+      const clave=String(x.articulo_id);
+      cantidadesPorArticulo.set(clave,(cantidadesPorArticulo.get(clave)||0)+Number(x.cantidad));
+    }
+    for(const [idArticulo,cantidadSolicitada] of cantidadesPorArticulo){
+      const actual=articulos.find(a=>String(a.id)===idArticulo);
       if(!actual){
-        mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos el artículo '+escaparHTML(x.nombre||"")+'.</div>';
+        mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos uno de los artículos del ticket.</div>';
         return;
       }
-      if(Number(actual.stock||0)<x.cantidad){
-        mensaje.innerHTML='<div class="mensaje-error">❌ El stock cambió para '+escaparHTML(x.nombre||"")+'. Disponible ahora: '+Number(actual.stock||0)+'</div>';
+      if(Number(actual.stock||0)<cantidadSolicitada){
+        mensaje.innerHTML='<div class="mensaje-error">❌ Stock insuficiente para '+escaparHTML(actual.nombre||"")+'. Disponible: '+Number(actual.stock||0)+', solicitado: '+cantidadSolicitada+'</div>';
         return;
       }
     }
@@ -7940,6 +7945,7 @@ function cambiarPinAdministracion(){
       ventaItems=[];
       try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
       clienteVentaSeleccionado=null;
+      el("ventaMetodoPago").value="";
       el("ventaCliente").value="";
       el("estadoClienteVenta").innerHTML="";
       el("resultadoClienteVenta").innerHTML="";
