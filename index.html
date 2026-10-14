@@ -262,6 +262,7 @@ font-weight:bold;
 background:#fff4d6;
 }
 .fecha-vencimiento{margin:7px 0;}
+.pantalla h2{font-size:28px;font-weight:900;color:#123b2a;border-bottom:3px solid #28784f;padding-bottom:10px}.pantalla h3{font-size:21px;font-weight:850;color:#123b2a;background:#eaf3ed;padding:10px;border-left:5px solid #28784f}.menu button{font-size:18px;font-weight:800}.tarjeta label{font-weight:800}
 </style>
 
 <meta name="theme-color" content="#123b2a">
@@ -876,7 +877,7 @@ placeholder="Notas del apartado"
 
 <div class="tarjeta">
 
-<h3>📋 Historial de apartados</h3>
+<h3>📋 Apartados activos e historial</h3><p class="ayuda">Los activos siempre están disponibles. Consulta los pagados y cancelados por calendario o buscando al cliente.</p><label for="fechaHistorialApartados">📅 Fecha del historial</label><input id="fechaHistorialApartados" type="date" onchange="filtrarHistorialApartados()"><button type="button" class="secundario" onclick="document.getElementById('fechaHistorialApartados').value='';filtrarHistorialApartados()">Quitar fecha</button>
 
 <label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
 <input
@@ -5314,290 +5315,80 @@ mensaje.innerHTML=
 
 /* ================= HISTORIAL APARTADOS ================= */
 
+
+let apartadosVista=[];
+let pagosApartadosVista=[];
 async function cargarHistorialApartados(){
-
-const contenedor=
-document.getElementById("historialApartados");
-
-if(!contenedor)return;
-
-contenedor.innerHTML=
-"🔄 Cargando apartados...";
-
-
-try{
-
-const respuesta=
-await fetch(
-SUPABASE_URL+
-"/rest/v1/apartados?select=*&order=fecha.desc",
-{
-method:"GET",
-headers:{
-...headersSupabase,
-"Cache-Control":"no-cache",
-"Pragma":"no-cache"
-},
-cache:"no-store"
+ const destino=document.getElementById("historialApartados");if(!destino)return;
+ destino.textContent="Cargando apartados...";
+ try{
+  const [ra,rp]=await Promise.all([
+   fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&order=fecha.desc",{headers:headersSupabase,cache:"no-store"}),
+   fetch(SUPABASE_URL+"/rest/v1/apartado_pagos?select=apartado_id,fecha&order=fecha.desc",{headers:headersSupabase,cache:"no-store"})
+  ]);
+  if(!ra.ok)throw Error(await ra.text());
+  apartadosVista=await ra.json();
+  pagosApartadosVista=rp.ok?await rp.json():[];
+  if(!rp.ok)console.warn("No se pudo consultar la fecha de abonos",await rp.text());
+  filtrarHistorialApartados();
+ }catch(e){destino.textContent="No se pudieron cargar los apartados: "+e.message;}
 }
-);
-
-
-if(!respuesta.ok){
-
-const errorTexto=
-await respuesta.text();
-
-console.error(
-"Error historial apartados:",
-errorTexto
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ No se pudo cargar el historial de apartados.
-
-<br><br>
-
-${escaparHTML(errorTexto)}
-
-</div>
-`;
-
-return;
-
+function filtrarHistorialApartados(){
+ const destino=document.getElementById("historialApartados");if(!destino)return;
+ const texto=(document.getElementById("buscarHistorialApartados")?.value||"").trim().toLowerCase();
+ const fecha=document.getElementById("fechaHistorialApartados")?.value||"";
+ const normalizar=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ const hoy=new Date(fechaHoyMexicoApartado()+"T12:00:00");
+ const lista=apartadosVista.filter(a=>{
+  const estado=normalizar(a.estado);
+  const activo=!["cancelado","cancelada","pagado","liquidado"].includes(estado)&&Number(a.saldo||0)>0;
+  const c=clientes.find(x=>x.id===a.cliente_id),art=articulos.find(x=>x.id===a.articulo_id);
+  const coincide=!texto||normalizar((c?.nombre||"")+" "+(c?.telefono||"")+" "+(art?.nombre||"")).includes(normalizar(texto));
+  return coincide&&(activo||Boolean(texto)||Boolean(fecha)&&String(a.fecha||"").slice(0,10)===fecha);
+ });
+ const activos=lista.filter(a=>!["cancelado","cancelada","pagado","liquidado"].includes(normalizar(a.estado))&&Number(a.saldo||0)>0);
+ const historicos=lista.filter(a=>!activos.includes(a));
+ function tarjeta(a){
+  const c=clientes.find(x=>x.id===a.cliente_id),art=articulos.find(x=>x.id===a.articulo_id);
+  const estado=normalizar(a.estado),activo=activos.includes(a);
+  const fechas=pagosApartadosVista.filter(p=>p.apartado_id===a.id).map(p=>new Date(p.fecha)).filter(d=>!Number.isNaN(d.getTime()));
+  const base=new Date(String(a.fecha||"").slice(0,10)+"T12:00:00");
+  const ultima=fechas.reduce((m,d)=>d>m?d:m,base);
+  const dias=Math.floor((hoy-ultima)/86400000),vencido=activo&&dias>=60;
+  const id=String(a.id||"").replace(/[^a-zA-Z0-9-]/g,"");
+  const e=x=>escaparHTML(String(x??""));
+  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><strong>'+e(c?.nombre||"Cliente no disponible")+'</strong><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
+ }
+ destino.innerHTML='<h3>🟢 Activos ('+activos.length+')</h3>'+(activos.map(tarjeta).join("")||'<p>No hay apartados activos.</p>')+'<details '+(fecha||texto?'open':'')+'><summary style="font-weight:800;padding:12px;cursor:pointer">📅 Historial ('+historicos.length+')</summary>'+(historicos.map(tarjeta).join("")||'<p>Selecciona una fecha o busca un cliente para consultar el historial.</p>')+'</details>';
 }
-
-
-const apartados=
-await respuesta.json();
-
-
-if(!Array.isArray(apartados)||!apartados.length){
-
-contenedor.innerHTML=
-`
-<div class="tarjeta">
-Todavia no hay apartados registrados.
-</div>
-`;
-
-return;
-
+async function editarApartadoExistente(id){
+ const a=apartadosVista.find(x=>String(x.id)===String(id));if(!a)return;
+ const cantidadTexto=prompt("Cantidad (el cambio ajustará el inventario):",String(a.cantidad||1));if(cantidadTexto===null)return;
+ const cantidad=Number(cantidadTexto);if(!Number.isInteger(cantidad)||cantidad<1){alert("Cantidad inválida");return;}
+ const precioTexto=prompt("Precio por unidad:",String(a.precio_unitario||0));if(precioTexto===null)return;
+ const precio=Number(precioTexto);if(!Number.isFinite(precio)||precio<0){alert("Precio inválido");return;}
+ const notas=prompt("Notas:",a.notas||"");if(notas===null)return;
+ const total=cantidad*precio,pagado=Number(a.pagado||0);
+ if(total<pagado){alert("El total no puede ser menor que los abonos registrados.");return;}
+ const diferencia=cantidad-Number(a.cantidad||0);
+ const art=articulos.find(x=>x.id===a.articulo_id);
+ if(diferencia&&!art){alert("No se encontró el artículo. No se modificó nada.");return;}
+ const stock=Number(art?.stock||0);
+ if(diferencia>stock){alert("Stock insuficiente.");return;}
+ if(!confirm("Guardar cambios del apartado?"+(diferencia?" Se ajustará el inventario.":"")))return;
+ try{
+  if(diferencia){
+   const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(a.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock:stock-diferencia})});
+   if(!rs.ok)throw Error("No se pudo ajustar el inventario: "+await rs.text());
+  }
+  const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({cantidad,precio_unitario:precio,total,saldo:total-pagado,notas})});
+  if(!r.ok){
+   if(diferencia)await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(a.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock})});
+   throw Error(await r.text());
+  }
+  alert("Apartado actualizado.");await cargarArticulos();await cargarHistorialApartados();
+ }catch(e){alert("No se pudo editar: "+e.message);}
 }
-
-
-/*
- Cargamos clientes y articulos desde los arrays actuales.
-*/
-
-contenedor.innerHTML=
-apartados.map(function(a){
-
-const cliente=
-clientes.find(function(c){
-return c.id===a.cliente_id;
-});
-
-const articulo=
-articulos.find(function(x){
-return x.id===a.articulo_id;
-});
-
-
-const nombreCliente=
-cliente
-?cliente.nombre
-:"Cliente no disponible";
-
-
-const nombreArticulo=
-articulo
-?articulo.nombre
-:"Articulo no disponible";
-
-
-const estado=
-String(a.estado||"pendiente").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
-
-
-let estadoHTML=
-`
-<span class="estado-ok">
-${escaparHTML(a.estado||"pendiente")}
-</span>
-`;
-
-
-if(estado==="cancelado"||estado==="cancelada"){
-
-estadoHTML=
-`
-<strong style="color:#a00000">
-${escaparHTML(a.estado)}
-</strong>
-`;
-
-}
-
-
-const puedeCancelar=
-estado!=="cancelado"&&
-estado!=="cancelada"&&
-estado!=="liquidado"&&
-estado!=="pagado";
-
-
-let botones='<button type="button" onclick="mostrarHistorialAbonosApartado(\''+a.id+'\')">📜 Ver historial de adelantos</button>';
-
-
-if(puedeCancelar){
-
-botones+=
-`
-<button
-class="eliminar"
-onclick="cancelarApartado('${a.id}')"
->
-❌ Cancelar apartado y devolver stock
-</button>
-`;
-
-}
-
-
-if(estado==="pendiente"&&Number(a.saldo||0)>0){
-
-botones+=
-`
-<button
-onclick="registrarAbonoApartado('${a.id}')"
->
-💵 Registrar adelanto
-</button>
-`;
-
-}
-
-
-return `
-<div class="historial">
-
-<strong>
-📋 Apartado
-</strong>
-
-<div class="fecha-operacion">
-📅 ${formatearFecha(a.fecha)}
-</div>
-
-<div class="operacion-id">
-Operacion:
-${escaparHTML(String(a.id||"").substring(0,8))}
-</div>
-
-<div class="dato">
-Cliente:
-<strong>
-${escaparHTML(nombreCliente)}
-</strong>
-</div>
-
-<div class="dato">
-Articulo:
-<strong>
-${escaparHTML(nombreArticulo)}
-</strong>
-</div>
-
-<div class="dato">
-Cantidad:
-${Number(a.cantidad||0)}
-</div>
-
-<div class="dato">
-Precio por unidad:
-$${Number(a.precio_unitario||0).toFixed(0)}
-</div>
-
-<div class="dato">
-${(estado==="cancelado"||estado==="cancelada")?"Importe original del apartado (cancelado, no contabiliza):":"Total:"}
-<strong>
-${Number(a.total||0).toFixed(0)}
-</strong>
-</div>
-
-<div class="dato">
-${(estado==="cancelado"||estado==="cancelada")?"Anticipos históricos (no cuentan como ingreso):":"Pagado:"}
-<strong>
-${Number(a.pagado||0).toFixed(0)}
-</strong>
-</div>
-
-<div class="dato">
-${(estado==="cancelado"||estado==="cancelada")?"Saldo original al cancelar:":"Saldo:"}
-<strong>
-${Number(a.saldo||0).toFixed(0)}
-</strong>
-</div>
-
-<div class="dato">
-Metodo inicial:
-${escaparHTML(a.metodo_pago||"")}
-</div>
-
-<div class="dato">
-💳 Adelantos acumulados:
-<strong>${Number(a.pagado||0).toFixed(0)}</strong>
-</div>
-
-<div class="dato">
-Estado:
-${estadoHTML}
-</div>
-
-${a.notas?
-`
-<div class="dato">
-📝 Notas:
-${escaparHTML(a.notas)}
-</div>
-`
-:""}
-
-<div class="separador"></div>
-
-${botones}
-
-</div>
-`;
-
-}).join("");
-
-
-}catch(error){
-
-console.error(
-"Error historial apartados:",
-error
-);
-
-contenedor.innerHTML=
-`
-<div class="mensaje-error">
-
-❌ Error de conexion con Supabase.
-
-<br><br
-</div>
-`;
-
-}
-
-}
-
 
 /* ================= HISTORIAL DE ABONOS DE APARTADOS ================= */
 async function mostrarHistorialAbonosApartado(id){
