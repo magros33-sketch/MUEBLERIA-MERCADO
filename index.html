@@ -7597,7 +7597,7 @@ function cambiarPinAdministracion(){
   let ventaItems=[];
 
   function money(n){
-    return "$"+Number(n||0).toFixed(2);
+    return "$"+Math.round(Number(n||0)).toLocaleString("es-MX",{maximumFractionDigits:0});
   }
 
   function el(id){ return document.getElementById(id); }
