@@ -7634,7 +7634,7 @@ function cambiarPinAdministracion(){
       const b=JSON.parse(localStorage.getItem(CLAVE_BORRADOR_VENTA)||'null');if(!b)return;
       if(Array.isArray(b.items))ventaItems=b.items;
       if(el('ventaTipoCliente')&&b.tipoCliente)el('ventaTipoCliente').value=b.tipoCliente;
-      if(el('ventaMetodoPago')&&b.metodoPago)el('ventaMetodoPago').value=b.metodoPago;
+      if(el('ventaMetodoPago'))el('ventaMetodoPago').value=['efectivo','tarjeta','transferencia','aplazo'].includes(String(b.metodoPago||''))?b.metodoPago:'';
       if(el('ventaCliente'))el('ventaCliente').value=b.cliente||'';
       if(el('ventaCantidad'))el('ventaCantidad').value=b.cantidad||'1';
       if(el('ventaPrecio'))el('ventaPrecio').value=b.precio||'';
