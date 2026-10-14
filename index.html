@@ -8827,10 +8827,11 @@ async function registrarPagoProveedor(compraId){
           '<div class="dato">Cliente: <strong>'+escaparHTML(mapaClientes[String(a.cliente_id)]||"Cliente no disponible")+'</strong></div>'+
           '<div class="dato">Artículo: <strong>'+escaparHTML(art.nombre||"Artículo no disponible")+'</strong></div>'+
           '<div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div>'+
-          '<div class="dato">Precio por unidad: '+dinero(a.precio_unitario)+'</div>'+
-          '<div class="dato">Total: <strong>'+dinero(a.total)+'</strong></div>'+
-          '<div class="dato">Pagado: <strong>'+dinero(a.pagado)+'</strong></div>'+
-          '<div class="dato">Saldo: <strong>'+dinero(a.saldo)+'</strong></div>'+
+          '<div class="dato">Precio por unidad (histórico): '+dinero(a.precio_unitario)+'</div>'+
+          '<div class="dato">'+(cancelado?'Total original (cancelado): ':'Total: ')+'<strong>'+dinero(a.total)+'</strong></div>'+
+          '<div class="dato">'+(cancelado?'Anticipos registrados antes de cancelar: ':'Pagado: ')+'<strong>'+dinero(a.pagado)+'</strong></div>'+
+          '<div class="dato">'+(cancelado?'Saldo original (sin cobro pendiente): ':'Saldo: ')+'<strong>'+dinero(a.saldo)+'</strong></div>'+
+          (cancelado?'<div class="ayuda"><strong>Operación anulada: no se incluye en ingresos ni apartados activos. Los anticipos históricos no acreditan por sí solos una devolución de dinero.</strong></div>':'')+
           '<div class="dato">Estado: <strong class="'+(cancelado?'':'estado-ok')+'">'+escaparHTML(a.estado||"pendiente")+'</strong></div>'+
           (a.notas?'<div class="dato">📝 '+escaparHTML(a.notas)+'</div>':'')+
           '<div class="separador"></div>'+botones+
