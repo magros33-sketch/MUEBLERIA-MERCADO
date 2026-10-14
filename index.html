@@ -653,6 +653,7 @@ oninput="actualizarTotalVenta()"
 
 <select id="ventaMetodoPago">
 
+<option value="" selected>Selecciona una forma de pago</option>
 <option value="efectivo">Efectivo</option>
 <option value="tarjeta">Tarjeta</option>
 <option value="transferencia">Transferencia</option>
@@ -665,7 +666,7 @@ oninput="actualizarTotalVenta()"
 <strong>Total de la venta</strong>
 
 <div id="totalVenta" class="precio-venta">
-$0.00
+$0
 </div>
 
 </div>
@@ -1189,37 +1190,50 @@ try{
     return;
   }
 
+  // Editar una línea concreta sin obligar a recorrer todos los artículos del ticket.
+  const idsTicket=[...new Set(detalles.map(d=>String(d.articulo_id)))];
+  const raTicket=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=in.("+idsTicket.join(",")+")",{headers:headersSupabase,cache:"no-store"});
+  if(!raTicket.ok)throw new Error("No se pudieron consultar los artículos del ticket.");
+  const catalogoTicket=await raTicket.json();
+  const mapaTicket=new Map(catalogoTicket.map(art=>[String(art.id),art]));
+  const articulosTicket=detalles.map(d=>{
+    const articulo=mapaTicket.get(String(d.articulo_id));
+    if(!articulo)throw new Error("Falta un artículo del ticket.");
+    return articulo;
+  });
+  const opciones=detalles.map((d,i)=>(i+1)+". "+(articulosTicket[i].nombre||"Artículo")+" — "+d.cantidad+" × $"+Number(d.precio_unitario||0).toLocaleString("es-MX",{maximumFractionDigits:0})).join("\n");
+  const eleccionTexto=prompt("¿Qué artículo deseas modificar?\n\n"+opciones+"\n\nEscribe el número del artículo. Cancelar no cambia nada.");
+  if(eleccionTexto===null)return;
+  const eleccion=Number(eleccionTexto);
+  if(!eleccionTexto.trim()||!Number.isInteger(eleccion)||eleccion<1||eleccion>detalles.length){alert("Selecciona un número válido de la lista.");return;}
+  const indiceElegido=eleccion-1;
   const cambios=[];
   const stockPorArticulo={};
-  let totalNuevo=0;
+  let totalNuevo=detalles.reduce((s,d)=>s+Number(d.subtotal??(Number(d.cantidad||0)*Number(d.precio_unitario||0))),0);
 
-  for(const detalle of detalles){
+  for(const [indice,detalle] of detalles.entries()){
+    if(indice!==indiceElegido)continue;
     const articuloId=detalle.articulo_id;
-    const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{headers:headersSupabase,cache:"no-store"});
-    if(!ra.ok)throw new Error("No se pudo consultar uno de los artículos.");
-    const arts=await ra.json();
-    if(!arts.length)throw new Error("No se encontró uno de los artículos.");
-
-    const articulo=arts[0];
+    const articulo=articulosTicket[indice];
     const nombre=articulo.nombre||"Artículo";
     const cantidadAnterior=Number(detalle.cantidad||0);
     const precioAnterior=Number(detalle.precio_unitario||0);
 
-    const nuevaCantidadTexto=prompt("Artículo: "+nombre+"\\nCantidad actual: "+cantidadAnterior+"\\nEscribe la nueva cantidad. Escribe 0 para quitar este artículo de la venta:",String(cantidadAnterior));
+    const nuevaCantidadTexto=prompt("Artículo: "+nombre+"\nCantidad actual: "+cantidadAnterior+"\nEscribe la nueva cantidad. Escribe 0 para quitar este artículo de la venta:",String(cantidadAnterior));
     if(nuevaCantidadTexto===null)return;
     const nuevaCantidad=Number(nuevaCantidadTexto);
-    if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<0){
+    if(!nuevaCantidadTexto.trim()||!Number.isSafeInteger(nuevaCantidad)||nuevaCantidad<0){
       alert("Cantidad no válida para "+nombre+". Usa un número entero igual o mayor que 0.");
       return;
     }
 
     let nuevoPrecio=precioAnterior;
     if(nuevaCantidad>0){
-      const nuevoPrecioTexto=prompt("Artículo: "+nombre+"\\nPrecio por unidad:",precioAnterior.toFixed(2));
+      const nuevoPrecioTexto=prompt("Artículo: "+nombre+"\nPrecio por unidad:",String(precioAnterior));
       if(nuevoPrecioTexto===null)return;
       nuevoPrecio=Number(nuevoPrecioTexto);
-      if(!Number.isFinite(nuevoPrecio)||nuevoPrecio<0){
-        alert("Precio no válido para "+nombre+".");
+      if(!nuevoPrecioTexto.trim()||!Number.isSafeInteger(nuevoPrecio)||nuevoPrecio<0){
+        alert("Precio no válido para "+nombre+". En Mueblería Mercado los precios son en pesos completos, sin centavos.");
         return;
       }
     }
@@ -1232,14 +1246,14 @@ try{
     const stockDisponible=stockPorArticulo[articuloId];
 
     if(diferencia>0 && stockDisponible<diferencia){
-      alert("No hay suficiente stock para aumentar la cantidad de "+nombre+".\\n\\nDisponible para esta modificación: "+stockDisponible);
+      alert("No hay suficiente stock para aumentar la cantidad de "+nombre+".\n\nDisponible para esta modificación: "+stockDisponible);
       return;
     }
 
     stockPorArticulo[articuloId]=stockDisponible-diferencia;
 
     const subtotal=nuevaCantidad*nuevoPrecio;
-    totalNuevo+=subtotal;
+    totalNuevo+=subtotal-Number(detalle.subtotal??(cantidadAnterior*precioAnterior));
 
     cambios.push({
       detalle:detalle,
@@ -1252,90 +1266,48 @@ try{
     });
   }
 
-  if(!cambios.some(c=>c.nuevaCantidad>0)){
+  if(detalles.length===1 && !cambios.some(c=>c.nuevaCantidad>0)){
     alert("La venta no puede quedarse sin artículos. Para anularla completa, usa «Eliminar venta y devolver stock».");
     return;
   }
 
-  if(!confirm("¿Guardar los cambios de esta venta?\\n\\nPuedes escribir 0 en la cantidad para quitar un artículo.\\n\\nTotal anterior: $"+Number(venta.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)))return;
+  if(cambios[0].nuevaCantidad===cambios[0].cantidadAnterior && cambios[0].nuevoPrecio===cambios[0].precioAnterior){alert("No hay cambios que guardar.");return;}
 
-  const aplicados=[];
-  const stockInicial={};
-  Object.keys(stockPorArticulo).forEach(function(idArticulo){
-    stockInicial[idArticulo]=null;
+
+  if(!confirm("¿Guardar los cambios de esta venta?\n\nPuedes escribir 0 en la cantidad para quitar un artículo.\n\nTotal anterior: $"+Number(venta.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})+"\nTotal nuevo: $"+totalNuevo.toLocaleString("es-MX",{maximumFractionDigits:0})))return;
+
+  // Una sola transacción en PostgreSQL: detalle, stock y total se guardan juntos.
+  const cambio=cambios[0];
+  const respuesta=await fetch(SUPABASE_URL+"/rest/v1/rpc/editar_linea_ticket_segura",{
+    method:"POST",
+    headers:headersSupabase,
+    body:JSON.stringify({
+      p_venta_id:id,
+      p_detalle_id:cambio.detalle.id,
+      p_cantidad:cambio.nuevaCantidad,
+      p_precio:cambio.nuevaCantidad===0?0:cambio.nuevoPrecio
+    })
   });
-
-  try{
-    for(const cambio of cambios){
-      const articuloId=cambio.detalle.articulo_id;
-      const stockActualAntes=stockInicial[articuloId]===null
-        ?Number(cambio.articulo.stock||0)
-        :stockInicial[articuloId];
-
-      if(stockInicial[articuloId]===null)stockInicial[articuloId]=stockActualAntes;
-
-      const stockNuevo=stockActualAntes-(cambio.nuevaCantidad-cambio.cantidadAnterior);
-
-      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({stock:stockNuevo})
-      });
-      if(!rs.ok)throw new Error("No se pudo actualizar el stock de "+(cambio.articulo.nombre||"")+".");
-
-      const filtroDetalle="/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId);
-      const rd2=await fetch(SUPABASE_URL+filtroDetalle,{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({
-          cantidad:cambio.nuevaCantidad,
-          precio_unitario:cambio.nuevoPrecio,
-          subtotal:cambio.subtotal
-        })
-      });
-      if(!rd2.ok)throw new Error("No se pudo actualizar el detalle de "+(cambio.articulo.nombre||"")+".");
-
-      aplicados.push(cambio);
-      stockInicial[articuloId]=stockNuevo;
-    }
-
-    const rv2=await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(id),{
-      method:"PATCH",
-      headers:{...headersSupabase,"Prefer":"return=minimal"},
-      body:JSON.stringify({total:totalNuevo})
-    });
-    if(!rv2.ok)throw new Error("No se pudo actualizar el total de la venta: "+await rv2.text());
-
-  }catch(e){
-    for(const cambio of aplicados){
-      const articuloId=cambio.detalle.articulo_id;
-      const stockOriginal=Number(cambio.articulo.stock||0);
-      await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({stock:stockOriginal})
-      });
-      await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(id)+"&articulo_id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({
-          cantidad:cambio.cantidadAnterior,
-          precio_unitario:cambio.precioAnterior,
-          subtotal:cambio.cantidadAnterior*cambio.precioAnterior
-        })
-      });
-    }
-    throw e;
+  if(!respuesta.ok){
+    let mensaje="No se pudo guardar el cambio.";
+    try{const e=await respuesta.json();mensaje=e.message||mensaje;}catch(_e){}
+    throw new Error(mensaje);
   }
 
-  alert("✅ Venta editada correctamente.\\nEl stock y el total fueron ajustados.");
-  await cargarArticulos();
-  await cargarHistorialVentas();
-  await cargarResumenVentasDia();
+  const resultado=await respuesta.json();
+  alert("✅ Artículo actualizado en este ticket.\nTotal confirmado: $"+Number(resultado.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})+"\nEl inventario se ajustó correctamente.");
+  try{
+    await cargarArticulos();
+    await cargarHistorialVentas();
+    await cargarResumenVentasDia();
+  }catch(errorActualizacion){
+    console.error("La edición se guardó, pero falló la actualización de pantalla:",errorActualizacion);
+    alert("El cambio SÍ se guardó en la base de datos. No se pudo actualizar la pantalla; vuelve a abrir Ventas para ver los importes actuales.");
+  }
 
 }catch(error){
   console.error("Error editando venta:",error);
-  alert("❌ No se pudo editar la venta.\\n\\n"+(error.message||String(error)));
+  alert("❌ No se pudo editar la venta.\n\n"+(error.message||String(error)));
 }
 
 }
@@ -1624,11 +1596,11 @@ Proveedor: ${escaparHTML((proveedores.find(function(p){return String(p.id)===Str
 </div>
 
 <div class="dato">
-Costo: $${Number(a.costo||0).toFixed(2)}
+Costo: $${Number(a.costo||0).toFixed(0)}
 </div>
 
 <div class="dato">
-Precio publico: $${Number(a.precio_publico||0).toFixed(2)}
+Precio publico: $${Number(a.precio_publico||0).toFixed(0)}
 </div>
 
 <div class="dato">
@@ -1639,7 +1611,7 @@ Stock: <strong>${Number(a.stock||0)}</strong>
 Stock minimo: ${Number(a.stock_minimo||0)}
 </div>
 
-${Number(a.stock_minimo||0)>0 && Number(a.stock||0)<=Number(a.stock_minimo||0) ? '<div class="mensaje-error" style="color:#b91c1c;background:#fee2e2;border-left:5px solid #dc2626;padding:8px;margin-top:8px;"><strong>🚨 FALTANTE: pedir '+Math.max(Number(a.stock_minimo||0)-Number(a.stock||0),0)+' unidad(es) para llegar al mínimo</strong></div>' : ''}
+${Number(a.stock_minimo||0)>0 && Number(a.stock||0)<Number(a.stock_minimo||0) ? '<div class="mensaje-error" style="color:#b91c1c;background:#fee2e2;border-left:5px solid #dc2626;padding:8px;margin-top:8px;"><strong>🚨 FALTANTE: pedir '+Math.max(Number(a.stock_minimo||0)-Number(a.stock||0),0)+' unidad(es) para llegar al mínimo</strong></div>' : ''}
 
 <div class="separador"></div>
 
@@ -2253,7 +2225,7 @@ Stock actual: ${Number(a.stock||0)}
 
 <br>
 
-Costo: $${Number(a.costo||0).toFixed(2)}
+Costo: $${Number(a.costo||0).toFixed(0)}
 
 </button>
 `;
@@ -2328,7 +2300,7 @@ ${Number(articulo.stock||0)}
 <br>
 
 Costo actual:
-$${Number(articulo.costo||0).toFixed(2)}
+$${Number(articulo.costo||0).toFixed(0)}
 
 </div>
 `;
@@ -2681,12 +2653,12 @@ ${nuevoStock}
 <br>
 
 Costo:
-$${costo.toFixed(2)}
+$${costo.toFixed(0)}
 
 <br>
 
 Total:
-$${subtotal.toFixed(2)}
+$${subtotal.toFixed(0)}
 
 </div>
 `;
@@ -2762,7 +2734,7 @@ try{
     const costoAnterior=Number(d.costo_unitario||0);
     const nuevaCantidad=Number(prompt("Artículo: "+nombre+"\\nCantidad recibida:",String(cantidadAnterior)));
     if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<1){alert("Cantidad no válida para "+nombre+".");return;}
-    const nuevoCosto=Number(prompt("Artículo: "+nombre+"\\nCosto por unidad:",costoAnterior.toFixed(2)));
+    const nuevoCosto=Number(prompt("Artículo: "+nombre+"\\nCosto por unidad:",costoAnterior.toFixed(0)));
     if(!Number.isFinite(nuevoCosto)||nuevoCosto<0){alert("Costo no válido para "+nombre+".");return;}
     const diferencia=nuevaCantidad-cantidadAnterior;
     if(diferencia<0 && Number(articulo.stock||0)<Math.abs(diferencia)){
@@ -2776,13 +2748,13 @@ try{
 
   const pagadoActual=Number(compra.pagado||0);
   if(totalNuevo<pagadoActual){
-    alert("No se puede dejar la compra por debajo de lo ya pagado.\\n\\nTotal nuevo: $"+totalNuevo.toFixed(2)+"\\nPagado: $"+pagadoActual.toFixed(2));
+    alert("No se puede dejar la compra por debajo de lo ya pagado.\\n\\nTotal nuevo: $"+totalNuevo.toFixed(0)+"\\nPagado: $"+pagadoActual.toFixed(0));
     return;
   }
   const nuevoSaldo=Math.max(0,totalNuevo-pagadoActual);
   const nuevoMetodo=pagadoActual>=totalNuevo?"credito_pagado":(String(compra.metodo_pago||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()==="credito"?"credito":"contado");
 
-  if(!confirm("¿Guardar los cambios de esta compra?\\n\\nTotal anterior: $"+Number(compra.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)+"\\nSaldo: $"+nuevoSaldo.toFixed(2)))return;
+  if(!confirm("¿Guardar los cambios de esta compra?\\n\\nTotal anterior: $"+Number(compra.total||0).toFixed(0)+"\\nTotal nuevo: $"+totalNuevo.toFixed(0)+"\\nSaldo: $"+nuevoSaldo.toFixed(0)))return;
 
   const aplicados=[];
   try{
@@ -2905,11 +2877,11 @@ async function cargarHistorialCompras(){
         '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
         '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
         '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
-        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(0)+'</strong></div>'+
         '<div class="dato">Estado: '+escaparHTML(c.estado||"")+'</div>'+
         '<div class="dato">Forma de pago: <strong>'+escaparHTML(c.metodo_pago==="credito_pagado"?"Crédito — pagado":(c.metodo_pago||"contado"))+'</strong></div>'+
-        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(2)+'</strong></div>'+
-        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(0)+'</strong></div>'+
+        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(0)+'</strong></div>'+
         '<div class="separador"></div>'+botones+
         '</div>';
     }).join("");
@@ -3317,7 +3289,7 @@ ${Number(a.stock||0)}
 <br>
 
 Precio publico:
-$${Number(a.precio_publico||0).toFixed(2)}
+$${Number(a.precio_publico||0).toFixed(0)}
 
 </button>
 `;
@@ -3355,7 +3327,7 @@ const precio=
 Number(articulo.precio_publico||0);
 
 document.getElementById("ventaPrecio").value=
-precio.toFixed(2);
+precio.toFixed(0);
 
 document.getElementById("estadoVentaCodigo").innerHTML=
 `
@@ -3395,7 +3367,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 </div>
 `;
@@ -3423,7 +3395,7 @@ Number(document.getElementById("ventaPrecio").value||0);
 const total=cantidad*precio;
 
 document.getElementById("totalVenta").innerHTML=
-"$"+total.toFixed(2);
+"$"+total.toFixed(0);
 
 }
 
@@ -3765,12 +3737,12 @@ ${cantidad}
 <br>
 
 Precio por unidad:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 <br>
 
 Total:
-<strong>$${total.toFixed(2)}</strong>
+<strong>$${total.toFixed(0)}</strong>
 
 <br>
 
@@ -3909,14 +3881,14 @@ const totalGastos=gh.reduce((s,g)=>s+Number(g.importe||0),0);
 const neto=total-totalGastos;
 
 contenedor.innerHTML=
-'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>📋 Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>📋 Apartados registrados del día (valor total, no cobrado)</strong><div class="precio-venta">$'+totalApartadosDia.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🪑 Anticipos de apartados (incluidos en su forma de pago)</strong><div class="precio-venta">$'+totalAnticiposApartados.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Apartados registrados del día (valor total, no cobrado)</strong><div class="precio-venta">$'+totalApartadosDia.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🪑 Anticipos de apartados (incluidos en su forma de pago)</strong><div class="precio-venta">$'+totalAnticiposApartados.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(0)+'</div></div>'+
 '<div class="ayuda">Importes del día en hora de México. Los gastos se descuentan del total cobrado para obtener el neto del día.</div>';
 }catch(error){
 console.error("Error resumen ventas del día:",error);
@@ -4127,7 +4099,7 @@ return `
 <strong>💵 Dinero recibido por apartado</strong>
 <div class="fecha-operacion">📅 ${formatearFecha(p.fecha)}</div>
 <div class="dato">Cliente: <strong>${escaparHTML(nombreCliente)}</strong></div>
-<div class="dato">Importe recibido: <strong>$${Number(p.importe||0).toFixed(2)}</strong></div>
+<div class="dato">Importe recibido: <strong>$${Number(p.importe||0).toFixed(0)}</strong></div>
 <div class="dato">Método: ${escaparHTML(p.metodo_pago||"")}</div>
 ${p.notas?'<div class="dato">Detalle: '+escaparHTML(p.notas)+'</div>':""}
 </div>`;
@@ -4137,15 +4109,15 @@ return `
 <div class="tarjeta">
 <h3>📅 ${escaparHTML(grupo)}</h3>
 <div class="dato">
-<div class="dato">🛍️ Ventas cobradas: <strong>$${totalGrupo.toFixed(2)}</strong></div>
-<div class="dato">💵 Dinero recibido por apartados: <strong>$${totalPagosApartadosGrupo.toFixed(2)}</strong></div>
-<div class="dato">💰 Total de dinero ingresado: <strong>$${totalIngresadoGrupo.toFixed(2)}</strong></div>
+<div class="dato">🛍️ Ventas cobradas: <strong>$${totalGrupo.toFixed(0)}</strong></div>
+<div class="dato">💵 Dinero recibido por apartados: <strong>$${totalPagosApartadosGrupo.toFixed(0)}</strong></div>
+<div class="dato">💰 Total de dinero ingresado: <strong>$${totalIngresadoGrupo.toFixed(0)}</strong></div>
 </div>
 <div class="dato">
-💸 Gastos: <strong>-$${totalGastosGrupo.toFixed(2)}</strong>
+💸 Gastos: <strong>-$${totalGastosGrupo.toFixed(0)}</strong>
 </div>
 <div class="dato">
-🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(2)}</strong>
+🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(0)}</strong>
 </div>
 </div>
 
@@ -4181,11 +4153,11 @@ Cliente:
 Metodo:
 ${escaparHTML(v.metodo_pago||"")}
 </div>
-${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
+${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose de pagos por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
 
 <div class="dato">
 Total:
-<strong>$${Number(v.total||0).toFixed(2)}</strong>
+<strong>&#36;${Number(v.total||0).toLocaleString("es-MX",{maximumFractionDigits:0})}</strong>
 </div>
 
 <div class="dato">
@@ -4588,7 +4560,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${Number(a.precio_publico||0).toFixed(2)}
+$${Number(a.precio_publico||0).toFixed(0)}
 
 </button>
 `;
@@ -4629,7 +4601,7 @@ const precio=
 Number(articulo.precio_publico||0);
 
 document.getElementById("apartadoPrecio").value=
-precio.toFixed(2);
+precio.toFixed(0);
 
 document.getElementById("estadoApartadoCodigo").innerHTML=
 `
@@ -4669,7 +4641,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 </div>
 `;
@@ -4716,10 +4688,10 @@ saldo=0;
 }
 
 document.getElementById("totalApartado").innerHTML=
-"$"+total.toFixed(2);
+"$"+total.toFixed(0);
 
 document.getElementById("saldoApartado").innerHTML=
-"$"+saldo.toFixed(2);
+"$"+saldo.toFixed(0);
 
 }
 
@@ -5208,22 +5180,22 @@ ${cantidad}
 <br>
 
 Precio por unidad:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 <br>
 
 Total:
-<strong>$${total.toFixed(2)}</strong>
+<strong>$${total.toFixed(0)}</strong>
 
 <br>
 
 Anticipo:
-<strong>$${anticipo.toFixed(2)}</strong>
+<strong>$${anticipo.toFixed(0)}</strong>
 
 <br>
 
 Saldo:
-<strong>$${saldo.toFixed(2)}</strong>
+<strong>$${saldo.toFixed(0)}</strong>
 
 <br>
 
@@ -5494,27 +5466,27 @@ ${Number(a.cantidad||0)}
 
 <div class="dato">
 Precio por unidad:
-$${Number(a.precio_unitario||0).toFixed(2)}
+$${Number(a.precio_unitario||0).toFixed(0)}
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Importe original del apartado (cancelado, no contabiliza):":"Total:"}
 <strong>
-${Number(a.total||0).toFixed(2)}
+${Number(a.total||0).toFixed(0)}
 </strong>
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Anticipos históricos (no cuentan como ingreso):":"Pagado:"}
 <strong>
-${Number(a.pagado||0).toFixed(2)}
+${Number(a.pagado||0).toFixed(0)}
 </strong>
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Saldo original al cancelar:":"Saldo:"}
 <strong>
-${Number(a.saldo||0).toFixed(2)}
+${Number(a.saldo||0).toFixed(0)}
 </strong>
 </div>
 
@@ -5525,7 +5497,7 @@ ${escaparHTML(a.metodo_pago||"")}
 
 <div class="dato">
 💳 Adelantos acumulados:
-<strong>${Number(a.pagado||0).toFixed(2)}</strong>
+<strong>${Number(a.pagado||0).toFixed(0)}</strong>
 </div>
 
 <div class="dato">
@@ -5584,9 +5556,9 @@ async function mostrarHistorialAbonosApartado(id){
     let total=0;
     const lineas=pagos.map(function(p,i){
       const importe=Number(p.importe||0); total+=importe;
-      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(2)+" — "+(p.metodo_pago||"Sin método");
+      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(0)+" — "+(p.metodo_pago||"Sin método");
     });
-    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(2));
+    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(0));
   }catch(e){
     console.error("Error consultando historial de adelantos:",e);
     alert("❌ No se pudo consultar el historial de adelantos.\n\n"+(e.message||String(e)));
@@ -5623,7 +5595,7 @@ async function registrarAbonoApartado(id){
     if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
     const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})});
     if(!ru.ok)throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
-    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(2)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(2));
+    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(0)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(0));
     await cargarHistorialApartados();
     await cargarResumenVentasDia();
   }catch(e){
@@ -7389,13 +7361,13 @@ contenedor.innerHTML='<div class="tarjeta">No hay gastos registrados para este d
 return;
 }
 const total=filtrados.reduce((s,g)=>s+Number(g.importe||0),0);
-contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(0)+'</div></div>'+
 filtrados.map(function(g){
 return '<div class="historial">'+
 '<strong>💸 '+escaparHTML(g.concepto||"Sin concepto")+'</strong>'+
 '<div class="fecha-operacion">📅 '+formatearFecha(g.fecha)+'</div>'+
 '<div class="dato">Categoría: '+escaparHTML(g.categoria||"otros")+'</div>'+
-'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(2)+'</strong></div>'+
+'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(0)+'</strong></div>'+
 (g.notas?'<div class="dato">📝 '+escaparHTML(g.notas)+'</div>':"")+
 '<div class="separador"></div>'+
 '<button class="eliminar" onclick="eliminarGasto(\''+g.id+'\')">🗑️ Eliminar gasto</button>'+
@@ -7577,7 +7549,7 @@ async function cargarResumenAdministracion(){
       <div class="info-articulo"><strong>📅 Periodo: ${escaparHTML(etiqueta)}</strong></div>
       <div class="info-articulo"><strong>💵 Ventas registradas</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
       <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
-      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(0)}%</strong> de las ventas cobradas</div></div>
       <div class="info-articulo"><strong>🛒 Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
       <div class="info-articulo"><strong>💸 Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
       <div class="info-articulo"><strong>📊 Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
@@ -7625,7 +7597,7 @@ function cambiarPinAdministracion(){
   let ventaItems=[];
 
   function money(n){
-    return "$"+Number(n||0).toFixed(2);
+    return "$"+Math.round(Number(n||0)).toLocaleString("es-MX",{maximumFractionDigits:0});
   }
 
   function el(id){ return document.getElementById(id); }
@@ -7648,7 +7620,7 @@ function cambiarPinAdministracion(){
       localStorage.setItem(CLAVE_BORRADOR_VENTA,JSON.stringify({
         items:ventaItems,
         tipoCliente:el('ventaTipoCliente')?.value||'publico_general',
-        metodoPago:el('ventaMetodoPago')?.value||'efectivo',
+        metodoPago:el('ventaMetodoPago')?.value||'',
         cliente:el('ventaCliente')?.value||'',
         cantidad:el('ventaCantidad')?.value||'1',
         precio:el('ventaPrecio')?.value||'',
@@ -7662,7 +7634,7 @@ function cambiarPinAdministracion(){
       const b=JSON.parse(localStorage.getItem(CLAVE_BORRADOR_VENTA)||'null');if(!b)return;
       if(Array.isArray(b.items))ventaItems=b.items;
       if(el('ventaTipoCliente')&&b.tipoCliente)el('ventaTipoCliente').value=b.tipoCliente;
-      if(el('ventaMetodoPago')&&b.metodoPago)el('ventaMetodoPago').value=b.metodoPago;
+      if(el('ventaMetodoPago'))el('ventaMetodoPago').value=['efectivo','tarjeta','transferencia','aplazo'].includes(String(b.metodoPago||''))?b.metodoPago:'';
       if(el('ventaCliente'))el('ventaCliente').value=b.cliente||'';
       if(el('ventaCantidad'))el('ventaCantidad').value=b.cantidad||'1';
       if(el('ventaPrecio'))el('ventaPrecio').value=b.precio||'';
@@ -7718,10 +7690,11 @@ function cambiarPinAdministracion(){
           ' = <strong>'+money(x.subtotal)+'</strong><br>'+
           '<label for="metodoPagoArticulo_'+i+'">Forma de pago de este artículo</label>'+
           '<select id="metodoPagoArticulo_'+i+'" onchange="cambiarMetodoPagoArticulo('+i+',this.value)">'+
-            '<option value="efectivo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="efectivo"?" selected":"")+'>Efectivo</option>'+
-            '<option value="tarjeta"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="tarjeta"?" selected":"")+'>Tarjeta</option>'+
-            '<option value="transferencia"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="transferencia"?" selected":"")+'>Transferencia</option>'+
-            '<option value="aplazo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="aplazo"?" selected":"")+'>Aplazo</option>'+
+            '<option value=""'+(!x.metodo_pago?' selected':'')+'>⚠️ Selecciona forma de pago</option>'+
+            '<option value="efectivo"'+((x.metodo_pago||"")==="efectivo"?" selected":"")+'>Efectivo</option>'+
+            '<option value="tarjeta"'+((x.metodo_pago||"")==="tarjeta"?" selected":"")+'>Tarjeta</option>'+
+            '<option value="transferencia"'+((x.metodo_pago||"")==="transferencia"?" selected":"")+'>Transferencia</option>'+
+            '<option value="aplazo"'+((x.metodo_pago||"")==="aplazo"?" selected":"")+'>Aplazo</option>'+
           '</select>'+
           '<button type="button" class="eliminar" onclick="quitarArticuloVenta('+i+')">🗑️ Quitar</button>'+
           '</div>';
@@ -7739,7 +7712,7 @@ function cambiarPinAdministracion(){
 
   window.actualizarTotalVenta=function(){
     const totalItems=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
-    const total=totalItems+totalPendiente();
+    const total=totalItems; // Solo artículos realmente añadidos al ticket
     if(el("totalVenta"))el("totalVenta").innerHTML=money(total);
   };
 
@@ -7769,12 +7742,17 @@ function cambiarPinAdministracion(){
       mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad entera mayor que 0.</div>';
       return;
     }
-    if(!Number.isFinite(precio)||precio<0){
-      mensaje.innerHTML='<div class="mensaje-error">❌ El precio no puede ser negativo.</div>';
+    if(!Number.isSafeInteger(precio)||precio<0){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Escribe el precio en pesos completos, sin centavos.</div>';
       return;
     }
 
-    const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+    const metodoArticulo=el("ventaMetodoPago")?.value||"";
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoArticulo)){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Selecciona la forma de pago antes de añadir el artículo.</div>';
+      el("ventaMetodoPago")?.focus();
+      return;
+    }
     const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
     const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
     const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
@@ -7816,6 +7794,12 @@ function cambiarPinAdministracion(){
 
   window.registrarVenta=async function(){
     const mensaje=el("mensajeVenta");
+    if(window.__ventaRegistroEnCurso){
+      mensaje.innerHTML='<div class="mensaje-error">⏳ La venta se está guardando. Espera la confirmación antes de pulsar otra vez.</div>';
+      return;
+    }
+    window.__ventaRegistroEnCurso=true;
+    try{
     const tipoCliente=el("ventaTipoCliente").value;
     const clienteTexto=el("ventaCliente").value.trim();
     const metodoPago=el("ventaMetodoPago").value;
@@ -7837,8 +7821,17 @@ function cambiarPinAdministracion(){
     const a=articuloVentaSeleccionado;
     const cantidad=Number(el("ventaCantidad")?.value||0);
     const precio=Number(el("ventaPrecio")?.value||0);
-    if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
-      const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+    if(a && cantidad>0){
+      if(!Number.isSafeInteger(cantidad)||!Number.isSafeInteger(precio)||precio<0){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ Revisa la cantidad y el precio: deben ser números enteros, sin centavos.</div>';
+        return;
+      }
+      const metodoArticulo=el("ventaMetodoPago")?.value||"";
+      if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoArticulo)){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ Selecciona la forma de pago antes de registrar la venta.</div>';
+        el("ventaMetodoPago")?.focus();
+        return;
+      }
       const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
       const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
       const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
@@ -7864,6 +7857,16 @@ function cambiarPinAdministracion(){
       articuloVentaSeleccionado=null;
     }
 
+    if(ventaItems.some(x=>!Number.isSafeInteger(Number(x.cantidad))||Number(x.cantidad)<1||!Number.isSafeInteger(Number(x.precio))||Number(x.precio)<0||!Number.isSafeInteger(Number(x.subtotal))||Number(x.subtotal)!==Number(x.cantidad)*Number(x.precio))){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Hay artículos con cantidades, precios o subtotales incorrectos. Revisa el ticket antes de guardar.</div>';
+      return;
+    }
+
+    if(ventaItems.some(x=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(x.metodo_pago||"")))){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Hay artículos sin forma de pago. Selecciona una para cada artículo antes de guardar.</div>';
+      return;
+    }
+
     if(!ventaItems.length){
       mensaje.innerHTML='<div class="mensaje-error">❌ Añade al menos un artículo a la venta.</div>';
       return;
@@ -7883,15 +7886,30 @@ function cambiarPinAdministracion(){
       return;
     }
 
-    // Comprobar nuevamente el stock real antes de guardar.
-    for(const x of ventaItems){
-      const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
-      if(!actual){
-        mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos el artículo '+escaparHTML(x.nombre||"")+'.</div>';
+    if(tipoCliente==="cliente"&&clienteVentaSeleccionado){
+      const textoNormalizado=clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+      const datosCliente=[clienteVentaSeleccionado.codigo_cliente,clienteVentaSeleccionado.nombre,clienteVentaSeleccionado.telefono]
+        .map(v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
+      if(textoNormalizado&&!datosCliente.includes(textoNormalizado)){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ El cliente escrito no coincide con el seleccionado. Vuelve a seleccionar el cliente antes de guardar.</div>';
         return;
       }
-      if(Number(actual.stock||0)<x.cantidad){
-        mensaje.innerHTML='<div class="mensaje-error">❌ El stock cambió para '+escaparHTML(x.nombre||"")+'. Disponible ahora: '+Number(actual.stock||0)+'</div>';
+    }
+
+    // Sumar todas las líneas del mismo artículo, incluso con distintos pagos.
+    const cantidadesPorArticulo=new Map();
+    for(const x of ventaItems){
+      const clave=String(x.articulo_id);
+      cantidadesPorArticulo.set(clave,(cantidadesPorArticulo.get(clave)||0)+Number(x.cantidad));
+    }
+    for(const [idArticulo,cantidadSolicitada] of cantidadesPorArticulo){
+      const actual=articulos.find(a=>String(a.id)===idArticulo);
+      if(!actual){
+        mensaje.innerHTML='<div class="mensaje-error">❌ No encontramos uno de los artículos del ticket.</div>';
+        return;
+      }
+      if(Number(actual.stock||0)<cantidadSolicitada){
+        mensaje.innerHTML='<div class="mensaje-error">❌ Stock insuficiente para '+escaparHTML(actual.nombre||"")+'. Disponible: '+Number(actual.stock||0)+', solicitado: '+cantidadSolicitada+'</div>';
         return;
       }
     }
@@ -7903,74 +7921,35 @@ function cambiarPinAdministracion(){
     const idVenta=crypto.randomUUID();
 
     try{
-      const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas",{
+      const rv=await fetch(SUPABASE_URL+"/rest/v1/rpc/registrar_venta_atomica",{
         method:"POST",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        headers:headersSupabase,
         body:JSON.stringify({
-          id:idVenta,
-          cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
-          fecha:fechaVentaISO,
-          tipo_cliente:tipoCliente,
-          metodo_pago:metodoPagoVenta,
-          total:total,
-          estado:"completada",
-          notas:"Venta registrada desde la aplicacion | Pago por artículo: "+desglosePago
+          p_venta_id:idVenta,
+          p_cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
+          p_fecha:fechaVentaISO,
+          p_tipo_cliente:tipoCliente,
+          p_notas:"Venta registrada desde la aplicacion",
+          p_items:ventaItems.map(x=>({
+            articulo_id:x.articulo_id,
+            cantidad:x.cantidad,
+            precio:x.precio,
+            metodo_pago:x.metodo_pago
+          }))
         })
       });
-
-      if(!rv.ok)throw new Error("No se pudo guardar la venta: "+await rv.text());
-
-      const detalles=ventaItems.map(function(x){
-        return {
-          id:crypto.randomUUID(),
-          venta_id:idVenta,
-          articulo_id:x.articulo_id,
-          cantidad:x.cantidad,
-          precio_unitario:x.precio,
-          subtotal:x.subtotal,
-          metodo_pago:x.metodo_pago||metodoPago
-        };
-      });
-
-      const rd=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle",{
-        method:"POST",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify(detalles)
-      });
-
-      if(!rd.ok){
-        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        throw new Error("No se pudo guardar el detalle: "+await rd.text());
+      if(!rv.ok){
+        let errorServidor="No se pudo registrar la venta.";
+        try{const detalle=await rv.json();errorServidor=detalle.message||errorServidor;}catch(_error){}
+        throw new Error(errorServidor);
       }
-
-      const stocksAplicados=[];
-      try{
-        for(const x of ventaItems){
-          const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
-          const nuevoStock=Number(actual.stock||0)-x.cantidad;
-          const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),{
-            method:"PATCH",
-            headers:{...headersSupabase,"Prefer":"return=minimal"},
-            body:JSON.stringify({stock:nuevoStock})
-          });
-          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
-          stocksAplicados.push({id:x.articulo_id,stockAnterior:Number(actual.stock||0)});
-        }
-      }catch(errorStock){
-        for(const s of stocksAplicados){
-          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
-            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
-            body:JSON.stringify({stock:s.stockAnterior})
-          });
-        }
-        await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        throw errorStock;
-      }
+      const ventaConfirmada=await rv.json();
+      if(String(ventaConfirmada.id)!==String(idVenta))throw new Error("La base de datos devolvió una confirmación inesperada. Revisa el historial antes de intentar registrar otra vez.");
 
       if(fechaVentaSeleccionada===fechaVentaHoy){
         const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago:metodoPagoVenta,tipoCliente};
-        registrarVentaEnSesion(registroSesion);
+        try{registrarVentaEnSesion(registroSesion)}
+        catch(errorSesion){console.warn('Venta guardada; no se pudo actualizar el panel local',errorSesion)}
       }
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
         'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
@@ -7980,21 +7959,36 @@ function cambiarPinAdministracion(){
         '<br>Desglose: '+escaparHTML(desglosePago)+
         '</div>';
 
-      ventaItems=[];
-      try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
-      clienteVentaSeleccionado=null;
-      el("ventaCliente").value="";
-      el("estadoClienteVenta").innerHTML="";
-      el("resultadoClienteVenta").innerHTML="";
-      renderVentaItems();
-      if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
+      // La venta ya está confirmada: ningún fallo visual debe sugerir que se guarde otra vez.
+      try{
+        ventaItems=[];
+        try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
+        clienteVentaSeleccionado=null;
+        el("ventaMetodoPago").value="";
+        el("ventaCliente").value="";
+        el("estadoClienteVenta").innerHTML="";
+        el("resultadoClienteVenta").innerHTML="";
+        renderVentaItems();
+        if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
+      }catch(errorPantalla){
+        console.error('Venta guardada, fallo al limpiar formulario',errorPantalla);
+        mensaje.innerHTML+='<div class="mensaje-error">⚠️ La venta SÍ quedó registrada. No vuelvas a guardarla. Actualiza la pantalla.</div>';
+      }
 
-      await cargarArticulos();
-      await cargarHistorialVentas();
-      await cargarResumenVentasDia();
+      try{
+        await cargarArticulos();
+        await cargarHistorialVentas();
+        await cargarResumenVentasDia();
+      }catch(errorActualizacion){
+        console.error('Venta guardada, pero no se pudo actualizar la pantalla',errorActualizacion);
+        mensaje.innerHTML+='<div class="mensaje-error">⚠️ La venta SÍ quedó registrada. No vuelvas a guardarla. Actualiza la pantalla para ver el historial y el inventario.</div>';
+      }
     }catch(e){
       console.error(e);
       mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
+    }
+    }finally{
+      window.__ventaRegistroEnCurso=false;
     }
   };
 
@@ -8037,7 +8031,7 @@ function cambiarPinAdministracion(){
     el("ventaCantidad")?.addEventListener("input",actualizarTotalVenta);
     el("ventaPrecio")?.addEventListener("input",actualizarTotalVenta);
     ['ventaTipoCliente','ventaMetodoPago','ventaCliente','ventaCantidad','ventaPrecio','ventaCodigo','ventaNombre'].forEach(id=>{
-      const campo=el(id);if(campo&&!campo.dataset.ventaBorradorListener){campo.dataset.ventaBorradorListener='1';campo.addEventListener('input',guardarBorradorVenta);campo.addEventListener('change',guardarBorradorVenta)}
+      const campo=el(id);if(campo&&!campo.dataset.ventaBorradorListener){campo.dataset.ventaBorradorListener='1';campo.addEventListener('input',guardarBorradorVenta);campo.addEventListener('change',guardarBorradorVenta);if(id==='ventaMetodoPago')campo.addEventListener('change',()=>{const m=el('mensajeVenta');if(m&&m.textContent.includes('Selecciona la forma de pago antes de añadir el artículo'))m.innerHTML='';})}
     });
     renderVentaItems();
   }
@@ -8056,7 +8050,7 @@ function cambiarPinAdministracion(){
   let compraItems=[];
 
   function el(id){ return document.getElementById(id); }
-  function money(n){ return "$"+Number(n||0).toFixed(2); }
+  function money(n){ return "$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 
   function fechaHoyMexicoCompra(){
     return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -8394,7 +8388,7 @@ async function registrarPagoProveedor(compraId){
     if(!rp.ok)throw new Error("No se pudo registrar el abono: "+await rp.text());
     const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,metodo_pago:nuevoSaldo>0?"credito":"credito_pagado"})});
     if(!ru.ok)throw new Error("No se pudo actualizar la deuda: "+await ru.text());
-    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(2));
+    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(0));
     await cargarHistorialCompras();
     // Actualizar explícitamente todas las vistas de deuda tras registrar el abono.
     await cargarDeudasProveedores();
@@ -8471,7 +8465,7 @@ async function registrarPagoProveedor(compraId){
   }
 
   function dinero(n){
-    return "$"+Number(n||0).toFixed(2);
+    return "$"+Number(n||0).toFixed(0);
   }
 
   window.cargarReporteVentasDiarias=async function(){
@@ -8623,7 +8617,7 @@ async function registrarPagoProveedor(compraId){
       timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"
     }).format(new Date());
   }
-  function dinero(n){return "$"+Number(n||0).toFixed(2);}
+  function dinero(n){return "$"+Number(n||0).toFixed(0);}
   function estadoNormal(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();}
 
   /*
@@ -9116,8 +9110,8 @@ async function cargarResumenStockProveedores(){
         'Artículo: <strong>'+escaparHTML(articulo.nombre||"")+'</strong><br>'+
         'Cantidad: <strong>'+cantidad+'</strong><br>'+
         'Nuevo stock: <strong>'+nuevoStock+'</strong><br>'+
-        'Importe agregado: <strong>'+subtotal.toFixed(2)+'</strong><br>'+
-        'Total de la compra: <strong>'+totalFinal.toFixed(2)+'</strong></div>';
+        'Importe agregado: <strong>'+subtotal.toFixed(0)+'</strong><br>'+
+        'Total de la compra: <strong>'+totalFinal.toFixed(0)+'</strong></div>';
 
       articuloCompraSeleccionado=null;
       if(document.getElementById("compraCodigo"))document.getElementById("compraCodigo").value="";
@@ -9285,7 +9279,7 @@ async function cargarResumenStockProveedores(){
       const totalGastos=gastos.reduce((s,x)=>s+Number(x.importe||0),0);
       const totalCompras=compras.reduce((s,x)=>s+Number(x.total||0),0);
       const resultado=totalVentas-totalGastos-totalCompras;
-      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(2)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(2)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(2)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(2)+"</strong></div></div>";
+      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(0)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(0)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(0)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(0)+"</strong></div></div>";
     }catch(e){box.innerHTML="<div class='mensaje-error'>❌ No se pudo cargar el resumen.<br><br>"+escaparHTML(e.message||String(e))+"</div>";}
   }
   window.cargarResumenAdministracion=async function(){
@@ -9467,7 +9461,7 @@ async function cargarResumenStockProveedores(){
 (function(){
   let compraItems=[];
   const $=id=>document.getElementById(id);
-  const money=n=>'$'+Number(n||0).toFixed(2);
+  const money=n=>'$'+Number(n||0).toFixed(0);
   function hoy(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
   function fechaVencimiento(fecha,dias){const d=new Date(fecha+'T12:00:00-06:00');d.setDate(d.getDate()+Number(dias||0));return new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
   function render(){
@@ -9576,7 +9570,7 @@ async function cargarResumenStockProveedores(){
 (function(){
   const esc=(v)=>typeof escaparHTML==='function'?escaparHTML(String(v??'')):String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const el=(id)=>document.getElementById(id);
-  const money=(n)=>'$'+Number(n||0).toFixed(2);
+  const money=(n)=>'$'+Number(n||0).toFixed(0);
   window.compraItems=Array.isArray(window.compraItems)?window.compraItems:[];
   window.articuloCompraSeleccionado=window.articuloCompraSeleccionado||null;
   const CLAVE_BORRADOR_COMPRA='muebleria_compra_borrador_v1';
