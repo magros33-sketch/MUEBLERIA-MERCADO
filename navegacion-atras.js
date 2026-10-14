@@ -6,6 +6,7 @@
   window.__mercadoAtras = true;
   let ultimoAviso = 0;
   let timer;
+  let restaurandoCancelacion = false;
   const activa = () => document.querySelector('.pantalla.activa')?.id || 'inicio';
   const estado = (pantalla, profundidad, base = false) => ({ [key]: true, pantalla, profundidad, base });
   const guardar = (valor, reemplazar) => history[reemplazar ? 'replaceState' : 'pushState'](valor, '', location.href);
@@ -110,6 +111,10 @@
     const destino = evento.state;
     if (!destino?.[key]) return;
     if (!destino.base) {
+      if (restaurandoCancelacion) {
+        restaurandoCancelacion = false;
+        return;
+      }
       limpiarAviso();
       original(destino.pantalla);
       return;
@@ -118,7 +123,8 @@
       const anterior = activa();
       if (!permitirSalida(anterior)) {
         limpiarAviso();
-        guardar(estado(anterior, 0), false);
+        restaurandoCancelacion = true;
+        history.forward();
         return;
       }
       limpiarAviso();
