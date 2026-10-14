@@ -2814,15 +2814,39 @@ async function cargarDeudasProveedores(){
     if(!compras.length){
       html='<div class="tarjeta">✅ No hay deudas pendientes con proveedores.</div>';
     }else{
-      const grupos={};
-      compras.forEach(c=>{
-        const pid=String(c.proveedor_id||c.id_proveedor||"");
-        if(!grupos[pid])grupos[pid]={nombre:mapa[pid]||"Proveedor no identificado",saldo:0};
-        grupos[pid].saldo+=Number(c.saldo||0);
+      const fechaMX=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?"":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);};
+      const mostrarFecha=v=>v?v.split("-").reverse().join("/"):"Sin fecha";
+      const hoy=fechaMX(new Date());
+      const pendientes=compras.filter(c=>Number(c.saldo||0)>0&&!["cancelada","cancelado"].includes(String(c.estado||"").toLowerCase())).map(c=>{
+        const notas=String(c.notas||"");
+        const fechaCompra=fechaMX(c.fecha);
+        const vencGuardado=notas.match(/Vence:\\s*(\\d{4}-\\d{2}-\\d{2}|\\d{2}\\/\\d{2}\\/\\d{4})/i);
+        const plazo=notas.match(/cr[eé]dito\\s+a\\s+(7|15|30|60|90)\\s+d[ií]as/i);
+        let vencimiento="";
+        if(vencGuardado){const v=vencGuardado[1];vencimiento=v.includes("/")?v.split("/").reverse().join("-"):v;}
+        else if(plazo&&fechaCompra){const d=new Date(fechaCompra+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+Number(plazo[1]));vencimiento=d.toISOString().slice(0,10);}
+        return {...c,fechaCompra,vencimiento,proveedorNombre:mapa[String(c.proveedor_id||c.id_proveedor||"")]||"Proveedor no identificado"};
       });
-      const total=Object.values(grupos).reduce((s,g)=>s+Number(g.saldo||0),0);
+      pendientes.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
+      const total=pendientes.reduce((n,c)=>n+Number(c.saldo||0),0);
       html='<div class="info-articulo"><strong>Deuda total pendiente</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>'+
-        Object.values(grupos).sort((a,b)=>a.nombre.localeCompare(b.nombre,"es")).map(g=>'<div class="info-articulo"><strong>🚚 '+escaparHTML(g.nombre)+'</strong><div class="precio-venta">Pendiente: '+dineroAdmin(g.saldo)+'</div></div>').join("");
+        pendientes.map(c=>{
+          const vencida=c.vencimiento&&c.vencimiento<hoy;
+          const titulo=vencida?"⚠️ VENCIDA":c.vencimiento===hoy?"⏰ VENCE HOY":"📅 Pendiente";
+          const fechaVenc=c.vencimiento?mostrarFecha(c.vencimiento):"Sin vencimiento registrado";
+          const dias=c.vencimiento?Math.round((Date.parse(c.vencimiento+"T12:00:00Z")-Date.parse(hoy+"T12:00:00Z"))/86400000):null;
+          const plazoTexto=dias===null?"":dias<0?" · "+Math.abs(dias)+" día(s) de retraso":dias===0?" · vence hoy":" · faltan "+dias+" día(s)";
+          return '<div class="historial" style="margin:10px 0;padding:12px;border:1px solid #d0ddd5;border-radius:10px">'+
+            '<strong>'+titulo+' · '+escaparHTML(c.proveedorNombre)+'</strong>'+
+            '<div class="dato">Compra: '+mostrarFecha(c.fechaCompra)+'</div>'+
+            '<div class="dato">Vencimiento: <strong>'+fechaVenc+'</strong>'+plazoTexto+'</div>'+
+            '<div class="dato">Nota: '+escaparHTML(String(c.id).slice(0,8))+'</div>'+
+            '<div class="dato">Pendiente: <strong>'+dineroAdmin(Number(c.saldo||0))+'</strong></div>'+
+            '<button type="button" onclick="editarCompra(\\''+c.id+'\\')">✏️ Editar compra</button>'+
+            '<button type="button" onclick="registrarPagoProveedor(\\''+c.id+'\\')">💳 Registrar abono</button>'+
+            '<button type="button" onclick="verPagosNotaProveedor(\\''+c.id+'\\')">📜 Ver pagos</button></div>';
+        }).join("");
+
     }
     cajas.forEach(box=>box.innerHTML=html);
   }catch(e){
