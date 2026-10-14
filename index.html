@@ -8950,7 +8950,29 @@ async function registrarPagoProveedor(compraId){
         throw new Error("No se pudo marcar el apartado como cancelado: "+await rc.text());
       }
 
-      alert("✅ Apartado cancelado. El stock fue devuelto.");
+      // Reiniciar solamente el formulario de nuevo apartado; no alterar registros ni stock.
+      for(const [id,valor] of Object.entries({
+        apartadoCliente:"",apartadoCodigo:"",apartadoNombre:"",
+        apartadoCantidad:"1",apartadoPrecio:"",apartadoAnticipo:"0",
+        apartadoNotas:""
+      })){
+        const campo=document.getElementById(id);
+        if(campo)campo.value=valor;
+      }
+      clienteApartadoSeleccionado=null;
+      articuloApartadoSeleccionado=null;
+      for(const id of ["estadoApartadoCodigo","estadoApartadoNombre","mensajeApartado"]){
+        const nodo=document.getElementById(id);
+        if(nodo)nodo.innerHTML="";
+      }
+      for(const id of ["apartadoFecha","apartadoFechaAnticipo"]){
+        const campo=document.getElementById(id);
+        if(campo)campo.value=hoyMexico();
+      }
+      for(const id of ["apartadoCantidad","apartadoAnticipo"]){
+        document.getElementById(id)?.dispatchEvent(new Event("input",{bubbles:true}));
+      }
+      alert("✅ Apartado cancelado. El stock fue devuelto. Formulario listo para un nuevo apartado.");
       await cargarArticulos();
       await cargarHistorialApartados();
       await cargarResumenVentasDia();
