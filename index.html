@@ -1056,6 +1056,14 @@ Las ventas posteriores a las 20:00 pasan al siguiente día comercial.
 🔄 Actualizar ventas por día
 </button>
 
+<div class="ayuda">Consulta una fecha concreta o el resumen semanal y mensual. El historial completo permanece oculto.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:10px 0">
+<label>Fecha <input type="date" id="fechaConsultaReportes"></label>
+<button type="button" onclick="filtrarReporteVentas('dia')">Ver día</button>
+<button type="button" onclick="filtrarReporteVentas('semana')">Ver semana</button>
+<button type="button" onclick="filtrarReporteVentas('mes')">Ver mes</button>
+</div>
+<div id="avisoReportes" class="ayuda">Ventas registradas no equivale necesariamente a dinero cobrado; los apartados y pagos pendientes requieren conciliación.</div>
 <div id="reporteVentasDiarias">
 Cargando ventas...
 </div>
@@ -1122,6 +1130,19 @@ Cargando artículos vendidos...
 <div class="ayuda">Importe pendiente de las compras a crédito, agrupado por proveedor. Se actualiza con los abonos registrados.</div>
 <div id="deudasProveedoresAdmin">Cargando deudas...</div>
 <button type="button" onclick="cargarDeudasProveedores()">🔄 Actualizar deudas</button>
+</div>
+
+<div class="tarjeta">
+<h3>🏠 Rentas pagadas</h3>
+<div class="ayuda">Registra cada pago de renta como gasto y consulta el total pagado por mes. Los meses anteriores permanecen ocultos.</div>
+<label>Fecha del pago</label><input type="date" id="rentaFecha">
+<label>Concepto o inmueble</label><input type="text" id="rentaConcepto" placeholder="Ejemplo: renta del local">
+<label>Importe pagado</label><input type="number" id="rentaImporte" min="0.01" step="0.01" placeholder="0">
+<button type="button" onclick="guardarRentaAdmin()">💾 Registrar pago de renta</button>
+<div id="mensajeRentaAdmin"></div>
+<label>Consultar mes</label><input type="month" id="rentaMes" onchange="cargarRentasAdmin()">
+<button type="button" onclick="cargarRentasAdmin()">📅 Ver pagos del mes</button>
+<div id="rentasResumenAdmin">Selecciona un mes para consultar las rentas.</div>
 </div>
 
 <div class="tarjeta">
@@ -8312,6 +8333,35 @@ async function registrarPagoProveedor(compraId){
     return "$"+Number(n||0).toFixed(0);
   }
 
+  window.filtrarReporteVentas=function(periodo){
+    const box=document.getElementById("reporteVentasDiarias");
+    const input=document.getElementById("fechaConsultaReportes");
+    const mapa=window.__reporteDiarioDatos||{};
+    if(!box||!input)return;
+    const fecha=input.value||fechaMexico(new Date());
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha)){box.textContent="Selecciona una fecha válida.";return;}
+    const base=new Date(fecha+"T12:00:00Z");
+    let inicio=fecha,fin=fecha;
+    if(periodo==="semana"){
+      const dia=(base.getUTCDay()+6)%7;
+      const a=new Date(base);a.setUTCDate(a.getUTCDate()-dia);
+      const b=new Date(a);b.setUTCDate(b.getUTCDate()+6);
+      inicio=a.toISOString().slice(0,10);fin=b.toISOString().slice(0,10);
+    }else if(periodo==="mes"){
+      inicio=fecha.slice(0,7)+"-01";
+      const b=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,0,12));
+      fin=b.toISOString().slice(0,10);
+    }
+    const dias=Object.keys(mapa).filter(d=>d>=inicio&&d<=fin).sort().reverse();
+    const total=dias.reduce((a,d)=>({ventas:a.ventas+mapa[d].ventas,gastos:a.gastos+mapa[d].gastos,cantidad:a.cantidad+mapa[d].cantidad}),{ventas:0,gastos:0,cantidad:0});
+    const formato=n=>"$"+Number(n||0).toFixed(0);
+    box.innerHTML='<div class="historial"><strong>📅 '+inicio+(fin!==inicio?' a '+fin:'')+'</strong>'+
+      '<div class="dato">Operaciones registradas: <strong>'+total.cantidad+'</strong></div>'+
+      '<div class="dato">Importe de ventas registradas: <strong>'+formato(total.ventas)+'</strong></div>'+
+      '<div class="dato">Gastos registrados: <strong>-'+formato(total.gastos)+'</strong></div>'+
+      '<div class="dato">Diferencia contable preliminar: <strong>'+formato(total.ventas-total.gastos)+'</strong></div>'+
+      '<div class="ayuda">No es efectivo disponible ni utilidad: no descuenta costos de mercancía y puede incluir importes pendientes de cobro.</div></div>';
+  };
   window.cargarReporteVentasDiarias=async function(){
     const box=document.getElementById("reporteVentasDiarias");
     if(!box)return;
@@ -8343,24 +8393,10 @@ async function registrarPagoProveedor(compraId){
         mapa[dia].gastos+=Number(g.importe||0);
       });
 
-      const dias=Object.keys(mapa).sort().reverse();
-      if(!dias.length){
-        box.innerHTML='<div class="tarjeta">Todavía no hay operaciones para mostrar.</div>';
-        return;
-      }
-
-      box.innerHTML=dias.map(function(dia){
-        const x=mapa[dia];
-        const neto=x.ventas-x.gastos;
-        return '<div class="historial">'+
-          '<div class="fecha-operacion">📅 '+dia+'</div>'+
-          '<div class="dato">Operaciones de venta: <strong>'+x.cantidad+'</strong></div>'+
-          '<div class="dato">Ventas: <strong>'+dinero(x.ventas)+'</strong></div>'+
-          '<div class="dato">Gastos: <strong>-'+dinero(x.gastos)+'</strong></div>'+
-          '<div class="dato">Neto después de gastos: <strong>'+dinero(neto)+'</strong></div>'+
-          '<div class="ayuda">Día comercial: de 20:00 a 19:59 hora de México.</div>'+
-        '</div>';
-      }).join("");
+      window.__reporteDiarioDatos=mapa;
+      const input=document.getElementById("fechaConsultaReportes");
+      if(input&&!input.value)input.value=fechaMexico(new Date());
+      window.filtrarReporteVentas("dia");
     }catch(e){
       console.error("Error reporte ventas diarias:",e);
       box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
@@ -9652,6 +9688,46 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+</script>
+<script id="rentas-admin-20261014">
+(function(){
+function fechaLocal(){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
+function preparar(){const d=document.getElementById("rentaFecha"),m=document.getElementById("rentaMes");if(d&&!d.value)d.value=fechaLocal();if(m&&!m.value)m.value=fechaLocal().slice(0,7);}
+window.cargarRentasAdmin=async function(){
+ preparar();
+ const box=document.getElementById("rentasResumenAdmin"),mes=document.getElementById("rentaMes")?.value;
+ if(!box||!mes)return;
+ box.textContent="Cargando rentas...";
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=fecha,concepto,categoria,importe&categoria=eq.renta&order=fecha.desc&limit=5000",{headers:headersSupabase,cache:"no-store"});
+  if(!r.ok)throw new Error(await r.text());
+  const lista=(await r.json()).filter(x=>{const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
+  const suma=lista.reduce((a,x)=>a+Number(x.importe||0),0);
+  const fmt=n=>"$"+Number(n).toFixed(0);
+  box.innerHTML='<div class="dato"><strong>Total pagado en '+mes+': '+fmt(suma)+'</strong></div>'+
+    (lista.length?lista.map(x=>'<div class="historial">'+escaparHTML(String(x.concepto||"Renta"))+
+      ' — '+escaparHTML(String(x.fecha||"").slice(0,10))+
+      ': <strong>'+fmt(x.importe)+'</strong></div>').join(""):'<div class="ayuda">No hay pagos registrados este mes.</div>');
+ }catch(e){box.textContent="No se pudieron consultar las rentas: "+String(e.message||e);}
+};
+window.guardarRentaAdmin=async function(){
+ preparar();
+ const msg=document.getElementById("mensajeRentaAdmin");
+ const fecha=document.getElementById("rentaFecha")?.value,concepto=document.getElementById("rentaConcepto")?.value.trim(),importe=Number(document.getElementById("rentaImporte")?.value);
+ if(!fecha||!concepto||!Number.isFinite(importe)||importe<=0){msg.textContent="Completa fecha, concepto e importe válido.";return;}
+ msg.textContent="Guardando...";
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify({fecha:new Date(fecha+"T12:00:00").toISOString(),concepto,categoria:"renta",importe,notas:"Pago de renta desde Administración"})});
+  if(!r.ok)throw new Error(await r.text());
+  msg.textContent="Pago de renta registrado.";
+  document.getElementById("rentaConcepto").value="";
+  document.getElementById("rentaImporte").value="";
+  document.getElementById("rentaMes").value=fecha.slice(0,7);
+  await window.cargarRentasAdmin();
+ }catch(e){msg.textContent="No se pudo guardar: "+String(e.message||e);}
+};
+document.addEventListener("DOMContentLoaded",preparar);
+})();
 </script>
 </body>
 </html>
