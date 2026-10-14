@@ -1133,6 +1133,19 @@ Cargando artículos vendidos...
 </div>
 
 <div class="tarjeta">
+<h3>🏠 Rentas pagadas</h3>
+<div class="ayuda">Registra cada pago de renta como gasto y consulta el total pagado por mes. Los meses anteriores permanecen ocultos.</div>
+<label>Fecha del pago</label><input type="date" id="rentaFecha">
+<label>Concepto o inmueble</label><input type="text" id="rentaConcepto" placeholder="Ejemplo: renta del local">
+<label>Importe pagado</label><input type="number" id="rentaImporte" min="0.01" step="0.01" placeholder="0">
+<button type="button" onclick="guardarRentaAdmin()">💾 Registrar pago de renta</button>
+<div id="mensajeRentaAdmin"></div>
+<label>Consultar mes</label><input type="month" id="rentaMes" onchange="cargarRentasAdmin()">
+<button type="button" onclick="cargarRentasAdmin()">📅 Ver pagos del mes</button>
+<div id="rentasResumenAdmin">Selecciona un mes para consultar las rentas.</div>
+</div>
+
+<div class="tarjeta">
 <h3>🔑 Cambiar PIN</h3>
 <label>PIN actual</label>
 <input id="pinActual" type="password" inputmode="numeric" maxlength="12">
@@ -9675,6 +9688,46 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+</script>
+<script id="rentas-admin-20261014">
+(function(){
+function fechaLocal(){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
+function preparar(){const d=document.getElementById("rentaFecha"),m=document.getElementById("rentaMes");if(d&&!d.value)d.value=fechaLocal();if(m&&!m.value)m.value=fechaLocal().slice(0,7);}
+window.cargarRentasAdmin=async function(){
+ preparar();
+ const box=document.getElementById("rentasResumenAdmin"),mes=document.getElementById("rentaMes")?.value;
+ if(!box||!mes)return;
+ box.textContent="Cargando rentas...";
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=fecha,concepto,categoria,importe&categoria=eq.renta&order=fecha.desc&limit=5000",{headers:headersSupabase,cache:"no-store"});
+  if(!r.ok)throw new Error(await r.text());
+  const lista=(await r.json()).filter(x=>{const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
+  const suma=lista.reduce((a,x)=>a+Number(x.importe||0),0);
+  const fmt=n=>"$"+Number(n).toFixed(0);
+  box.innerHTML='<div class="dato"><strong>Total pagado en '+mes+': '+fmt(suma)+'</strong></div>'+
+    (lista.length?lista.map(x=>'<div class="historial">'+escaparHTML(String(x.concepto||"Renta"))+
+      ' — '+escaparHTML(String(x.fecha||"").slice(0,10))+
+      ': <strong>'+fmt(x.importe)+'</strong></div>').join(""):'<div class="ayuda">No hay pagos registrados este mes.</div>');
+ }catch(e){box.textContent="No se pudieron consultar las rentas: "+String(e.message||e);}
+};
+window.guardarRentaAdmin=async function(){
+ preparar();
+ const msg=document.getElementById("mensajeRentaAdmin");
+ const fecha=document.getElementById("rentaFecha")?.value,concepto=document.getElementById("rentaConcepto")?.value.trim(),importe=Number(document.getElementById("rentaImporte")?.value);
+ if(!fecha||!concepto||!Number.isFinite(importe)||importe<=0){msg.textContent="Completa fecha, concepto e importe válido.";return;}
+ msg.textContent="Guardando...";
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos",{method:"POST",headers:{...headersSupabase,"Prefer":"return=representation"},body:JSON.stringify({fecha:new Date(fecha+"T12:00:00").toISOString(),concepto,categoria:"renta",importe,notas:"Pago de renta desde Administración"})});
+  if(!r.ok)throw new Error(await r.text());
+  msg.textContent="Pago de renta registrado.";
+  document.getElementById("rentaConcepto").value="";
+  document.getElementById("rentaImporte").value="";
+  document.getElementById("rentaMes").value=fecha.slice(0,7);
+  await window.cargarRentasAdmin();
+ }catch(e){msg.textContent="No se pudo guardar: "+String(e.message||e);}
+};
+document.addEventListener("DOMContentLoaded",preparar);
+})();
 </script>
 </body>
 </html>
