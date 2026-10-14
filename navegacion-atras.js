@@ -58,12 +58,11 @@
     if (typeof registrar !== 'function') continue;
     window[config.funcion] = async function () {
       if (guardando.has(id)) return;
-      const antes = document.getElementById(config.mensaje)?.innerHTML;
       guardando.add(id);
       try {
         const resultado = await registrar.apply(this, arguments);
         const mensaje = document.getElementById(config.mensaje);
-        if (mensaje?.innerHTML !== antes && mensaje?.querySelector('.mensaje-exito') &&
+        if (mensaje?.querySelector('.mensaje-exito') &&
             /(?:venta registrada|compra registrada|apartado creado|apartado registrado)/i.test(mensaje.textContent)) {
           pendientes.delete(id);
         }
