@@ -7794,6 +7794,12 @@ function cambiarPinAdministracion(){
 
   window.registrarVenta=async function(){
     const mensaje=el("mensajeVenta");
+    if(window.__ventaRegistroEnCurso){
+      mensaje.innerHTML='<div class="mensaje-error">⏳ La venta se está guardando. Espera la confirmación antes de pulsar otra vez.</div>';
+      return;
+    }
+    window.__ventaRegistroEnCurso=true;
+    try{
     const tipoCliente=el("ventaTipoCliente").value;
     const clienteTexto=el("ventaCliente").value.trim();
     const metodoPago=el("ventaMetodoPago").value;
@@ -7964,6 +7970,9 @@ function cambiarPinAdministracion(){
     }catch(e){
       console.error(e);
       mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
+    }
+    }finally{
+      window.__ventaRegistroEnCurso=false;
     }
   };
 
