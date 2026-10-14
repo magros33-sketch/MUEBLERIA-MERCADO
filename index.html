@@ -7886,6 +7886,16 @@ function cambiarPinAdministracion(){
       return;
     }
 
+    if(tipoCliente==="cliente"&&clienteVentaSeleccionado){
+      const textoNormalizado=clienteTexto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+      const datosCliente=[clienteVentaSeleccionado.codigo_cliente,clienteVentaSeleccionado.nombre,clienteVentaSeleccionado.telefono]
+        .map(v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim());
+      if(textoNormalizado&&!datosCliente.includes(textoNormalizado)){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ El cliente escrito no coincide con el seleccionado. Vuelve a seleccionar el cliente antes de guardar.</div>';
+        return;
+      }
+    }
+
     // Sumar todas las líneas del mismo artículo, incluso con distintos pagos.
     const cantidadesPorArticulo=new Map();
     for(const x of ventaItems){
