@@ -8598,7 +8598,7 @@ async function registrarPagoProveedor(compraId){
    * Historial activo: los apartados totalmente pagados desaparecen,
    * pero los cancelados siguen visibles como histórico.
    */
-  window.cargarHistorialApartados=async function(){
+  window.cargarHistorialApartadosAnterior=async function(){
     const contenedor=document.getElementById("historialApartados");
     if(!contenedor)return;
     contenedor.innerHTML="🔄 Cargando apartados...";
@@ -8657,7 +8657,7 @@ async function registrarPagoProveedor(compraId){
     }
   };
 
-  window.filtrarHistorialApartados=function(){
+  window.filtrarHistorialApartadosAnterior=function(){
     const campo=document.getElementById("buscarHistorialApartados");
     const contenedor=document.getElementById("historialApartados");
     if(!campo||!contenedor)return;
