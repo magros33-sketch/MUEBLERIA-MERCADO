@@ -876,7 +876,11 @@ placeholder="Notas del apartado"
 
 <div class="tarjeta">
 
-<h3>📋 Historial de apartados</h3>
+<h3>📅 Historial de apartados</h3>
+<label for="fechaHistorialApartados">Consultar historial por fecha</label>
+<input type="date" id="fechaHistorialApartados" onchange="filtrarHistorialApartados()">
+<button type="button" class="secundario" onclick="document.getElementById('fechaHistorialApartados').value='';filtrarHistorialApartados()">Limpiar fecha</button>
+<div class="ayuda">Los apartados pendientes aparecen siempre. Los cancelados y pagados se consultan por fecha o por cliente.</div>
 
 <label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
 <input
@@ -8822,7 +8826,7 @@ async function registrarPagoProveedor(compraId){
       const mapaClientes={};
       clientesDb.forEach(c=>mapaClientes[String(c.id)]=c.nombre||c.codigo_cliente||"Cliente");
 
-      const activos=apartados.filter(a=>!["pagado","liquidado"].includes(estadoNormal(a.estado)));
+      const activos=apartados;
       if(!activos.length){
         contenedor.innerHTML='<div class="tarjeta">No hay apartados pendientes. Los apartados totalmente pagados ya no aparecen aquí.</div>';
         return;
@@ -8844,7 +8848,7 @@ async function registrarPagoProveedor(compraId){
         }else{
           botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
         }
-        return '<div class="historial'+(cancelado?' apartado-cancelado':'')+'">'+
+        return '<div class="historial'+(cancelado?' apartado-cancelado':'')+'" data-fecha="'+escaparHTML(String(a.fecha||'').slice(0,10))+'" data-activo="'+(!cancelado&&!['pagado','liquidado'].includes(est))+'">'+
           '<strong>📋 Apartado</strong>'+
           '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
           '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
@@ -8860,6 +8864,7 @@ async function registrarPagoProveedor(compraId){
           '<div class="separador"></div>'+botones+
           '</div>';
       }).join("");
+      filtrarHistorialApartados();
     }catch(e){
       console.error("Error historial apartados:",e);
       contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de apartados.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
@@ -8868,25 +8873,25 @@ async function registrarPagoProveedor(compraId){
 
   window.filtrarHistorialApartados=function(){
     const campo=document.getElementById("buscarHistorialApartados");
+    const fecha=document.getElementById("fechaHistorialApartados");
     const contenedor=document.getElementById("historialApartados");
-    if(!campo||!contenedor)return;
-    const texto=campo.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim();
-    const tarjetas=contenedor.querySelectorAll(".historial");
+    if(!contenedor)return;
+    const texto=(campo?.value||"").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("es-MX");
+    const dia=fecha?.value||"";
     let visibles=0;
-    tarjetas.forEach(function(tarjeta){
-      const coincide=tarjeta.textContent.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim().includes(texto);
-      tarjeta.style.display=coincide?"":"none";
-      if(coincide)visibles++;
+    contenedor.querySelectorAll(".historial").forEach(function(t){
+      const busqueda=t.textContent.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("es-MX");
+      const coincideTexto=!texto||busqueda.includes(texto);
+      const coincideFecha=!dia||t.dataset.fecha===dia;
+      const activo=t.dataset.activo==="true";
+      const visible=coincideTexto&&coincideFecha&&(activo||!!dia||!!texto);
+      t.style.display=visible?"":"none";
+      if(visible)visibles++;
     });
     let aviso=document.getElementById("sinResultadosHistorialApartados");
-    if(!aviso){
-      aviso=document.createElement("div");
-      aviso.id="sinResultadosHistorialApartados";
-      aviso.className="tarjeta";
-      contenedor.appendChild(aviso);
-    }
-    aviso.textContent=texto&&visibles===0?"No se encontraron apartados con ese nombre.": "";
-    aviso.style.display=texto&&visibles===0?"":"none";
+    if(!aviso){aviso=document.createElement("div");aviso.id="sinResultadosHistorialApartados";aviso.className="tarjeta";contenedor.appendChild(aviso);}
+    aviso.textContent=visibles===0?"No hay apartados para esta búsqueda.":"";
+    aviso.style.display=visibles===0?"":"none";
   };
 
   window.registrarAbonoApartado=async function(id){
