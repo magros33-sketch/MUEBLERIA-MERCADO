@@ -884,6 +884,8 @@ autocomplete="off"
 oninput="filtrarHistorialApartados()"
 >
 
+<label for="fechaHistorialApartados">Buscar por fecha</label><input id="fechaHistorialApartados" type="date" onchange="filtrarHistorialApartados()">
+<label><input id="mostrarAnterioresApartados" type="checkbox" onchange="cargarHistorialApartados()"> Mostrar apartados anteriores (cancelados y liquidados)</label>
 <button onclick="cargarHistorialApartados()">
 🔄 Actualizar apartados
 </button>
@@ -8799,9 +8801,10 @@ async function registrarPagoProveedor(compraId){
       const mapaClientes={};
       clientesDb.forEach(c=>mapaClientes[String(c.id)]=[c.nombre||"",c.codigo_cliente||"",c.telefono||""].filter(Boolean).join(" · ")||"Cliente");
 
-      const activos=apartados.filter(a=>!["pagado","liquidado"].includes(estadoNormal(a.estado)));
+      const verAnteriores=!!document.getElementById("mostrarAnterioresApartados")?.checked;
+      const activos=apartados.filter(a=>verAnteriores?["pagado","liquidado","cancelada","cancelado"].includes(estadoNormal(a.estado)):!["pagado","liquidado","cancelada","cancelado"].includes(estadoNormal(a.estado)));
       if(!activos.length){
-        contenedor.innerHTML='<div class="tarjeta">No hay apartados pendientes. Los apartados totalmente pagados ya no aparecen aquí.</div>';
+        contenedor.innerHTML='<div class="tarjeta">No hay apartados en esta vista. Usa «Mostrar apartados anteriores» para consultar cancelados y liquidados.</div>';
         return;
       }
 
@@ -8823,7 +8826,7 @@ async function registrarPagoProveedor(compraId){
         }
         return '<div class="historial'+(cancelado?' apartado-cancelado':'')+'">'+
           '<strong>📋 Apartado</strong>'+
-          '<div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div>'+
+          '<div class="fecha-operacion" data-fecha="'+escaparHTML(String(a.fecha||'').slice(0,10))+'">📅 '+formatearFecha(a.fecha)+'</div>'+
           '<div class="operacion-id">Operación: '+escaparHTML(String(a.id||"").substring(0,8))+'</div>'+
           '<div class="dato">Cliente: <strong>'+escaparHTML(mapaClientes[String(a.cliente_id)]||"Cliente no disponible")+'</strong></div>'+
           '<div class="dato">Artículo: <strong>'+escaparHTML(art.nombre||"Artículo no disponible")+'</strong></div>'+
@@ -8838,6 +8841,7 @@ async function registrarPagoProveedor(compraId){
           '<div class="separador"></div>'+botones+
           '</div>';
       }).join("");
+      filtrarHistorialApartados();
     }catch(e){
       console.error("Error historial apartados:",e);
       contenedor.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el historial de apartados.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
@@ -8849,12 +8853,14 @@ async function registrarPagoProveedor(compraId){
     const contenedor=document.getElementById("historialApartados");
     if(!campo||!contenedor)return;
     const texto=campo.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim();
+    const fecha=document.getElementById("fechaHistorialApartados")?.value||"";
     const tarjetas=contenedor.querySelectorAll(".historial");
     let visibles=0;
     tarjetas.forEach(function(tarjeta){
       const coincide=tarjeta.textContent.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es-MX").replace(/\s+/g," ").trim().includes(texto);
-      tarjeta.style.display=coincide?"":"none";
-      if(coincide)visibles++;
+      const coincideFecha=!fecha||tarjeta.querySelector(".fecha-operacion")?.getAttribute("data-fecha")===fecha;
+      tarjeta.style.display=coincide&&coincideFecha?"":"none";
+      if(coincide&&coincideFecha)visibles++;
     });
     let aviso=document.getElementById("sinResultadosHistorialApartados");
     if(!aviso){
@@ -8863,8 +8869,8 @@ async function registrarPagoProveedor(compraId){
       aviso.className="tarjeta";
       contenedor.appendChild(aviso);
     }
-    aviso.textContent=texto&&visibles===0?"No se encontraron apartados con ese nombre.": "";
-    aviso.style.display=texto&&visibles===0?"":"none";
+    aviso.textContent=(texto||fecha)&&visibles===0?"No se encontraron apartados con esos filtros.": "";
+    aviso.style.display=(texto||fecha)&&visibles===0?"":"none";
   };
 
   window.registrarAbonoApartado=async function(id){
