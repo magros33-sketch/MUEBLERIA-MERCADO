@@ -9,6 +9,68 @@
   const activa = () => document.querySelector('.pantalla.activa')?.id || 'inicio';
   const estado = (pantalla, profundidad, base = false) => ({ [key]: true, pantalla, profundidad, base });
   const guardar = (valor, reemplazar) => history[reemplazar ? 'replaceState' : 'pushState'](valor, '', location.href);
+
+  const pendientes = new Set();
+  const guardando = new Set();
+  const formularios = {
+    ventas: { funcion: 'registrarVenta', mensaje: 'mensajeVenta', lista: 'ventaItemsLista',
+      campos: ['ventaTipoCliente','ventaCliente','ventaCodigo','ventaNombre','ventaCantidad','ventaPrecio','fechaVentaRegistro','ventaMetodoPago'] },
+    compras: { funcion: 'registrarCompra', mensaje: 'mensajeCompra', lista: 'compraItemsListaFinal',
+      campos: ['compraProveedor','compraProveedorId','compraCodigo','compraNombre','compraCantidad','compraCosto','compraFormaPago','compraPlazoDias','compraAnticipo'] },
+    apartados: { funcion: 'registrarApartado', mensaje: 'mensajeApartado',
+      campos: ['apartadoCliente','apartadoCodigo','apartadoNombre','apartadoCantidad','apartadoPrecio','apartadoFecha','apartadoAnticipo','apartadoFechaAnticipo','apartadoMetodoPago','apartadoNotas'] }
+  };
+  function tienePendientes(id) {
+    const config = formularios[id];
+    if (!config) return false;
+    // También proteger los artículos recuperados de un borrador anterior.
+    const lista = config.lista && document.getElementById(config.lista);
+    return pendientes.has(id) || !!lista?.querySelector('button');
+  }
+  function permitirSalida(id) {
+    if (guardando.has(id)) {
+      window.alert('Se está guardando. Espera la confirmación antes de salir.');
+      return false;
+    }
+    if (!tienePendientes(id)) return true;
+    return window.confirm('Hay cambios sin guardar. ¿Quieres volver a Inicio o cambiar de sección?\n\nAceptar: continuar sin guardar.\nCancelar: quedarte para terminar.\n\nEl formulario se conserva mientras la app siga abierta.');
+  }
+  function marcarCambio(evento) {
+    for (const [id, config] of Object.entries(formularios)) {
+      if (config.campos.includes(evento.target?.id)) pendientes.add(id);
+    }
+  }
+  document.addEventListener('input', marcarCambio);
+  document.addEventListener('change', marcarCambio);
+  document.addEventListener('click', function (evento) {
+    const boton = evento.target?.closest('button');
+    if (!boton) return;
+    const id = boton.closest('.pantalla')?.id;
+    const config = formularios[id];
+    if (!config) return;
+    const registro = document.querySelector('#' + id + ' button[onclick="' + config.funcion + '()"]');
+    const formulario = registro?.closest('.tarjeta');
+    // Añadir/quitar líneas también cambia el formulario aunque no genere input.
+    if (formulario?.contains(boton) && boton !== registro) pendientes.add(id);
+  });
+  for (const [id, config] of Object.entries(formularios)) {
+    const registrar = window[config.funcion];
+    if (typeof registrar !== 'function') continue;
+    window[config.funcion] = async function () {
+      if (guardando.has(id)) return;
+      guardando.add(id);
+      try {
+        const resultado = await registrar.apply(this, arguments);
+        const mensaje = document.getElementById(config.mensaje);
+        if (mensaje?.querySelector('.mensaje-exito') &&
+            /(?:venta registrada|compra registrada|apartado creado|apartado registrado)/i.test(mensaje.textContent)) {
+          pendientes.delete(id);
+        }
+        return resultado;
+      } finally { guardando.delete(id); }
+    };
+  }
+
   function limpiarAviso() {
     ultimoAviso = 0;
     clearTimeout(timer);
@@ -37,6 +99,7 @@
   window.mostrarPantalla = function (id) {
     if (!document.getElementById(id)?.classList.contains('pantalla')) return;
     const anterior = activa();
+    if (id !== anterior && !permitirSalida(anterior)) return;
     const resultado = original.apply(this, arguments);
     limpiarAviso();
     if (id === anterior) return resultado;
@@ -52,6 +115,12 @@
       return;
     }
     if (activa() !== 'inicio') {
+      const anterior = activa();
+      if (!permitirSalida(anterior)) {
+        limpiarAviso();
+        guardar(estado(anterior, 0), false);
+        return;
+      }
       limpiarAviso();
       original('inicio');
       guardar(estado('inicio', 0), false);
