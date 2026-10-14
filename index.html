@@ -877,7 +877,7 @@ placeholder="Notas del apartado"
 
 <div class="tarjeta">
 
-<h3>📋 Apartados activos e historial</h3><p class="ayuda">Los activos siempre están disponibles. Consulta los pagados y cancelados por calendario o buscando al cliente.</p><label for="fechaHistorialApartados">📅 Fecha del historial</label><input id="fechaHistorialApartados" type="date" onchange="filtrarHistorialApartados()"><button type="button" class="secundario" onclick="document.getElementById('fechaHistorialApartados').value='';filtrarHistorialApartados()">Quitar fecha</button>
+<h3>📅 Calendario de apartados</h3><p class="ayuda">Todos los apartados, incluidos activos, pagados y cancelados, se consultan por fecha o buscando al cliente. Usa «Ver activos» para registrar abonos sin saturar la pantalla.</p><button type="button" onclick="const x=document.getElementById('mostrarActivosApartados');x.checked=!x.checked;filtrarHistorialApartados()">📋 Ver u ocultar activos</button><input type="checkbox" id="mostrarActivosApartados" style="display:none"><label for="fechaHistorialApartados">📅 Fecha del historial</label><input id="fechaHistorialApartados" type="date" onchange="filtrarHistorialApartados()"><button type="button" class="secundario" onclick="document.getElementById('fechaHistorialApartados').value='';filtrarHistorialApartados()">Quitar fecha</button>
 
 <label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
 <input
@@ -5339,12 +5339,12 @@ function filtrarHistorialApartados(){
  const fecha=document.getElementById("fechaHistorialApartados")?.value||"";
  const normalizar=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
  const hoy=new Date(fechaHoyMexicoApartado()+"T12:00:00");
+ const mostrarActivos=document.getElementById("mostrarActivosApartados")?.checked||false;
  const lista=apartadosVista.filter(a=>{
-  const estado=normalizar(a.estado);
-  const activo=!["cancelado","cancelada","pagado","liquidado"].includes(estado)&&Number(a.saldo||0)>0;
   const c=clientes.find(x=>x.id===a.cliente_id),art=articulos.find(x=>x.id===a.articulo_id);
-  const coincide=!texto||normalizar((c?.nombre||"")+" "+(c?.telefono||"")+" "+(art?.nombre||"")).includes(normalizar(texto));
-  return coincide&&(activo||Boolean(texto)||Boolean(fecha)&&String(a.fecha||"").slice(0,10)===fecha);
+  const coincide=!texto||normalizar((c?.nombre||"")+" "+(c?.telefono||"")+" "+(art?.nombre||"")+" "+(art?.codigo||"")).includes(normalizar(texto));
+  const fechaCoincide=!fecha||String(a.fecha||"").slice(0,10)===fecha;
+  return coincide&&fechaCoincide&&(Boolean(fecha)||Boolean(texto)||mostrarActivos);
  });
  const activos=lista.filter(a=>!["cancelado","cancelada","pagado","liquidado"].includes(normalizar(a.estado))&&Number(a.saldo||0)>0);
  const historicos=lista.filter(a=>!activos.includes(a));
@@ -5359,7 +5359,7 @@ function filtrarHistorialApartados(){
   const e=x=>escaparHTML(String(x??""));
   return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><strong>'+e(c?.nombre||"Cliente no disponible")+'</strong><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
  }
- destino.innerHTML='<h3>🟢 Activos ('+activos.length+')</h3>'+(activos.map(tarjeta).join("")||'<p>No hay apartados activos.</p>')+'<details '+(fecha||texto?'open':'')+'><summary style="font-weight:800;padding:12px;cursor:pointer">📅 Historial ('+historicos.length+')</summary>'+(historicos.map(tarjeta).join("")||'<p>Selecciona una fecha o busca un cliente para consultar el historial.</p>')+'</details>';
+ destino.innerHTML=(!fecha&&!texto&&!mostrarActivos?'<p>📅 Elige una fecha, busca un cliente o pulsa «Ver activos».</p>':'<h3>📋 Apartados encontrados ('+lista.length+')</h3>'+(lista.map(tarjeta).join("")||'<p>No hay apartados para esta búsqueda.</p>'));
 }
 async function editarApartadoExistente(id){
  const a=apartadosVista.find(x=>String(x.id)===String(id));if(!a)return;
