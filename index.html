@@ -7689,11 +7689,12 @@ function cambiarPinAdministracion(){
           ' × '+money(x.precio)+
           ' = <strong>'+money(x.subtotal)+'</strong><br>'+
           '<label for="metodoPagoArticulo_'+i+'">Forma de pago de este artículo</label>'+
-          '<select id="metodoPagoArticulo_'+i+'" onchange="cambiarMetodoPagoArticulo('+i+',this.value)">'+
-            '<option value="efectivo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="efectivo"?" selected":"")+'>Efectivo</option>'+
-            '<option value="tarjeta"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="tarjeta"?" selected":"")+'>Tarjeta</option>'+
-            '<option value="transferencia"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="transferencia"?" selected":"")+'>Transferencia</option>'+
-            '<option value="aplazo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="aplazo"?" selected":"")+'>Aplazo</option>'+
+          '<select id="metodoPagoArticulo_'+i+'" onchange="cambiarMetodoPagoArticulo('+i+',this.value)">'++
+            '<option value=""'+(!x.metodo_pago?' selected':'')+'>⚠️ Selecciona forma de pago</option>'
+            '<option value="efectivo"'+((x.metodo_pago||"")==="efectivo"?" selected":"")+'>Efectivo</option>'+
+            '<option value="tarjeta"'+((x.metodo_pago||"")==="tarjeta"?" selected":"")+'>Tarjeta</option>'+
+            '<option value="transferencia"'+((x.metodo_pago||"")==="transferencia"?" selected":"")+'>Transferencia</option>'+
+            '<option value="aplazo"'+((x.metodo_pago||"")==="aplazo"?" selected":"")+'>Aplazo</option>'+
           '</select>'+
           '<button type="button" class="eliminar" onclick="quitarArticuloVenta('+i+')">🗑️ Quitar</button>'+
           '</div>';
