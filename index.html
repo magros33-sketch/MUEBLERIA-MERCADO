@@ -345,7 +345,7 @@ background:#fff4d6;
 <input
 id="buscarArticulo"
 type="text"
-placeholder="Buscar por codigo o nombre"
+placeholder="Buscar por código, producto o proveedor"
 autocomplete="off"
 oninput="filtrarArticulos()"
 >
@@ -1764,7 +1764,8 @@ const texto=campo.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").t
 const porProveedor=articulosDelProveedorSeleccionado(articulos);
 const filtrados=porProveedor.filter(function(a){
 return !texto || String(a.codigo||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto)
-||String(a.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);
+||String(a.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto)
+||String((proveedores.find(function(p){return String(p.id)===String(a.proveedor_id);})||{}).nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().includes(texto);
 });
 if(resultados){
 if(texto && filtrados.length){
