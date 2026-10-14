@@ -874,11 +874,11 @@ placeholder="Notas del apartado"
 
 <h3>📋 Historial de apartados</h3>
 
-<label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
+<label for="buscarHistorialApartados">🔎 Buscar cliente o apartado para agregar anticipo (nombre, teléfono, código o artículo)</label>
 <input
 id="buscarHistorialApartados"
 type="text"
-placeholder="Escribe el nombre del cliente o artículo"
+placeholder="Nombre, teléfono, código de cliente o artículo"
 autocomplete="off"
 oninput="filtrarHistorialApartados()"
 >
@@ -8790,13 +8790,13 @@ async function registrarPagoProveedor(compraId){
     try{
       const [ra,rc]=await Promise.all([
         fetch(SUPABASE_URL+"/rest/v1/apartados?select=*&order=fecha.desc",{headers:headersSupabase,cache:"no-store"}),
-        fetch(SUPABASE_URL+"/rest/v1/clientes?select=id,nombre,codigo_cliente",{headers:headersSupabase,cache:"no-store"})
+        fetch(SUPABASE_URL+"/rest/v1/clientes?select=id,nombre,codigo_cliente,telefono",{headers:headersSupabase,cache:"no-store"})
       ]);
       if(!ra.ok)throw new Error(await ra.text());
       const apartados=await ra.json();
       const clientesDb=rc.ok?await rc.json():[];
       const mapaClientes={};
-      clientesDb.forEach(c=>mapaClientes[String(c.id)]=c.nombre||c.codigo_cliente||"Cliente");
+      clientesDb.forEach(c=>mapaClientes[String(c.id)]=[c.nombre||"",c.codigo_cliente||"",c.telefono||""].filter(Boolean).join(" · ")||"Cliente");
 
       const activos=apartados.filter(a=>!["pagado","liquidado"].includes(estadoNormal(a.estado)));
       if(!activos.length){
@@ -8815,7 +8815,7 @@ async function registrarPagoProveedor(compraId){
         if(!cancelado){
           botones+='<button type="button" class="eliminar" onclick="cancelarApartado(\''+a.id+'\')">❌ Cancelar apartado y devolver stock</button>';
           if(est==="pendiente"&&Number(a.saldo||0)>0){
-            botones+='<button type="button" onclick="registrarAbonoApartado(\''+a.id+'\')">💵 Registrar adelanto</button>';
+            botones+='<button type="button" onclick="registrarAbonoApartado(\''+a.id+'\')">💵 Agregar anticipo</button>';
           }
         }else{
           botones+='<div class="ayuda">Apartado cancelado. El stock ya fue devuelto.</div>';
