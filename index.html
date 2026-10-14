@@ -262,6 +262,11 @@ font-weight:bold;
 background:#fff4d6;
 }
 .fecha-vencimiento{margin:7px 0;}
+/* Jerarquía visual accesible */
+.pantalla h2{font-size:clamp(25px,5vw,31px);font-weight:900;color:#123b2a;border-bottom:3px solid #26734e;padding-bottom:10px;margin:16px 0}
+.pantalla h3{font-size:21px;font-weight:800;color:#123b2a;background:#edf5ef;padding:10px 12px;border-left:5px solid #26734e;border-radius:5px}
+.menu button{font-weight:800;font-size:18px}
+.tarjeta label{font-weight:800;color:#173f2d}
 </style>
 
 <meta name="theme-color" content="#123b2a">
@@ -876,7 +881,11 @@ placeholder="Notas del apartado"
 
 <div class="tarjeta">
 
-<h3>📋 Historial de apartados</h3>
+<h3>📋 Consulta de apartados</h3>
+<p class="ayuda">Los apartados pendientes siguen disponibles para recibir abonos. Los de más de 60 días sin movimiento se marcan vencidos, sin cancelarse.</p>
+<label for="fechaHistorialApartados">Consultar historial por fecha</label>
+<input id="fechaHistorialApartados" type="date" onchange="filtrarHistorialApartados()">
+<button type="button" class="secundario" onclick="document.getElementById('fechaHistorialApartados').value='';filtrarHistorialApartados()">🗓️ Quitar filtro de fecha</button>
 
 <label for="buscarHistorialApartados">Buscar apartado por nombre de cliente o artículo</label>
 <input
@@ -5393,6 +5402,10 @@ return;
  Cargamos clientes y articulos desde los arrays actuales.
 */
 
+window.apartadosCacheVista=apartados;
+renderizarApartadosFiltrados();
+/* Renderizado original conservado como referencia */
+/*
 contenedor.innerHTML=
 apartados.map(function(a){
 
@@ -5576,6 +5589,7 @@ ${botones}
 
 }).join("");
 
+*/
 
 }catch(error){
 
@@ -5599,6 +5613,42 @@ contenedor.innerHTML=
 }
 
 
+
+function filtrarHistorialApartados(){renderizarApartadosFiltrados();}
+function renderizarApartadosFiltrados(){
+ const cont=document.getElementById("historialApartados");if(!cont)return;
+ const items=window.apartadosCacheVista||[];
+ const busqueda=(document.getElementById("buscarHistorialApartados")?.value||"").toLocaleLowerCase().trim();
+ const fecha=document.getElementById("fechaHistorialApartados")?.value||"";
+ const hoy=new Date();
+ const normalizar=e=>String(e||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ const filtrados=items.filter(a=>{
+  const estado=normalizar(a.estado);
+  const activo=!["cancelado","cancelada","pagado","liquidado"].includes(estado)&&Number(a.saldo||0)>0;
+  const cliente=clientes.find(c=>c.id===a.cliente_id);
+  const articulo=articulos.find(x=>x.id===a.articulo_id);
+  const coincide=!busqueda||normalizar((cliente?.nombre||"")+" "+(articulo?.nombre||"")).includes(normalizar(busqueda));
+  const dia=String(a.fecha||"").slice(0,10);
+  return coincide&&(busqueda?true:(activo||Boolean(fecha)&&dia===fecha));
+ });
+ cont.innerHTML=filtrados.length?filtrados.map(a=>{
+  const estado=normalizar(a.estado);
+  const activo=!["cancelado","cancelada","pagado","liquidado"].includes(estado)&&Number(a.saldo||0)>0;
+  const cliente=clientes.find(c=>c.id===a.cliente_id);
+  const articulo=articulos.find(x=>x.id===a.articulo_id);
+  const dias=Math.floor((hoy-new Date(String(a.fecha||"").slice(0,10)+"T12:00:00"))/86400000);
+  const vencido=activo&&dias>60;
+  const id=escaparHTML(String(a.id||""));
+  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><strong>'+escaparHTML(cliente?.nombre||"Cliente no disponible")+'</strong><div class="fecha-operacion">📅 '+formatearFecha(a.fecha)+'</div><div class="dato">Artículo: '+escaparHTML(articulo?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO (sin cancelar)':escaparHTML(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+escaparHTML(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar apartado</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar apartado</button>':'')+'</div>';
+ }).join(""):'<div class="tarjeta">No hay apartados para esta consulta.</div>';
+}
+async function editarApartadoExistente(id){
+ const a=(window.apartadosCacheVista||[]).find(x=>String(x.id)===String(id));if(!a)return;
+ const notas=prompt("Editar notas del apartado:",a.notas||"");if(notas===null)return;
+ const respuesta=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({notas})});
+ if(!respuesta.ok){alert("No se pudo editar: "+await respuesta.text());return;}
+ alert("Notas actualizadas. Los importes y el stock no se han modificado.");await cargarHistorialApartados();
+}
 /* ================= HISTORIAL DE ABONOS DE APARTADOS ================= */
 async function mostrarHistorialAbonosApartado(id){
   try{
