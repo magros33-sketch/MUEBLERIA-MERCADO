@@ -8019,7 +8019,7 @@ function cambiarPinAdministracion(){
   let compraItems=[];
 
   function el(id){ return document.getElementById(id); }
-  function money(n){ return "$"+Number(n||0).toFixed(2); }
+  function money(n){ return "$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 
   function fechaHoyMexicoCompra(){
     return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
