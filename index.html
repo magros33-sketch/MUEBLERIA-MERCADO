@@ -497,7 +497,7 @@ placeholder="Ejemplo: 3500"
 </select>
 <div id="compraCreditoInfo" class="ayuda">La compra se registrará pagada de contado y no generará deuda.</div>
 <div id="compraPlazoBox" class="oculto">
-<label>Plazo de pago del crédito</label>
+<label>Anticipo entregado al proveedor ($)</label><input id="compraAnticipo" type="number" min="0" step="0.01" value="0" placeholder="0"><label>Plazo de pago del crédito</label>
 <select id="compraPlazoDias">
 <option value="7">Crédito a 7 días</option>
 <option value="15">Crédito a 15 días</option>
@@ -2873,6 +2873,7 @@ async function cargarHistorialCompras(){
         if(Number(c.saldo||0)>0){
           botones+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';
         }
+        botones+='<button type="button" class="editar" onclick="verPagosNotaProveedor(\''+c.id+'\')">📜 Ver pagos</button>';
         botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
       }
       return '<div class="historial">'+
@@ -2909,6 +2910,14 @@ function filtrarNotasProveedor(){
   });
 }
 
+async function verPagosNotaProveedor(compraId){
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores?select=fecha,importe,metodo_pago,notas&compra_id=eq."+encodeURIComponent(compraId)+"&order=fecha.asc",{headers:headersSupabase,cache:"no-store"});
+  if(!r.ok)throw new Error(await r.text());
+  const pagos=await r.json();
+  alert(pagos.length?pagos.map(p=>new Date(p.fecha).toLocaleDateString("es-MX",{timeZone:"America/Mexico_City"})+" | $"+Number(p.importe||0).toFixed(0)+" | "+(p.metodo_pago||"")+" | "+(p.notas||"")).join("\\n"):"Esta nota todavía no tiene abonos registrados.");
+ }catch(e){alert("No se pudo consultar el historial: "+(e.message||String(e)));}
+}
 /* ================= VENTAS ================= */
 
 const campoVentaCodigo=
@@ -9030,6 +9039,8 @@ async function cargarResumenStockProveedores(){
     if(!["contado","credito"].includes(forma)){mensaje.innerHTML='<div class="mensaje-error">❌ Forma de pago no válida.</div>';return;}
     if(forma==="credito" && ![7,15,30,60,90].includes(plazo)){mensaje.innerHTML='<div class="mensaje-error">❌ Selecciona un plazo de crédito válido.</div>';return;}
 
+    const anticipo=forma==="credito"?Number(document.getElementById("compraAnticipo")?.value||0):0;
+    if(!Number.isFinite(anticipo)||anticipo<0||anticipo>cantidad*costo){mensaje.innerHTML='<div class="mensaje-error">❌ El anticipo debe estar entre cero y el total de la nota.</div>';return;}
     const subtotal=cantidad*costo;
     const fechaActual=new Date();
     const fechaMexico=hoyMexicoCompra();
@@ -9116,6 +9127,18 @@ async function cargarResumenStockProveedores(){
       });
       if(!ra.ok)throw new Error("La compra se guardó, pero no se pudo actualizar el stock: "+await ra.text());
 
+      if(forma==="credito"&&anticipo>0){
+        const rp=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores",{
+          method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({compra_id:compraId,proveedor_id:proveedorId,importe:anticipo,metodo_pago:"efectivo",notas:"Anticipo inicial de la nota"})
+        });
+        if(!rp.ok)throw new Error("La compra y el inventario quedaron guardados, pero NO el anticipo. No repitas la compra; registra el abono en su nota: "+await rp.text());
+        const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{
+          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
+          body:JSON.stringify({pagado:anticipo,saldo:subtotal-anticipo,metodo_pago:anticipo===subtotal?"credito_pagado":"credito"})
+        });
+        if(!ru.ok)throw new Error("El anticipo se registró, pero no se actualizó el saldo. No repitas el pago: "+await ru.text());
+      }
       const totalFinal=Number(compraGuardada?.total||subtotal);
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Compra registrada correctamente.</strong><br><br>'+
         (agrupada
@@ -9135,6 +9158,7 @@ async function cargarResumenStockProveedores(){
       if(document.getElementById("compraCosto"))document.getElementById("compraCosto").value="";
       if(document.getElementById("compraFormaPago"))document.getElementById("compraFormaPago").value="contado";
       if(document.getElementById("compraPlazoDias"))document.getElementById("compraPlazoDias").value="30";
+      if(document.getElementById("compraAnticipo"))document.getElementById("compraAnticipo").value="0";
       actualizarFormaPagoCompraNueva();
       ["estadoCodigo","estadoNombre","resultadoCompra","estadoProveedorCompra","resultadoProveedorCompra"].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML="";});
       const cp=document.getElementById("compraProveedor"), cpi=document.getElementById("compraProveedorId");
