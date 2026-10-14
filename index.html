@@ -2849,7 +2849,10 @@ async function cargarDeudasProveedores(){
         }).join("");
 
     }
-    cajas.forEach(box=>box.innerHTML=html);
+    cajas.forEach(box=>{
+      const estabaAbierto=box.querySelector("details.deudas-vencidas-desplegable")?.open||false;
+      box.innerHTML='<details class="deudas-vencidas-desplegable"'+(estabaAbierto?' open':'')+'><summary style="cursor:pointer;padding:12px;font-weight:700">⚠️ Ver deudas vencidas ('+vencidas.length+')</summary><div style="padding-top:10px">'+html+'</div></details>';
+    });
   }catch(e){
     console.error("Error cargando deudas de proveedores:",e);
     const html='<div class="mensaje-error">❌ No se pudieron cargar las deudas con proveedores.<br><small>'+escaparHTML(e.message||String(e))+'</small></div>';
