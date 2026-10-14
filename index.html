@@ -1056,6 +1056,14 @@ Las ventas posteriores a las 20:00 pasan al siguiente día comercial.
 🔄 Actualizar ventas por día
 </button>
 
+<div class="ayuda">Consulta una fecha concreta o el resumen semanal y mensual. El historial completo permanece oculto.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:10px 0">
+<label>Fecha <input type="date" id="fechaConsultaReportes"></label>
+<button type="button" onclick="filtrarReporteVentas('dia')">Ver día</button>
+<button type="button" onclick="filtrarReporteVentas('semana')">Ver semana</button>
+<button type="button" onclick="filtrarReporteVentas('mes')">Ver mes</button>
+</div>
+<div id="avisoReportes" class="ayuda">Ventas registradas no equivale necesariamente a dinero cobrado; los apartados y pagos pendientes requieren conciliación.</div>
 <div id="reporteVentasDiarias">
 Cargando ventas...
 </div>
@@ -8312,6 +8320,35 @@ async function registrarPagoProveedor(compraId){
     return "$"+Number(n||0).toFixed(0);
   }
 
+  window.filtrarReporteVentas=function(periodo){
+    const box=document.getElementById("reporteVentasDiarias");
+    const input=document.getElementById("fechaConsultaReportes");
+    const mapa=window.__reporteDiarioDatos||{};
+    if(!box||!input)return;
+    const fecha=input.value||fechaMexico(new Date());
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha)){box.textContent="Selecciona una fecha válida.";return;}
+    const base=new Date(fecha+"T12:00:00Z");
+    let inicio=fecha,fin=fecha;
+    if(periodo==="semana"){
+      const dia=(base.getUTCDay()+6)%7;
+      const a=new Date(base);a.setUTCDate(a.getUTCDate()-dia);
+      const b=new Date(a);b.setUTCDate(b.getUTCDate()+6);
+      inicio=a.toISOString().slice(0,10);fin=b.toISOString().slice(0,10);
+    }else if(periodo==="mes"){
+      inicio=fecha.slice(0,7)+"-01";
+      const b=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,0,12));
+      fin=b.toISOString().slice(0,10);
+    }
+    const dias=Object.keys(mapa).filter(d=>d>=inicio&&d<=fin).sort().reverse();
+    const total=dias.reduce((a,d)=>({ventas:a.ventas+mapa[d].ventas,gastos:a.gastos+mapa[d].gastos,cantidad:a.cantidad+mapa[d].cantidad}),{ventas:0,gastos:0,cantidad:0});
+    const formato=n=>"$"+Number(n||0).toFixed(0);
+    box.innerHTML='<div class="historial"><strong>📅 '+inicio+(fin!==inicio?' a '+fin:'')+'</strong>'+
+      '<div class="dato">Operaciones registradas: <strong>'+total.cantidad+'</strong></div>'+
+      '<div class="dato">Importe de ventas registradas: <strong>'+formato(total.ventas)+'</strong></div>'+
+      '<div class="dato">Gastos registrados: <strong>-'+formato(total.gastos)+'</strong></div>'+
+      '<div class="dato">Diferencia contable preliminar: <strong>'+formato(total.ventas-total.gastos)+'</strong></div>'+
+      '<div class="ayuda">No es efectivo disponible ni utilidad: no descuenta costos de mercancía y puede incluir importes pendientes de cobro.</div></div>';
+  };
   window.cargarReporteVentasDiarias=async function(){
     const box=document.getElementById("reporteVentasDiarias");
     if(!box)return;
@@ -8343,24 +8380,10 @@ async function registrarPagoProveedor(compraId){
         mapa[dia].gastos+=Number(g.importe||0);
       });
 
-      const dias=Object.keys(mapa).sort().reverse();
-      if(!dias.length){
-        box.innerHTML='<div class="tarjeta">Todavía no hay operaciones para mostrar.</div>';
-        return;
-      }
-
-      box.innerHTML=dias.map(function(dia){
-        const x=mapa[dia];
-        const neto=x.ventas-x.gastos;
-        return '<div class="historial">'+
-          '<div class="fecha-operacion">📅 '+dia+'</div>'+
-          '<div class="dato">Operaciones de venta: <strong>'+x.cantidad+'</strong></div>'+
-          '<div class="dato">Ventas: <strong>'+dinero(x.ventas)+'</strong></div>'+
-          '<div class="dato">Gastos: <strong>-'+dinero(x.gastos)+'</strong></div>'+
-          '<div class="dato">Neto después de gastos: <strong>'+dinero(neto)+'</strong></div>'+
-          '<div class="ayuda">Día comercial: de 20:00 a 19:59 hora de México.</div>'+
-        '</div>';
-      }).join("");
+      window.__reporteDiarioDatos=mapa;
+      const input=document.getElementById("fechaConsultaReportes");
+      if(input&&!input.value)input.value=fechaMexico(new Date());
+      window.filtrarReporteVentas("dia");
     }catch(e){
       console.error("Error reporte ventas diarias:",e);
       box.innerHTML='<div class="mensaje-error">❌ No se pudo cargar el reporte.<br><br>'+escaparHTML(e.message||String(e))+'</div>';
