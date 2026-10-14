@@ -2830,7 +2830,7 @@ async function cargarDeudasProveedores(){
       const vencidas=pendientes.filter(c=>c.vencimiento&&c.vencimiento<hoy);
       vencidas.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
       const total=vencidas.reduce((n,c)=>n+Number(c.saldo||0),0);
-      html=vencidas.length?'<div class="info-articulo"><strong>Total vencido sin pagar</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>'+:'<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>'+
+      html=(vencidas.length?'<div class="info-articulo"><strong>Total vencido sin pagar</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>':'<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>')+
         vencidas.map(c=>{
           const vencida=c.vencimiento&&c.vencimiento<hoy;
           const titulo=vencida?"⚠️ VENCIDA":c.vencimiento===hoy?"⏰ VENCE HOY":"📅 Pendiente";
