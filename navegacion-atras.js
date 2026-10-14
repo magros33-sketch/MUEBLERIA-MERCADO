@@ -40,9 +40,7 @@
     const resultado = original.apply(this, arguments);
     limpiarAviso();
     if (id === anterior) return resultado;
-    const profundidad = history.state?.profundidad || 0;
-    if (id === 'inicio' && profundidad > 0) history.go(-profundidad);
-    else guardar(estado(id, profundidad + 1), false);
+    guardar(estado(id, 0), true);
     return resultado;
   };
   window.addEventListener('popstate', function (evento) {
