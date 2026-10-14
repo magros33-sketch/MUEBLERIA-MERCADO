@@ -518,6 +518,9 @@ placeholder="Ejemplo: 3500"
 <div class="tarjeta">
 
 <h3>📋 Historial de compras</h3>
+<label>Buscar por proveedor, fecha o número de nota</label>
+<input id="buscarNotaProveedor" type="search" placeholder="Proveedor, fecha o número de operación" oninput="filtrarNotasProveedor()" autocomplete="off">
+
 
 <button onclick="cargarHistorialCompras()">
 🔄 Actualizar historial
@@ -2886,6 +2889,7 @@ async function cargarHistorialCompras(){
         '</div>';
     }).join("");
 
+    filtrarNotasProveedor();
     await cargarDeudasProveedores();
   }catch(error){
     console.error("Error historial compras:",error);
@@ -2893,6 +2897,17 @@ async function cargarHistorialCompras(){
   }
 }
 
+
+function filtrarNotasProveedor(){
+  const campo=document.getElementById("buscarNotaProveedor");
+  const lista=document.getElementById("historialCompras");
+  if(!campo||!lista)return;
+  const normalizar=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+  const termino=normalizar(campo.value);
+  lista.querySelectorAll(".historial").forEach(n=>{
+    n.style.display=normalizar(n.textContent).includes(termino)?"":"none";
+  });
+}
 
 /* ================= VENTAS ================= */
 
