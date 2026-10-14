@@ -2820,8 +2820,8 @@ async function cargarDeudasProveedores(){
       const pendientes=compras.filter(c=>Number(c.saldo||0)>0&&!["cancelada","cancelado"].includes(String(c.estado||"").toLowerCase())).map(c=>{
         const notas=String(c.notas||"");
         const fechaCompra=fechaMX(c.fecha);
-        const vencGuardado=notas.match(/Vence:\\s*(\\d{4}-\\d{2}-\\d{2}|\\d{2}\\/\\d{2}\\/\\d{4})/i);
-        const plazo=notas.match(/cr[eé]dito\\s+a\\s+(7|15|30|60|90)\\s+d[ií]as/i);
+        const vencGuardado=notas.match(/Vence:\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i);
+        const plazo=notas.match(/cr[eé]dito\s+a\s+(7|15|30|60|90)\s+d[ií]as/i);
         let vencimiento="";
         if(vencGuardado){const v=vencGuardado[1];vencimiento=v.includes("/")?v.split("/").reverse().join("-"):v;}
         else if(plazo&&fechaCompra){const d=new Date(fechaCompra+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+Number(plazo[1]));vencimiento=d.toISOString().slice(0,10);}
@@ -2842,9 +2842,9 @@ async function cargarDeudasProveedores(){
             '<div class="dato">Vencimiento: <strong>'+fechaVenc+'</strong>'+plazoTexto+'</div>'+
             '<div class="dato">Nota: '+escaparHTML(String(c.id).slice(0,8))+'</div>'+
             '<div class="dato">Pendiente: <strong>'+dineroAdmin(Number(c.saldo||0))+'</strong></div>'+
-            '<button type="button" onclick="editarCompra(\\''+c.id+'\\')">✏️ Editar compra</button>'+
-            '<button type="button" onclick="registrarPagoProveedor(\\''+c.id+'\\')">💳 Registrar abono</button>'+
-            '<button type="button" onclick="verPagosNotaProveedor(\\''+c.id+'\\')">📜 Ver pagos</button></div>';
+            '<button type="button" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>'+
+            '<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>'+
+            '<button type="button" onclick="verPagosNotaProveedor(\''+c.id+'\')">📜 Ver pagos</button></div>';
         }).join("");
 
     }
