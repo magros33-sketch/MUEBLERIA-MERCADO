@@ -7952,9 +7952,14 @@ function cambiarPinAdministracion(){
       renderVentaItems();
       if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
 
-      await cargarArticulos();
-      await cargarHistorialVentas();
-      await cargarResumenVentasDia();
+      try{
+        await cargarArticulos();
+        await cargarHistorialVentas();
+        await cargarResumenVentasDia();
+      }catch(errorActualizacion){
+        console.error('Venta guardada, pero no se pudo actualizar la pantalla',errorActualizacion);
+        mensaje.innerHTML+='<div class="mensaje-error">⚠️ La venta SÍ quedó registrada. No vuelvas a guardarla. Actualiza la pantalla para ver el historial y el inventario.</div>';
+      }
     }catch(e){
       console.error(e);
       mensaje.innerHTML='<div class="mensaje-error">❌ '+escaparHTML(e.message||String(e))+'</div>';
