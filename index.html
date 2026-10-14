@@ -653,6 +653,7 @@ oninput="actualizarTotalVenta()"
 
 <select id="ventaMetodoPago">
 
+<option value="" selected>Selecciona una forma de pago</option>
 <option value="efectivo">Efectivo</option>
 <option value="tarjeta">Tarjeta</option>
 <option value="transferencia">Transferencia</option>
@@ -7745,7 +7746,12 @@ function cambiarPinAdministracion(){
       return;
     }
 
-    const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+    const metodoArticulo=el("ventaMetodoPago")?.value||"";
+    if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoArticulo)){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Selecciona la forma de pago antes de añadir el artículo.</div>';
+      el("ventaMetodoPago")?.focus();
+      return;
+    }
     const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
     const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
     const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
@@ -7809,7 +7815,12 @@ function cambiarPinAdministracion(){
     const cantidad=Number(el("ventaCantidad")?.value||0);
     const precio=Number(el("ventaPrecio")?.value||0);
     if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
-      const metodoArticulo=el("ventaMetodoPago")?.value||"efectivo";
+      const metodoArticulo=el("ventaMetodoPago")?.value||"";
+      if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoArticulo)){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ Selecciona la forma de pago antes de registrar la venta.</div>';
+        el("ventaMetodoPago")?.focus();
+        return;
+      }
       const existente=ventaItems.find(x=>String(x.articulo_id)===String(a.id)&&String(x.metodo_pago||metodoArticulo)===metodoArticulo);
       const cantidadArticuloEnVenta=ventaItems.filter(x=>String(x.articulo_id)===String(a.id)).reduce((s,x)=>s+Number(x.cantidad||0),0);
       const nuevaCantidad=(existente?existente.cantidad:0)+cantidad;
@@ -7833,6 +7844,11 @@ function cambiarPinAdministracion(){
       el("resultadoVenta").innerHTML="";
       el("infoPrecioVenta").innerHTML="";
       articuloVentaSeleccionado=null;
+    }
+
+    if(ventaItems.some(x=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(x.metodo_pago||"")))){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Hay artículos sin forma de pago. Selecciona una para cada artículo antes de guardar.</div>';
+      return;
     }
 
     if(!ventaItems.length){
