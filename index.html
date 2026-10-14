@@ -1142,6 +1142,7 @@ Cargando artículos vendidos...
 <div id="mensajeRentaAdmin"></div>
 <label>Consultar mes</label><input type="month" id="rentaMes" onchange="cargarRentasAdmin()">
 <button type="button" onclick="cargarRentasAdmin()">📅 Ver pagos del mes</button>
+<div id="rentasTotalMesAdmin" class="precio-venta" style="font-size:1.65rem;font-weight:800;margin:12px 0">$0</div>
 <div id="rentasResumenAdmin">Selecciona un mes para consultar las rentas.</div>
 </div>
 
@@ -9703,6 +9704,8 @@ window.cargarRentasAdmin=async function(){
   if(!r.ok)throw new Error(await r.text());
   const lista=(await r.json()).filter(x=>{const texto=(String(x.categoria||"")+" "+String(x.concepto||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();if(!/\\brentas?\\b/.test(texto))return false;const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
   const suma=lista.reduce((a,x)=>a+Number(x.importe||0),0);
+  const totalVisible=document.getElementById("rentasTotalMesAdmin");
+  if(totalVisible)totalVisible.textContent="$"+suma.toFixed(0)+" MXN";
   const fmt=n=>"$"+Number(n).toFixed(0);
   box.innerHTML='<div class="dato"><strong>Total pagado en '+mes+': '+fmt(suma)+'</strong></div>'+
     (lista.length?lista.map(x=>'<div class="historial">'+escaparHTML(String(x.concepto||"Renta"))+
