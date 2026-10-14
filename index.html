@@ -2827,10 +2827,11 @@ async function cargarDeudasProveedores(){
         else if(plazo&&fechaCompra){const d=new Date(fechaCompra+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+Number(plazo[1]));vencimiento=d.toISOString().slice(0,10);}
         return {...c,fechaCompra,vencimiento,proveedorNombre:mapa[String(c.proveedor_id||c.id_proveedor||"")]||"Proveedor no identificado"};
       });
-      pendientes.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
-      const total=pendientes.reduce((n,c)=>n+Number(c.saldo||0),0);
-      html='<div class="info-articulo"><strong>Deuda total pendiente</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>'+
-        pendientes.map(c=>{
+      const vencidas=pendientes.filter(c=>c.vencimiento&&c.vencimiento<hoy);
+      vencidas.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
+      const total=vencidas.reduce((n,c)=>n+Number(c.saldo||0),0);
+      html=vencidas.length?'<div class="info-articulo"><strong>Total vencido sin pagar</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>'+:'<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>'+
+        vencidas.map(c=>{
           const vencida=c.vencimiento&&c.vencimiento<hoy;
           const titulo=vencida?"⚠️ VENCIDA":c.vencimiento===hoy?"⏰ VENCE HOY":"📅 Pendiente";
           const fechaVenc=c.vencimiento?mostrarFecha(c.vencimiento):"Sin vencimiento registrado";
@@ -9819,7 +9820,7 @@ async function cargarResumenStockProveedores(){
       const totalMes=Array.from(grupoMes.dias.values()).reduce((n,d)=>n+d.tarjetas.length,0);
       const detalleMes=document.createElement("details");
       detalleMes.className="tarjeta historial-compras-mes";
-      detalleMes.open=true;
+      detalleMes.open=false;
       detalleMes.style.cssText="padding:10px;margin:10px 0;border:1px solid #d0ddd5";
       const resumenMes=document.createElement("summary");
       resumenMes.style.cssText="cursor:pointer;font-weight:bold;padding:8px";
@@ -9829,7 +9830,7 @@ async function cargarResumenStockProveedores(){
         const grupoDia=parDia[1];
         const detalleDia=document.createElement("details");
         detalleDia.style.cssText="margin:8px 0;padding:8px;background:#f4f7f5;border-radius:8px";
-        detalleDia.open=true;
+        detalleDia.open=false;
         const resumenDia=document.createElement("summary");
         resumenDia.style.cssText="cursor:pointer;font-weight:600;padding:8px";
         resumenDia.textContent="🗓️ "+grupoDia.etiqueta+" · "+grupoDia.tarjetas.length+" compra(s)";
