@@ -7900,70 +7900,30 @@ function cambiarPinAdministracion(){
     const idVenta=crypto.randomUUID();
 
     try{
-      const rv=await fetch(SUPABASE_URL+"/rest/v1/ventas",{
+      const rv=await fetch(SUPABASE_URL+"/rest/v1/rpc/registrar_venta_atomica",{
         method:"POST",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
+        headers:headersSupabase,
         body:JSON.stringify({
-          id:idVenta,
-          cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
-          fecha:fechaVentaISO,
-          tipo_cliente:tipoCliente,
-          metodo_pago:metodoPagoVenta,
-          total:total,
-          estado:"completada",
-          notas:"Venta registrada desde la aplicacion | Pago por artículo: "+desglosePago
+          p_venta_id:idVenta,
+          p_cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
+          p_fecha:fechaVentaISO,
+          p_tipo_cliente:tipoCliente,
+          p_notas:"Venta registrada desde la aplicacion",
+          p_items:ventaItems.map(x=>({
+            articulo_id:x.articulo_id,
+            cantidad:x.cantidad,
+            precio:x.precio,
+            metodo_pago:x.metodo_pago
+          }))
         })
       });
-
-      if(!rv.ok)throw new Error("No se pudo guardar la venta: "+await rv.text());
-
-      const detalles=ventaItems.map(function(x){
-        return {
-          id:crypto.randomUUID(),
-          venta_id:idVenta,
-          articulo_id:x.articulo_id,
-          cantidad:x.cantidad,
-          precio_unitario:x.precio,
-          subtotal:x.subtotal,
-          metodo_pago:x.metodo_pago||metodoPago
-        };
-      });
-
-      const rd=await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle",{
-        method:"POST",
-        headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify(detalles)
-      });
-
-      if(!rd.ok){
-        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        throw new Error("No se pudo guardar el detalle: "+await rd.text());
+      if(!rv.ok){
+        let errorServidor="No se pudo registrar la venta.";
+        try{const detalle=await rv.json();errorServidor=detalle.message||errorServidor;}catch(_error){}
+        throw new Error(errorServidor);
       }
-
-      const stocksAplicados=[];
-      try{
-        for(const x of ventaItems){
-          const actual=articulos.find(a=>String(a.id)===String(x.articulo_id));
-          const nuevoStock=Number(actual.stock||0)-x.cantidad;
-          const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(x.articulo_id),{
-            method:"PATCH",
-            headers:{...headersSupabase,"Prefer":"return=minimal"},
-            body:JSON.stringify({stock:nuevoStock})
-          });
-          if(!ra.ok)throw new Error("No se pudo actualizar el stock de "+(x.nombre||"")+": "+await ra.text());
-          stocksAplicados.push({id:x.articulo_id,stockAnterior:Number(actual.stock||0)});
-        }
-      }catch(errorStock){
-        for(const s of stocksAplicados){
-          await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(s.id),{
-            method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
-            body:JSON.stringify({stock:s.stockAnterior})
-          });
-        }
-        await fetch(SUPABASE_URL+"/rest/v1/ventas_detalle?venta_id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        await fetch(SUPABASE_URL+"/rest/v1/ventas?id=eq."+encodeURIComponent(idVenta),{method:"DELETE",headers:headersSupabase});
-        throw errorStock;
-      }
+      const ventaConfirmada=await rv.json();
+      if(String(ventaConfirmada.id)!==String(idVenta))throw new Error("La base de datos devolvió una confirmación inesperada. Revisa el historial antes de intentar registrar otra vez.");
 
       if(fechaVentaSeleccionada===fechaVentaHoy){
         const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago:metodoPagoVenta,tipoCliente};
