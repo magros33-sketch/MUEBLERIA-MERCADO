@@ -1043,6 +1043,9 @@ Cancelar
 
 <h2>📊 Reportes</h2>
 
+<button type="button" id="botonVentasGastosReportes" aria-expanded="false" aria-controls="contenidoVentasGastosReportes" onclick="const panel=document.getElementById('contenidoVentasGastosReportes');panel.hidden=!panel.hidden;this.setAttribute('aria-expanded',String(!panel.hidden));this.textContent=panel.hidden?'📋 Mostrar ventas y gastos':'📋 Ocultar ventas y gastos';">📋 Mostrar ventas y gastos</button>
+<div id="contenidoVentasGastosReportes" hidden>
+
 <div class="tarjeta">
 
 <h3>💰 Ventas por día</h3>
@@ -1068,6 +1071,7 @@ Las ventas posteriores a las 20:00 pasan al siguiente día comercial.
 Cargando ventas...
 </div>
 
+</div>
 </div>
 
 
@@ -1432,6 +1436,10 @@ cargarHistorialApartados();
 /* AGREGADO: cargar reportes al abrir Reportes */
 
 if(id==="reportes"){
+const panelVentasGastos=document.getElementById("contenidoVentasGastosReportes");
+const botonVentasGastos=document.getElementById("botonVentasGastosReportes");
+if(panelVentasGastos)panelVentasGastos.hidden=true;
+if(botonVentasGastos){botonVentasGastos.setAttribute("aria-expanded","false");botonVentasGastos.textContent="📋 Mostrar ventas y gastos";}
 cargarReporteVentasDiarias();
 cargarReporteArticulosVendidos();}
 
