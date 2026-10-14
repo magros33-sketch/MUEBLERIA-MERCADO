@@ -6,7 +6,7 @@
   window.__mercadoAtras = true;
   let ultimoAviso = 0;
   let timer;
-  let restaurandoCancelacion = false;
+  let restaurandoPantalla = null;
   const activa = () => document.querySelector('.pantalla.activa')?.id || 'inicio';
   const estado = (pantalla, profundidad, base = false) => ({ [key]: true, pantalla, profundidad, base });
   const guardar = (valor, reemplazar) => history[reemplazar ? 'replaceState' : 'pushState'](valor, '', location.href);
@@ -111,8 +111,9 @@
     const destino = evento.state;
     if (!destino?.[key]) return;
     if (!destino.base) {
-      if (restaurandoCancelacion) {
-        restaurandoCancelacion = false;
+      if (restaurandoPantalla) {
+        guardar(estado(restaurandoPantalla, 0), true);
+        restaurandoPantalla = null;
         return;
       }
       limpiarAviso();
@@ -123,19 +124,21 @@
       const anterior = activa();
       if (!permitirSalida(anterior)) {
         limpiarAviso();
-        restaurandoCancelacion = true;
+        restaurandoPantalla = anterior;
         history.forward();
         return;
       }
       limpiarAviso();
       original('inicio');
-      guardar(estado('inicio', 0), false);
+      restaurandoPantalla = 'inicio';
+      history.forward();
     } else if (ultimoAviso && Date.now() - ultimoAviso < 2000) {
       limpiarAviso();
       // Dejar que el navegador gestione la salida; no intentar cerrar la ventana.
       history.back();
     } else {
-      guardar(estado('inicio', 0), false);
+      restaurandoPantalla = 'inicio';
+      history.forward();
       avisar();
     }
   });
