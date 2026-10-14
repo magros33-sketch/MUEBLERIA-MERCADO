@@ -4628,8 +4628,7 @@ articulo.nombre||"";
 const precio=
 Number(articulo.precio_publico||0);
 
-document.getElementById("apartadoPrecio").value=
-precio.toLocaleString("es-MX",{minimumFractionDigits:0,maximumFractionDigits:0});
+document.getElementById("apartadoPrecio").value=String(precio); // input numérico: sin separadores de miles
 
 document.getElementById("estadoApartadoCodigo").innerHTML=
 `
