@@ -7959,15 +7959,21 @@ function cambiarPinAdministracion(){
         '<br>Desglose: '+escaparHTML(desglosePago)+
         '</div>';
 
-      ventaItems=[];
-      try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
-      clienteVentaSeleccionado=null;
-      el("ventaMetodoPago").value="";
-      el("ventaCliente").value="";
-      el("estadoClienteVenta").innerHTML="";
-      el("resultadoClienteVenta").innerHTML="";
-      renderVentaItems();
-      if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
+      // La venta ya está confirmada: ningún fallo visual debe sugerir que se guarde otra vez.
+      try{
+        ventaItems=[];
+        try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
+        clienteVentaSeleccionado=null;
+        el("ventaMetodoPago").value="";
+        el("ventaCliente").value="";
+        el("estadoClienteVenta").innerHTML="";
+        el("resultadoClienteVenta").innerHTML="";
+        renderVentaItems();
+        if(fechaVentaCampo)fechaVentaCampo.value=fechaMexicoHoyVentas();
+      }catch(errorPantalla){
+        console.error('Venta guardada, fallo al limpiar formulario',errorPantalla);
+        mensaje.innerHTML+='<div class="mensaje-error">⚠️ La venta SÍ quedó registrada. No vuelvas a guardarla. Actualiza la pantalla.</div>';
+      }
 
       try{
         await cargarArticulos();
