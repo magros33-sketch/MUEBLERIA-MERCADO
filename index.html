@@ -263,6 +263,8 @@ background:#fff4d6;
 }
 .fecha-vencimiento{margin:7px 0;}
 .pantalla h2{font-size:28px;font-weight:900;color:#123b2a;border-bottom:3px solid #28784f;padding-bottom:10px}.pantalla h3{font-size:21px;font-weight:850;color:#123b2a;background:#eaf3ed;padding:10px;border-left:5px solid #28784f}.menu button{font-size:18px;font-weight:800}.tarjeta label{font-weight:800}
+.compra-encabezado{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.compra-pagada-etiqueta{display:inline-block;background:#e3f5e9;color:#17652e;border:1px solid #b9dfc6;border-radius:20px;padding:4px 9px;font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap}
 </style>
 
 <meta name="theme-color" content="#123b2a">
@@ -2929,6 +2931,11 @@ async function cargarHistorialCompras(){
       const pid=String(c.proveedor_id||c.id_proveedor||"");
       const nombreProveedor=mapaProveedores[pid]||"Proveedor no identificado";
       const estadoCompra=String(c.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+      const saldoCompra=c.saldo!==null&&c.saldo!==undefined&&c.saldo!==""?Number(c.saldo):NaN;
+      const compraPagada=!["cancelada","cancelado"].includes(estadoCompra)&&(
+        Number.isFinite(saldoCompra)?saldoCompra<=0:
+        Number(c.total)>0&&Number(c.pagado)>=Number(c.total)
+      );
       let botones="";
       if(estadoCompra==="cancelada"||estadoCompra==="cancelado"){
         botones='<div class="ayuda">Compra cancelada. El producto ya fue quitado del stock.</div>';
@@ -2941,7 +2948,8 @@ async function cargarHistorialCompras(){
         botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
       }
       return '<div class="historial">'+
-        '<strong>🛒 Compra</strong>'+
+        '<div class="compra-encabezado"><strong>🛒 Compra</strong>'+
+        (compraPagada?'<span class="compra-pagada-etiqueta">✓ PAGADO</span>':'')+'</div>'+
         '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
         '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
         '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
