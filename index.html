@@ -7723,6 +7723,7 @@ function cambiarPinAdministracion(){
             '<option value="transferencia"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="transferencia"?" selected":"")+'>Transferencia</option>'+
             '<option value="aplazo"'+((x.metodo_pago||el("ventaMetodoPago")?.value||"efectivo")==="aplazo"?" selected":"")+'>Aplazo</option>'+
           '</select>'+
+          '<button type="button" onclick="editarArticuloVenta('+i+')">✏️ Editar</button>'+ 
           '<button type="button" class="eliminar" onclick="quitarArticuloVenta('+i+')">🗑️ Quitar</button>'+
           '</div>';
       }).join("");
@@ -7747,6 +7748,28 @@ function cambiarPinAdministracion(){
     if(!ventaItems[i])return;
     if(!["efectivo","tarjeta","transferencia","aplazo"].includes(String(metodo)))return;
     ventaItems[i].metodo_pago=String(metodo);
+    renderVentaItems();
+  };
+
+  window.editarArticuloVenta=function(i){
+    const x=ventaItems[i];
+    if(!x)return;
+    const cantidadTexto=prompt("Cantidad para "+x.nombre+":",String(x.cantidad));
+    if(cantidadTexto===null)return;
+    const cantidad=Number(cantidadTexto);
+    if(!Number.isInteger(cantidad)||cantidad<1){alert("La cantidad debe ser un entero mayor que cero.");return;}
+    const precioTexto=prompt("Precio unitario para "+x.nombre+":",String(x.precio));
+    if(precioTexto===null)return;
+    const precio=Number(precioTexto);
+    if(precioTexto.trim()===""||!Number.isFinite(precio)||precio<0){alert("Introduce un precio válido.");return;}
+    const articulo=(typeof articulos!=="undefined"&&Array.isArray(articulos))?articulos.find(a=>String(a.id)===String(x.articulo_id)):null;
+    if(articulo){
+      const otras=ventaItems.reduce((n,item,j)=>n+(j!==i&&String(item.articulo_id)===String(x.articulo_id)?Number(item.cantidad||0):0),0);
+      if(otras+cantidad>Number(articulo.stock||0)){alert("Stock insuficiente. Disponible: "+articulo.stock);return;}
+    }
+    x.cantidad=cantidad;
+    x.precio=precio;
+    x.subtotal=cantidad*precio;
     renderVentaItems();
   };
 
