@@ -7932,7 +7932,8 @@ function cambiarPinAdministracion(){
 
       if(fechaVentaSeleccionada===fechaVentaHoy){
         const registroSesion={id:idVenta.substring(0,8),fecha:fechaVentaISO,hora:new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit'}).format(new Date()),total,articulos:ventaItems.length,metodoPago:metodoPagoVenta,tipoCliente};
-        registrarVentaEnSesion(registroSesion);
+        try{registrarVentaEnSesion(registroSesion)}
+        catch(errorSesion){console.warn('Venta guardada; no se pudo actualizar el panel local',errorSesion)}
       }
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
         'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
