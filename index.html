@@ -2811,8 +2811,9 @@ async function cargarDeudasProveedores(){
     const compras=await rc.json(), proveedores=rp.ok?await rp.json():[], mapa={};
     proveedores.forEach(p=>mapa[String(p.id)]=p.nombre||"Sin nombre");
     let html="";
+    let vencidas=[];
     if(!compras.length){
-      html='<div class="tarjeta">✅ No hay deudas pendientes con proveedores.</div>';
+      html='<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>';
     }else{
       const fechaMX=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?"":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);};
       const mostrarFecha=v=>v?v.split("-").reverse().join("/"):"Sin fecha";
@@ -2827,7 +2828,7 @@ async function cargarDeudasProveedores(){
         else if(plazo&&fechaCompra){const d=new Date(fechaCompra+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+Number(plazo[1]));vencimiento=d.toISOString().slice(0,10);}
         return {...c,fechaCompra,vencimiento,proveedorNombre:mapa[String(c.proveedor_id||c.id_proveedor||"")]||"Proveedor no identificado"};
       });
-      const vencidas=pendientes.filter(c=>c.vencimiento&&c.vencimiento<hoy);
+      vencidas=pendientes.filter(c=>c.vencimiento&&c.vencimiento<hoy);
       vencidas.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
       const total=vencidas.reduce((n,c)=>n+Number(c.saldo||0),0);
       html=(vencidas.length?'<div class="info-articulo"><strong>Total vencido sin pagar</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>':'<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>')+
