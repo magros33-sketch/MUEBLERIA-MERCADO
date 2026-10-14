@@ -7851,6 +7851,11 @@ function cambiarPinAdministracion(){
       articuloVentaSeleccionado=null;
     }
 
+    if(ventaItems.some(x=>!Number.isSafeInteger(Number(x.cantidad))||Number(x.cantidad)<1||!Number.isSafeInteger(Number(x.precio))||Number(x.precio)<0||!Number.isSafeInteger(Number(x.subtotal))||Number(x.subtotal)!==Number(x.cantidad)*Number(x.precio))){
+      mensaje.innerHTML='<div class="mensaje-error">⚠️ Hay artículos con cantidades, precios o subtotales incorrectos. Revisa el ticket antes de guardar.</div>';
+      return;
+    }
+
     if(ventaItems.some(x=>!["efectivo","tarjeta","transferencia","aplazo"].includes(String(x.metodo_pago||"")))){
       mensaje.innerHTML='<div class="mensaje-error">⚠️ Hay artículos sin forma de pago. Selecciona una para cada artículo antes de guardar.</div>';
       return;
