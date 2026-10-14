@@ -721,6 +721,7 @@ Las ventas de hoy aparecen directamente. Las ventas antiguas quedan ocultas y so
 <div class="tarjeta">
 
 <h3>➕ Nuevo apartado</h3>
+<button type="button" class="secundario" onclick="limpiarFormularioApartado()">🔄 Limpiar y crear otro apartado</button>
 
 <div class="ayuda">
 Al crear el apartado, el stock se descuenta inmediatamente.
@@ -8751,6 +8752,7 @@ async function registrarPagoProveedor(compraId){
       if(document.getElementById("apartadoNotas"))document.getElementById("apartadoNotas").value="";
       articuloApartadoSeleccionado=null;
       clienteApartadoSeleccionado=null;
+      limpiarFormularioApartado();
       await cargarArticulos();
       await cargarHistorialApartados();
       await cargarResumenVentasDia();
@@ -8912,6 +8914,17 @@ async function registrarPagoProveedor(compraId){
     }
   };
 
+  window.limpiarFormularioApartado=function(){
+    const campos={apartadoCliente:"",apartadoCodigo:"",apartadoNombre:"",apartadoCantidad:"1",apartadoPrecio:"",apartadoAnticipo:"0",apartadoNotas:"",apartadoFecha:hoyMexico(),apartadoFechaAnticipo:hoyMexico()};
+    for(const [id,valor] of Object.entries(campos)){const e=document.getElementById(id);if(e)e.value=valor;}
+    clienteApartadoSeleccionado=null;
+    articuloApartadoSeleccionado=null;
+    for(const id of ["estadoClienteApartado","resultadoClienteApartado","estadoApartadoCodigo","estadoApartadoNombre","resultadoApartado","infoPrecioApartado","mensajeApartado"]){
+      const e=document.getElementById(id);if(e)e.innerHTML="";
+    }
+    if(typeof actualizarTotalApartado==="function")actualizarTotalApartado();
+  };
+
   window.cancelarApartado=async function(id){
     if(!confirm("¿Seguro que quieres cancelar este apartado?\n\nEl artículo regresará al stock."))return;
     try{
@@ -8949,28 +8962,7 @@ async function registrarPagoProveedor(compraId){
         throw new Error("No se pudo marcar el apartado como cancelado: "+await rc.text());
       }
 
-      // Reiniciar solamente el formulario de nuevo apartado; no alterar registros ni stock.
-      for(const [id,valor] of Object.entries({
-        apartadoCliente:"",apartadoCodigo:"",apartadoNombre:"",
-        apartadoCantidad:"1",apartadoPrecio:"",apartadoAnticipo:"0",
-        apartadoNotas:""
-      })){
-        const campo=document.getElementById(id);
-        if(campo)campo.value=valor;
-      }
-      clienteApartadoSeleccionado=null;
-      articuloApartadoSeleccionado=null;
-      for(const id of ["estadoApartadoCodigo","estadoApartadoNombre","mensajeApartado"]){
-        const nodo=document.getElementById(id);
-        if(nodo)nodo.innerHTML="";
-      }
-      for(const id of ["apartadoFecha","apartadoFechaAnticipo"]){
-        const campo=document.getElementById(id);
-        if(campo)campo.value=hoyMexico();
-      }
-      for(const id of ["apartadoCantidad","apartadoAnticipo"]){
-        document.getElementById(id)?.dispatchEvent(new Event("input",{bubbles:true}));
-      }
+      limpiarFormularioApartado();
       alert("✅ Apartado cancelado. El stock fue devuelto. Formulario listo para un nuevo apartado.");
       await cargarArticulos();
       await cargarHistorialApartados();
