@@ -9699,9 +9699,9 @@ window.cargarRentasAdmin=async function(){
  if(!box||!mes)return;
  box.textContent="Cargando rentas...";
  try{
-  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=fecha,concepto,categoria,importe&categoria=eq.renta&order=fecha.desc&limit=5000",{headers:headersSupabase,cache:"no-store"});
+  const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=fecha,concepto,categoria,importe&order=fecha.desc&limit=5000",{headers:headersSupabase,cache:"no-store"});
   if(!r.ok)throw new Error(await r.text());
-  const lista=(await r.json()).filter(x=>{const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
+  const lista=(await r.json()).filter(x=>{const texto=(String(x.categoria||"")+" "+String(x.concepto||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();if(!/\\brentas?\\b/.test(texto))return false;const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
   const suma=lista.reduce((a,x)=>a+Number(x.importe||0),0);
   const fmt=n=>"$"+Number(n).toFixed(0);
   box.innerHTML='<div class="dato"><strong>Total pagado en '+mes+': '+fmt(suma)+'</strong></div>'+
