@@ -7284,6 +7284,7 @@ async function entrarAdministracion(){
     await cargarResumenAdministracion();
     await cargarDeudasProveedores();
     if(typeof cargarCostoTotalInventario==="function") await cargarCostoTotalInventario();
+    if(typeof window.cargarRentasAdmin==="function") await window.cargarRentasAdmin();
     document.getElementById("adminLogin").style.display = "none";
     document.getElementById("adminPanel").style.display = "block";
     if(mensaje) mensaje.innerHTML = "";
@@ -9702,7 +9703,7 @@ window.cargarRentasAdmin=async function(){
  try{
   const r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=fecha,concepto,categoria,importe&order=fecha.desc&limit=5000",{headers:headersSupabase,cache:"no-store"});
   if(!r.ok)throw new Error(await r.text());
-  const lista=(await r.json()).filter(x=>{const texto=(String(x.categoria||"")+" "+String(x.concepto||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();if(!/\\brentas?\\b/.test(texto))return false;const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
+  const lista=(await r.json()).filter(x=>{const texto=(String(x.categoria||"")+" "+String(x.concepto||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();if(!/\brentas?\b/.test(texto))return false;const f=new Date(x.fecha);return !isNaN(f)&&new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit"}).format(f)===mes;});
   const suma=lista.reduce((a,x)=>a+Number(x.importe||0),0);
   const totalVisible=document.getElementById("rentasTotalMesAdmin");
   if(totalVisible)totalVisible.textContent="$"+suma.toFixed(0)+" MXN";
