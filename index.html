@@ -1596,11 +1596,11 @@ Proveedor: ${escaparHTML((proveedores.find(function(p){return String(p.id)===Str
 </div>
 
 <div class="dato">
-Costo: $${Number(a.costo||0).toFixed(2)}
+Costo: $${Number(a.costo||0).toFixed(0)}
 </div>
 
 <div class="dato">
-Precio publico: $${Number(a.precio_publico||0).toFixed(2)}
+Precio publico: $${Number(a.precio_publico||0).toFixed(0)}
 </div>
 
 <div class="dato">
@@ -2225,7 +2225,7 @@ Stock actual: ${Number(a.stock||0)}
 
 <br>
 
-Costo: $${Number(a.costo||0).toFixed(2)}
+Costo: $${Number(a.costo||0).toFixed(0)}
 
 </button>
 `;
@@ -2300,7 +2300,7 @@ ${Number(articulo.stock||0)}
 <br>
 
 Costo actual:
-$${Number(articulo.costo||0).toFixed(2)}
+$${Number(articulo.costo||0).toFixed(0)}
 
 </div>
 `;
@@ -2653,12 +2653,12 @@ ${nuevoStock}
 <br>
 
 Costo:
-$${costo.toFixed(2)}
+$${costo.toFixed(0)}
 
 <br>
 
 Total:
-$${subtotal.toFixed(2)}
+$${subtotal.toFixed(0)}
 
 </div>
 `;
@@ -2734,7 +2734,7 @@ try{
     const costoAnterior=Number(d.costo_unitario||0);
     const nuevaCantidad=Number(prompt("Artículo: "+nombre+"\\nCantidad recibida:",String(cantidadAnterior)));
     if(!Number.isInteger(nuevaCantidad)||nuevaCantidad<1){alert("Cantidad no válida para "+nombre+".");return;}
-    const nuevoCosto=Number(prompt("Artículo: "+nombre+"\\nCosto por unidad:",costoAnterior.toFixed(2)));
+    const nuevoCosto=Number(prompt("Artículo: "+nombre+"\\nCosto por unidad:",costoAnterior.toFixed(0)));
     if(!Number.isFinite(nuevoCosto)||nuevoCosto<0){alert("Costo no válido para "+nombre+".");return;}
     const diferencia=nuevaCantidad-cantidadAnterior;
     if(diferencia<0 && Number(articulo.stock||0)<Math.abs(diferencia)){
@@ -2748,13 +2748,13 @@ try{
 
   const pagadoActual=Number(compra.pagado||0);
   if(totalNuevo<pagadoActual){
-    alert("No se puede dejar la compra por debajo de lo ya pagado.\\n\\nTotal nuevo: $"+totalNuevo.toFixed(2)+"\\nPagado: $"+pagadoActual.toFixed(2));
+    alert("No se puede dejar la compra por debajo de lo ya pagado.\\n\\nTotal nuevo: $"+totalNuevo.toFixed(0)+"\\nPagado: $"+pagadoActual.toFixed(0));
     return;
   }
   const nuevoSaldo=Math.max(0,totalNuevo-pagadoActual);
   const nuevoMetodo=pagadoActual>=totalNuevo?"credito_pagado":(String(compra.metodo_pago||"contado").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()==="credito"?"credito":"contado");
 
-  if(!confirm("¿Guardar los cambios de esta compra?\\n\\nTotal anterior: $"+Number(compra.total||0).toFixed(2)+"\\nTotal nuevo: $"+totalNuevo.toFixed(2)+"\\nSaldo: $"+nuevoSaldo.toFixed(2)))return;
+  if(!confirm("¿Guardar los cambios de esta compra?\\n\\nTotal anterior: $"+Number(compra.total||0).toFixed(0)+"\\nTotal nuevo: $"+totalNuevo.toFixed(0)+"\\nSaldo: $"+nuevoSaldo.toFixed(0)))return;
 
   const aplicados=[];
   try{
@@ -2877,11 +2877,11 @@ async function cargarHistorialCompras(){
         '<div class="dato">🚚 Proveedor: <strong>'+escaparHTML(nombreProveedor)+'</strong></div>'+
         '<div class="fecha-operacion">📅 '+formatearFecha(c.fecha)+'</div>'+
         '<div class="operacion-id">Operación: '+escaparHTML(operacion)+'</div>'+
-        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Total: <strong>$'+Number(c.total||0).toFixed(0)+'</strong></div>'+
         '<div class="dato">Estado: '+escaparHTML(c.estado||"")+'</div>'+
         '<div class="dato">Forma de pago: <strong>'+escaparHTML(c.metodo_pago==="credito_pagado"?"Crédito — pagado":(c.metodo_pago||"contado"))+'</strong></div>'+
-        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(2)+'</strong></div>'+
-        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(2)+'</strong></div>'+
+        '<div class="dato">Pagado: <strong>$'+Number(c.pagado||0).toFixed(0)+'</strong></div>'+
+        '<div class="dato">Saldo pendiente: <strong>$'+Number(c.saldo||0).toFixed(0)+'</strong></div>'+
         '<div class="separador"></div>'+botones+
         '</div>';
     }).join("");
@@ -3289,7 +3289,7 @@ ${Number(a.stock||0)}
 <br>
 
 Precio publico:
-$${Number(a.precio_publico||0).toFixed(2)}
+$${Number(a.precio_publico||0).toFixed(0)}
 
 </button>
 `;
@@ -3327,7 +3327,7 @@ const precio=
 Number(articulo.precio_publico||0);
 
 document.getElementById("ventaPrecio").value=
-precio.toFixed(2);
+precio.toFixed(0);
 
 document.getElementById("estadoVentaCodigo").innerHTML=
 `
@@ -3367,7 +3367,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 </div>
 `;
@@ -3395,7 +3395,7 @@ Number(document.getElementById("ventaPrecio").value||0);
 const total=cantidad*precio;
 
 document.getElementById("totalVenta").innerHTML=
-"$"+total.toFixed(2);
+"$"+total.toFixed(0);
 
 }
 
@@ -3737,12 +3737,12 @@ ${cantidad}
 <br>
 
 Precio por unidad:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 <br>
 
 Total:
-<strong>$${total.toFixed(2)}</strong>
+<strong>$${total.toFixed(0)}</strong>
 
 <br>
 
@@ -3881,14 +3881,14 @@ const totalGastos=gh.reduce((s,g)=>s+Number(g.importe||0),0);
 const neto=total-totalGastos;
 
 contenedor.innerHTML=
-'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>📋 Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>📋 Apartados registrados del día (valor total, no cobrado)</strong><div class="precio-venta">$'+totalApartadosDia.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🪑 Anticipos de apartados (incluidos en su forma de pago)</strong><div class="precio-venta">$'+totalAnticiposApartados.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(2)+'</div></div>'+
-'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(2)+'</div></div>'+
+'<div class="info-articulo"><strong>💵 Contado</strong><div class="precio-venta">$'+contado.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>💳 Tarjeta</strong><div class="precio-venta">$'+tarjeta.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🏦 Transferencia</strong><div class="precio-venta">$'+transferencia.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Aplazo</strong><div class="precio-venta">$'+aplazo.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>📋 Apartados registrados del día (valor total, no cobrado)</strong><div class="precio-venta">$'+totalApartadosDia.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🪑 Anticipos de apartados (incluidos en su forma de pago)</strong><div class="precio-venta">$'+totalAnticiposApartados.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>💸 Gastos del día</strong><div class="precio-venta">-$'+totalGastos.toFixed(0)+'</div></div>'+
+'<div class="info-articulo"><strong>🧾 Neto del día después de gastos</strong><div class="precio-venta">$'+neto.toFixed(0)+'</div></div>'+
 '<div class="ayuda">Importes del día en hora de México. Los gastos se descuentan del total cobrado para obtener el neto del día.</div>';
 }catch(error){
 console.error("Error resumen ventas del día:",error);
@@ -4099,7 +4099,7 @@ return `
 <strong>💵 Dinero recibido por apartado</strong>
 <div class="fecha-operacion">📅 ${formatearFecha(p.fecha)}</div>
 <div class="dato">Cliente: <strong>${escaparHTML(nombreCliente)}</strong></div>
-<div class="dato">Importe recibido: <strong>$${Number(p.importe||0).toFixed(2)}</strong></div>
+<div class="dato">Importe recibido: <strong>$${Number(p.importe||0).toFixed(0)}</strong></div>
 <div class="dato">Método: ${escaparHTML(p.metodo_pago||"")}</div>
 ${p.notas?'<div class="dato">Detalle: '+escaparHTML(p.notas)+'</div>':""}
 </div>`;
@@ -4109,15 +4109,15 @@ return `
 <div class="tarjeta">
 <h3>📅 ${escaparHTML(grupo)}</h3>
 <div class="dato">
-<div class="dato">🛍️ Ventas cobradas: <strong>$${totalGrupo.toFixed(2)}</strong></div>
-<div class="dato">💵 Dinero recibido por apartados: <strong>$${totalPagosApartadosGrupo.toFixed(2)}</strong></div>
-<div class="dato">💰 Total de dinero ingresado: <strong>$${totalIngresadoGrupo.toFixed(2)}</strong></div>
+<div class="dato">🛍️ Ventas cobradas: <strong>$${totalGrupo.toFixed(0)}</strong></div>
+<div class="dato">💵 Dinero recibido por apartados: <strong>$${totalPagosApartadosGrupo.toFixed(0)}</strong></div>
+<div class="dato">💰 Total de dinero ingresado: <strong>$${totalIngresadoGrupo.toFixed(0)}</strong></div>
 </div>
 <div class="dato">
-💸 Gastos: <strong>-$${totalGastosGrupo.toFixed(2)}</strong>
+💸 Gastos: <strong>-$${totalGastosGrupo.toFixed(0)}</strong>
 </div>
 <div class="dato">
-🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(2)}</strong>
+🧾 Neto después de gastos: <strong>${netoGrupo.toFixed(0)}</strong>
 </div>
 </div>
 
@@ -4560,7 +4560,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${Number(a.precio_publico||0).toFixed(2)}
+$${Number(a.precio_publico||0).toFixed(0)}
 
 </button>
 `;
@@ -4601,7 +4601,7 @@ const precio=
 Number(articulo.precio_publico||0);
 
 document.getElementById("apartadoPrecio").value=
-precio.toFixed(2);
+precio.toFixed(0);
 
 document.getElementById("estadoApartadoCodigo").innerHTML=
 `
@@ -4641,7 +4641,7 @@ Stock disponible:
 <br>
 
 Precio publico:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 </div>
 `;
@@ -4688,10 +4688,10 @@ saldo=0;
 }
 
 document.getElementById("totalApartado").innerHTML=
-"$"+total.toFixed(2);
+"$"+total.toFixed(0);
 
 document.getElementById("saldoApartado").innerHTML=
-"$"+saldo.toFixed(2);
+"$"+saldo.toFixed(0);
 
 }
 
@@ -5180,22 +5180,22 @@ ${cantidad}
 <br>
 
 Precio por unidad:
-$${precio.toFixed(2)}
+$${precio.toFixed(0)}
 
 <br>
 
 Total:
-<strong>$${total.toFixed(2)}</strong>
+<strong>$${total.toFixed(0)}</strong>
 
 <br>
 
 Anticipo:
-<strong>$${anticipo.toFixed(2)}</strong>
+<strong>$${anticipo.toFixed(0)}</strong>
 
 <br>
 
 Saldo:
-<strong>$${saldo.toFixed(2)}</strong>
+<strong>$${saldo.toFixed(0)}</strong>
 
 <br>
 
@@ -5466,27 +5466,27 @@ ${Number(a.cantidad||0)}
 
 <div class="dato">
 Precio por unidad:
-$${Number(a.precio_unitario||0).toFixed(2)}
+$${Number(a.precio_unitario||0).toFixed(0)}
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Importe original del apartado (cancelado, no contabiliza):":"Total:"}
 <strong>
-${Number(a.total||0).toFixed(2)}
+${Number(a.total||0).toFixed(0)}
 </strong>
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Anticipos históricos (no cuentan como ingreso):":"Pagado:"}
 <strong>
-${Number(a.pagado||0).toFixed(2)}
+${Number(a.pagado||0).toFixed(0)}
 </strong>
 </div>
 
 <div class="dato">
 ${(estado==="cancelado"||estado==="cancelada")?"Saldo original al cancelar:":"Saldo:"}
 <strong>
-${Number(a.saldo||0).toFixed(2)}
+${Number(a.saldo||0).toFixed(0)}
 </strong>
 </div>
 
@@ -5497,7 +5497,7 @@ ${escaparHTML(a.metodo_pago||"")}
 
 <div class="dato">
 💳 Adelantos acumulados:
-<strong>${Number(a.pagado||0).toFixed(2)}</strong>
+<strong>${Number(a.pagado||0).toFixed(0)}</strong>
 </div>
 
 <div class="dato">
@@ -5556,9 +5556,9 @@ async function mostrarHistorialAbonosApartado(id){
     let total=0;
     const lineas=pagos.map(function(p,i){
       const importe=Number(p.importe||0); total+=importe;
-      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(2)+" — "+(p.metodo_pago||"Sin método");
+      return (i+1)+". "+formatearFecha(p.fecha)+" — $"+importe.toFixed(0)+" — "+(p.metodo_pago||"Sin método");
     });
-    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(2));
+    alert("📜 HISTORIAL DE ADELANTOS\n\n"+lineas.join("\n")+"\n\nTOTAL ACUMULADO: $"+total.toFixed(0));
   }catch(e){
     console.error("Error consultando historial de adelantos:",e);
     alert("❌ No se pudo consultar el historial de adelantos.\n\n"+(e.message||String(e)));
@@ -5595,7 +5595,7 @@ async function registrarAbonoApartado(id){
     if(!rp.ok)throw new Error("No se pudo guardar el adelanto: "+await rp.text());
     const ru=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,estado:nuevoEstado})});
     if(!ru.ok)throw new Error("No se pudo actualizar el saldo del apartado: "+await ru.text());
-    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(2)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(2));
+    alert("Adelanto registrado.\n\nFecha: "+fecha+"\nImporte: $"+importe.toFixed(0)+"\nNuevo saldo: $"+nuevoSaldo.toFixed(0));
     await cargarHistorialApartados();
     await cargarResumenVentasDia();
   }catch(e){
@@ -7361,13 +7361,13 @@ contenedor.innerHTML='<div class="tarjeta">No hay gastos registrados para este d
 return;
 }
 const total=filtrados.reduce((s,g)=>s+Number(g.importe||0),0);
-contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(2)+'</div></div>'+
+contenedor.innerHTML='<div class="info-articulo"><strong>💸 Total de gastos del día</strong><div class="precio-venta">$'+total.toFixed(0)+'</div></div>'+
 filtrados.map(function(g){
 return '<div class="historial">'+
 '<strong>💸 '+escaparHTML(g.concepto||"Sin concepto")+'</strong>'+
 '<div class="fecha-operacion">📅 '+formatearFecha(g.fecha)+'</div>'+
 '<div class="dato">Categoría: '+escaparHTML(g.categoria||"otros")+'</div>'+
-'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(2)+'</strong></div>'+
+'<div class="dato">Importe: <strong>$'+Number(g.importe||0).toFixed(0)+'</strong></div>'+
 (g.notas?'<div class="dato">📝 '+escaparHTML(g.notas)+'</div>':"")+
 '<div class="separador"></div>'+
 '<button class="eliminar" onclick="eliminarGasto(\''+g.id+'\')">🗑️ Eliminar gasto</button>'+
@@ -7549,7 +7549,7 @@ async function cargarResumenAdministracion(){
       <div class="info-articulo"><strong>📅 Periodo: ${escaparHTML(etiqueta)}</strong></div>
       <div class="info-articulo"><strong>💵 Ventas registradas</strong><div class="precio-venta">${dineroAdmin(totalVentasCobradas)}</div></div>
       <div class="info-articulo"><strong>📦 Costo de los artículos vendidos</strong><div class="precio-venta">${dineroAdmin(costoVentas)}</div></div>
-      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(2)}%</strong> de las ventas cobradas</div></div>
+      <div class="info-articulo"><strong>💰 Ganancia sobre las ventas registradas</strong><div class="precio-venta">${dineroAdmin(gananciaVentas)}</div><div class="dato"><strong>${porcentajeGanancia.toFixed(0)}%</strong> de las ventas cobradas</div></div>
       <div class="info-articulo"><strong>🛒 Compras</strong><div class="precio-venta">${dineroAdmin(totalCompras)}</div></div>
       <div class="info-articulo"><strong>💸 Gastos</strong><div class="precio-venta">${dineroAdmin(totalGastos)}</div></div>
       <div class="info-articulo"><strong>📊 Resultado después de gastos</strong><div class="precio-venta">${dineroAdmin(resultado)}</div></div>
@@ -8388,7 +8388,7 @@ async function registrarPagoProveedor(compraId){
     if(!rp.ok)throw new Error("No se pudo registrar el abono: "+await rp.text());
     const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,metodo_pago:nuevoSaldo>0?"credito":"credito_pagado"})});
     if(!ru.ok)throw new Error("No se pudo actualizar la deuda: "+await ru.text());
-    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(2));
+    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(0));
     await cargarHistorialCompras();
     // Actualizar explícitamente todas las vistas de deuda tras registrar el abono.
     await cargarDeudasProveedores();
@@ -8465,7 +8465,7 @@ async function registrarPagoProveedor(compraId){
   }
 
   function dinero(n){
-    return "$"+Number(n||0).toFixed(2);
+    return "$"+Number(n||0).toFixed(0);
   }
 
   window.cargarReporteVentasDiarias=async function(){
@@ -8617,7 +8617,7 @@ async function registrarPagoProveedor(compraId){
       timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"
     }).format(new Date());
   }
-  function dinero(n){return "$"+Number(n||0).toFixed(2);}
+  function dinero(n){return "$"+Number(n||0).toFixed(0);}
   function estadoNormal(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();}
 
   /*
@@ -9110,8 +9110,8 @@ async function cargarResumenStockProveedores(){
         'Artículo: <strong>'+escaparHTML(articulo.nombre||"")+'</strong><br>'+
         'Cantidad: <strong>'+cantidad+'</strong><br>'+
         'Nuevo stock: <strong>'+nuevoStock+'</strong><br>'+
-        'Importe agregado: <strong>'+subtotal.toFixed(2)+'</strong><br>'+
-        'Total de la compra: <strong>'+totalFinal.toFixed(2)+'</strong></div>';
+        'Importe agregado: <strong>'+subtotal.toFixed(0)+'</strong><br>'+
+        'Total de la compra: <strong>'+totalFinal.toFixed(0)+'</strong></div>';
 
       articuloCompraSeleccionado=null;
       if(document.getElementById("compraCodigo"))document.getElementById("compraCodigo").value="";
@@ -9279,7 +9279,7 @@ async function cargarResumenStockProveedores(){
       const totalGastos=gastos.reduce((s,x)=>s+Number(x.importe||0),0);
       const totalCompras=compras.reduce((s,x)=>s+Number(x.total||0),0);
       const resultado=totalVentas-totalGastos-totalCompras;
-      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(2)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(2)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(2)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(2)+"</strong></div></div>";
+      box.innerHTML="<div class='info-articulo'><strong>📅 "+r.etiqueta+"</strong><div class='dato'>💰 Ventas: <strong>$"+totalVentas.toFixed(0)+"</strong></div><div class='dato'>🛒 Compras: <strong>$"+totalCompras.toFixed(0)+"</strong></div><div class='dato'>💸 Gastos: <strong>$"+totalGastos.toFixed(0)+"</strong></div><div class='dato'>📊 Resultado: <strong>$"+resultado.toFixed(0)+"</strong></div></div>";
     }catch(e){box.innerHTML="<div class='mensaje-error'>❌ No se pudo cargar el resumen.<br><br>"+escaparHTML(e.message||String(e))+"</div>";}
   }
   window.cargarResumenAdministracion=async function(){
@@ -9461,7 +9461,7 @@ async function cargarResumenStockProveedores(){
 (function(){
   let compraItems=[];
   const $=id=>document.getElementById(id);
-  const money=n=>'$'+Number(n||0).toFixed(2);
+  const money=n=>'$'+Number(n||0).toFixed(0);
   function hoy(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
   function fechaVencimiento(fecha,dias){const d=new Date(fecha+'T12:00:00-06:00');d.setDate(d.getDate()+Number(dias||0));return new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
   function render(){
@@ -9570,7 +9570,7 @@ async function cargarResumenStockProveedores(){
 (function(){
   const esc=(v)=>typeof escaparHTML==='function'?escaparHTML(String(v??'')):String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const el=(id)=>document.getElementById(id);
-  const money=(n)=>'$'+Number(n||0).toFixed(2);
+  const money=(n)=>'$'+Number(n||0).toFixed(0);
   window.compraItems=Array.isArray(window.compraItems)?window.compraItems:[];
   window.articuloCompraSeleccionado=window.articuloCompraSeleccionado||null;
   const CLAVE_BORRADOR_COMPRA='muebleria_compra_borrador_v1';
