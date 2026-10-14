@@ -7620,7 +7620,7 @@ function cambiarPinAdministracion(){
       localStorage.setItem(CLAVE_BORRADOR_VENTA,JSON.stringify({
         items:ventaItems,
         tipoCliente:el('ventaTipoCliente')?.value||'publico_general',
-        metodoPago:el('ventaMetodoPago')?.value||'efectivo',
+        metodoPago:el('ventaMetodoPago')?.value||'',
         cliente:el('ventaCliente')?.value||'',
         cantidad:el('ventaCantidad')?.value||'1',
         precio:el('ventaPrecio')?.value||'',
