@@ -7742,8 +7742,8 @@ function cambiarPinAdministracion(){
       mensaje.innerHTML='<div class="mensaje-error">❌ Indica una cantidad entera mayor que 0.</div>';
       return;
     }
-    if(!Number.isFinite(precio)||precio<0){
-      mensaje.innerHTML='<div class="mensaje-error">❌ El precio no puede ser negativo.</div>';
+    if(!Number.isSafeInteger(precio)||precio<0){
+      mensaje.innerHTML='<div class="mensaje-error">❌ Escribe el precio en pesos completos, sin centavos.</div>';
       return;
     }
 
@@ -7815,7 +7815,11 @@ function cambiarPinAdministracion(){
     const a=articuloVentaSeleccionado;
     const cantidad=Number(el("ventaCantidad")?.value||0);
     const precio=Number(el("ventaPrecio")?.value||0);
-    if(a && cantidad>0 && Number.isFinite(precio) && precio>=0){
+    if(a && cantidad>0){
+      if(!Number.isSafeInteger(cantidad)||!Number.isSafeInteger(precio)||precio<0){
+        mensaje.innerHTML='<div class="mensaje-error">⚠️ Revisa la cantidad y el precio: deben ser números enteros, sin centavos.</div>';
+        return;
+      }
       const metodoArticulo=el("ventaMetodoPago")?.value||"";
       if(!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoArticulo)){
         mensaje.innerHTML='<div class="mensaje-error">⚠️ Selecciona la forma de pago antes de registrar la venta.</div>';
