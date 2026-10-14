@@ -9795,6 +9795,7 @@ async function cargarResumenStockProveedores(){
       const totalMes=Array.from(grupoMes.dias.values()).reduce((n,d)=>n+d.tarjetas.length,0);
       const detalleMes=document.createElement("details");
       detalleMes.className="tarjeta historial-compras-mes";
+      detalleMes.open=true;
       detalleMes.style.cssText="padding:10px;margin:10px 0;border:1px solid #d0ddd5";
       const resumenMes=document.createElement("summary");
       resumenMes.style.cssText="cursor:pointer;font-weight:bold;padding:8px";
@@ -9804,6 +9805,7 @@ async function cargarResumenStockProveedores(){
         const grupoDia=parDia[1];
         const detalleDia=document.createElement("details");
         detalleDia.style.cssText="margin:8px 0;padding:8px;background:#f4f7f5;border-radius:8px";
+        detalleDia.open=true;
         const resumenDia=document.createElement("summary");
         resumenDia.style.cssText="cursor:pointer;font-weight:600;padding:8px";
         resumenDia.textContent="🗓️ "+grupoDia.etiqueta+" · "+grupoDia.tarjetas.length+" compra(s)";
