@@ -1117,6 +1117,18 @@ Cargando artículos vendidos...
 
 <div id="adminPanel" class="oculto">
 
+<div class="tarjeta" id="totalesMensualesAdmin">
+<h3>📅 Totales del mes</h3>
+<label for="mesTotalesAdmin">Consultar mes</label>
+<input type="month" id="mesTotalesAdmin">
+<button type="button" id="actualizarTotalesMensualesAdmin">🔄 Actualizar totales</button>
+<div class="ayuda">Mes calendario, hora de Ciudad de México. Los tres importes se muestran por separado, sin restarse entre sí. Se excluyen operaciones canceladas.</div>
+<div class="info-articulo"><strong>💰 Ventas del mes · Solo entradas</strong><div class="precio-venta" id="totalEntradasMesAdmin">Selecciona un mes</div><div class="ayuda" id="detalleEntradasMesAdmin"></div><div class="ayuda">Incluye ventas y dinero recibido en anticipos y abonos de apartados durante el mes; no incluye saldos pendientes de apartados. Sin descontar costos, compras ni gastos.</div></div>
+<div class="info-articulo"><strong>🛒 Todas las compras del mes</strong><div class="precio-venta" id="totalComprasMesAdmin">Selecciona un mes</div><div class="ayuda">Importe completo de las compras registradas en el mes, tanto de contado como a crédito, sin descontar abonos.</div></div>
+<div class="info-articulo"><strong>💸 Todos los gastos del mes</strong><div class="precio-venta" id="totalGastosMesAdmin">Selecciona un mes</div><div class="ayuda">Incluye todos los gastos registrados en el mes, también las rentas, contadas una sola vez.</div></div>
+<div id="mensajeTotalesMensualesAdmin" role="status" aria-live="polite"></div>
+</div>
+
 <div class="tarjeta">
 <h3>📊 Resumen</h3>
 <div id="resumenAdministracion">Cargando resumen...</div>
@@ -9771,5 +9783,6 @@ document.addEventListener("DOMContentLoaded",preparar);
 <script src="./navegacion-atras.js"></script>
 <script src="./buscar-ventas.js"></script>
 <script src="./buscar-gastos-admin.js"></script>
+<script src="./totales-mensuales-admin.js"></script>
 </body>
 </html>
