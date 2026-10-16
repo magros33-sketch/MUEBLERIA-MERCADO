@@ -78,6 +78,16 @@
         mapa[dia].gastos+=Number(g.importe||0);
       });
 
+      // Un único mapa alimenta el calendario y el resumen, también bajo el service worker.
+      window.__reporteDiarioDatos=mapa;
+      const fechaConsulta=document.getElementById("fechaConsultaReportes");
+      if(fechaConsulta&&typeof window.filtrarReporteVentas==="function"){
+        if(!fechaConsulta.value)fechaConsulta.value=new Intl.DateTimeFormat("en-CA",{
+          timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"
+        }).format(new Date());
+        window.filtrarReporteVentas("dia");
+        return;
+      }
       const dias=Object.keys(mapa).sort().reverse();
       if(!dias.length){
         box.innerHTML='<div class="tarjeta">Todavía no hay operaciones para mostrar.</div>';
