@@ -2896,8 +2896,10 @@ async function cargarDeudasProveedores(){
     proveedores.forEach(p=>mapa[String(p.id)]=p.nombre||"Sin nombre");
     let html="";
     let vencidas=[];
+    let vigentesHTML="";
+    let totalPendiente=0;
     if(!compras.length){
-      html='<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>';
+      html='<div class="tarjeta">✅ No hay deudas pendientes.</div>';
     }else{
       const fechaMX=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?"":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);};
       const mostrarFecha=v=>v?v.split("-").reverse().join("/"):"Sin fecha";
@@ -2914,9 +2916,7 @@ async function cargarDeudasProveedores(){
       });
       vencidas=pendientes.filter(c=>c.vencimiento&&c.vencimiento<hoy);
       vencidas.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31")||(a.fechaCompra||"").localeCompare(b.fechaCompra||""));
-      const total=vencidas.reduce((n,c)=>n+Number(c.saldo||0),0);
-      html=(vencidas.length?'<div class="info-articulo"><strong>Total vencido sin pagar</strong><div class="precio-venta">'+dineroAdmin(total)+'</div></div>':'<div class="tarjeta">✅ No hay deudas vencidas pendientes.</div>')+
-        vencidas.map(c=>{
+      const renderNotas=lista=>lista.map(c=>{
           const vencida=c.vencimiento&&c.vencimiento<hoy;
           const titulo=vencida?"⚠️ VENCIDA":c.vencimiento===hoy?"⏰ VENCE HOY":"📅 Pendiente";
           const fechaVenc=c.vencimiento?mostrarFecha(c.vencimiento):"Sin vencimiento registrado";
@@ -2932,11 +2932,18 @@ async function cargarDeudasProveedores(){
             '<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>'+
             '<button type="button" onclick="verPagosNotaProveedor(\''+c.id+'\')">📜 Ver pagos</button></div>';
         }).join("");
+      const vigentes=pendientes.filter(c=>!c.vencimiento||c.vencimiento>=hoy);
+      vigentes.sort((a,b)=>(a.vencimiento||"9999-12-31").localeCompare(b.vencimiento||"9999-12-31"));
+      totalPendiente=pendientes.reduce((n,c)=>n+Number(c.saldo||0),0);
+      const totalVencido=vencidas.reduce((n,c)=>n+Number(c.saldo||0),0);
+      vigentesHTML=vigentes.length?'<h4>📅 Deudas dentro del plazo o sin vencimiento ('+vigentes.length+')</h4>'+renderNotas(vigentes):'<div class="ayuda">No hay deudas dentro del plazo.</div>';
+      html=vencidas.length?'<div class="info-articulo"><strong>Total vencido: '+dineroAdmin(totalVencido)+'</strong></div>'+renderNotas(vencidas):'<div class="ayuda">No hay deudas vencidas pendientes.</div>';
+
 
     }
     cajas.forEach(box=>{
       const estabaAbierto=box.querySelector("details.deudas-vencidas-desplegable")?.open||false;
-      box.innerHTML='<details class="deudas-vencidas-desplegable"'+(estabaAbierto?' open':'')+'><summary style="cursor:pointer;padding:12px;font-weight:700">⚠️ Ver deudas vencidas ('+vencidas.length+')</summary><div style="padding-top:10px">'+html+'</div></details>';
+      box.innerHTML='<div class="info-articulo"><strong>Total de deuda pendiente</strong><div class="precio-venta">'+dineroAdmin(totalPendiente)+'</div></div>'+vigentesHTML+'<details class="deudas-vencidas-desplegable"'+(estabaAbierto?' open':'')+'><summary style="cursor:pointer;padding:12px;font-weight:700">⚠️ Ver deudas vencidas ('+vencidas.length+')</summary><div style="padding-top:10px">'+html+'</div></details>';
     });
   }catch(e){
     console.error("Error cargando deudas de proveedores:",e);
