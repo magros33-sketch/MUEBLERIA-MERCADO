@@ -1410,7 +1410,10 @@ if(id==="inventario"){
 }
 
 if(id==="compras"){
-cargarArticulos();
+(async function(){
+await cargarProveedores();
+await cargarArticulos();
+})();
 cargarProveedoresEnCompra();
 cargarHistorialCompras();
 cargarDeudasProveedores();
