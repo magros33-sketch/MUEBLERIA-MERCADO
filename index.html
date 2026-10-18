@@ -4313,7 +4313,7 @@ Estado:
 <div class="separador"></div>
 
 ${String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()!=="cancelada"&&String(v.estado||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()!=="cancelado"
-?'<button onclick="editarVenta(\''+id+'\')">✏️ Editar venta</button><button class="eliminar" onclick="cancelarVenta(\''+id+'\')">🗑️ Eliminar venta y devolver stock</button>'
+?'<button onclick="editarFleteVenta(\''+id+'\')">🚚 Añadir / editar flete</button><button onclick="editarVenta(\''+id+'\')">✏️ Editar venta</button><button class="eliminar" onclick="cancelarVenta(\''+id+'\')">🗑️ Eliminar venta y devolver stock</button>'
 :'<div class="ayuda">Venta cancelada. El stock ya fue devuelto.</div>'}
 
 </div>`;
@@ -7550,6 +7550,18 @@ function cambiarPinAdministracion(){
     return {fecha:fechaLocalVentas(),activas:[],dia:[],ultimoCierre:null};
   }
   let sesionVentas=cargarSesionVentas();
+  window.addEventListener('venta-flete-actualizado',function(event){
+    sesionVentas=cargarSesionVentas();
+    const cambio=event.detail;
+    for(const lista of [sesionVentas.activas,sesionVentas.dia]){
+      for(const venta of lista){
+        if(String(venta.id)===String(cambio.id).substring(0,8)){
+          venta.total=cambio.total;venta.metodoPago=cambio.metodoPago;
+        }
+      }
+    }
+    guardarSesionVentas();renderPanelSesionVentas();
+  });
   function guardarSesionVentas(){try{localStorage.setItem(CLAVE_SESION_VENTAS,JSON.stringify(sesionVentas))}catch(e){console.warn('No se pudo guardar la sesión de ventas',e)}}
   function guardarBorradorVenta(){
     try{
@@ -9858,6 +9870,7 @@ document.addEventListener("DOMContentLoaded",preparar);
 <script src="./compras-duplicadas.js"></script>
 <script src="./navegacion-atras.js"></script>
 <script src="./buscar-ventas.js"></script>
+<script src="./editar-flete.js"></script>
 <script src="./buscar-gastos-admin.js"></script>
 <script src="./totales-mensuales-admin.js"></script>
 </body>
