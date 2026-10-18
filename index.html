@@ -1272,7 +1272,7 @@ try{
   const indiceElegido=eleccion-1;
   const cambios=[];
   const stockPorArticulo={};
-  let totalNuevo=detalles.reduce((s,d)=>s+Number(d.subtotal??(Number(d.cantidad||0)*Number(d.precio_unitario||0))),0);
+  let totalNuevo=detalles.reduce((s,d)=>s+Number(d.subtotal??(Number(d.cantidad||0)*Number(d.precio_unitario||0))),0)+Number(venta.flete||0);
 
   for(const [indice,detalle] of detalles.entries()){
     if(indice!==indiceElegido)continue;
@@ -3994,7 +3994,7 @@ detallesVentas.forEach(d=>{
 function sumarMetodoVentas(metodo){
   return vh.reduce((s,v)=>{
     const lineas=detallesPorVenta.get(String(v.id||""))||[];
-    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
+    if(lineas.some(d=>d.metodo_pago))return s+(v.flete_metodo===metodo?Number(v.flete||0):0)+lineas.filter(d=>String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
     return s+(String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo?Number(v.total||0):0);
   },0);
 }
@@ -4297,6 +4297,7 @@ Cliente:
 Metodo:
 ${escaparHTML(v.metodo_pago||"")}
 </div>
+${Number(v.flete||0)>0?'<div class="dato">🚚 Flete: <strong>$'+Number(v.flete).toLocaleString("es-MX")+'</strong> ('+escaparHTML(v.flete_metodo||"")+')</div>':""}
 ${String(v.notas||"").includes("Pago por artículo:")?'<div class="dato">Desglose de pagos por artículo: '+escaparHTML(String(v.notas).split("Pago por artículo: ")[1]||"")+'</div>':""}
 
 <div class="dato">
@@ -7554,6 +7555,8 @@ function cambiarPinAdministracion(){
     try{
       localStorage.setItem(CLAVE_BORRADOR_VENTA,JSON.stringify({
         items:ventaItems,
+        flete:el("ventaFlete")?.value||"0",
+        metodoFlete:el("ventaFleteMetodo")?.value||"",
         tipoCliente:el('ventaTipoCliente')?.value||'publico_general',
         metodoPago:el('ventaMetodoPago')?.value||'',
         cliente:el('ventaCliente')?.value||'',
@@ -7568,6 +7571,8 @@ function cambiarPinAdministracion(){
     try{
       const b=JSON.parse(localStorage.getItem(CLAVE_BORRADOR_VENTA)||'null');if(!b)return;
       if(Array.isArray(b.items))ventaItems=b.items;
+      el("ventaFlete").value=b.flete||"0";
+      el("ventaFleteMetodo").value=b.metodoFlete||"";
       if(el('ventaTipoCliente')&&b.tipoCliente)el('ventaTipoCliente').value=b.tipoCliente;
       if(el('ventaMetodoPago'))el('ventaMetodoPago').value=['efectivo','tarjeta','transferencia','aplazo'].includes(String(b.metodoPago||''))?b.metodoPago:'';
       if(el('ventaCliente'))el('ventaCliente').value=b.cliente||'';
@@ -7647,7 +7652,8 @@ function cambiarPinAdministracion(){
 
   window.actualizarTotalVenta=function(){
     const totalItems=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
-    const total=totalItems; // Solo artículos realmente añadidos al ticket
+    const flete=Number(el("ventaFlete")?.value||0);
+    const total=totalItems+(Number.isSafeInteger(flete)&&flete>=0?flete:0);
     if(el("totalVenta"))el("totalVenta").innerHTML=money(total);
   };
 
@@ -7735,6 +7741,14 @@ function cambiarPinAdministracion(){
     }
     window.__ventaRegistroEnCurso=true;
     try{
+    const flete=Number(el("ventaFlete")?.value||0);
+    const metodoFlete=el("ventaFleteMetodo")?.value||"";
+    if(!Number.isSafeInteger(flete)||flete<0){
+      mensaje.innerHTML='<div class="mensaje-error">Indica el flete en pesos completos, sin centavos y sin cantidades negativas.</div>';return;
+    }
+    if(flete>0&&!["efectivo","tarjeta","transferencia","aplazo"].includes(metodoFlete)){
+      mensaje.innerHTML='<div class="mensaje-error">Selecciona la forma de pago del flete.</div>';return;
+    }
     const tipoCliente=el("ventaTipoCliente").value;
     const clienteTexto=el("ventaCliente").value.trim();
     const metodoPago=el("ventaMetodoPago").value;
@@ -7849,17 +7863,19 @@ function cambiarPinAdministracion(){
       }
     }
 
-    const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0);
-    const metodosVenta=[...new Set(ventaItems.map(x=>String(x.metodo_pago||metodoPago)))];
+    const total=ventaItems.reduce((s,x)=>s+Number(x.subtotal||0),0)+flete;
+    const metodosVenta=[...new Set(ventaItems.map(x=>String(x.metodo_pago||metodoPago)).concat(flete>0?[metodoFlete]:[]))];
     const metodoPagoVenta=metodosVenta.length>1?"mixto":(metodosVenta[0]||metodoPago);
     const desglosePago=ventaItems.map(x=>(x.nombre||"Artículo")+" — "+money(x.subtotal)+" ("+(x.metodo_pago||metodoPago)+")").join("; ");
     const idVenta=crypto.randomUUID();
 
     try{
-      const rv=await fetch(SUPABASE_URL+"/rest/v1/rpc/registrar_venta_atomica",{
+      const rv=await fetch(SUPABASE_URL+"/rest/v1/rpc/registrar_venta_con_flete",{
         method:"POST",
         headers:headersSupabase,
         body:JSON.stringify({
+          p_flete:flete,
+          p_flete_metodo:metodoFlete,
           p_venta_id:idVenta,
           p_cliente_id:tipoCliente==="cliente"?clienteVentaSeleccionado.id:null,
           p_fecha:fechaVentaISO,
@@ -7889,6 +7905,7 @@ function cambiarPinAdministracion(){
       mensaje.innerHTML='<div class="mensaje-exito"><strong>✅ Venta registrada correctamente</strong><br><br>'+
         'Operación: <strong>'+escaparHTML(idVenta.substring(0,8))+'</strong><br>'+
         'Artículos: <strong>'+ventaItems.length+'</strong><br>'+
+        'Flete: <strong>'+money(flete)+'</strong><br>'+
         'Total: <strong>'+money(total)+'</strong><br>'+
         'Métodos de pago: '+escaparHTML(metodoPagoVenta)+
         '<br>Desglose: '+escaparHTML(desglosePago)+
@@ -7897,6 +7914,8 @@ function cambiarPinAdministracion(){
       // La venta ya está confirmada: ningún fallo visual debe sugerir que se guarde otra vez.
       try{
         ventaItems=[];
+        el("ventaFlete").value="0";
+        el("ventaFleteMetodo").value="";
         try{localStorage.removeItem(CLAVE_BORRADOR_VENTA)}catch(e){}
         clienteVentaSeleccionado=null;
         el("ventaMetodoPago").value="";
@@ -7934,6 +7953,13 @@ function cambiarPinAdministracion(){
       const panel=document.createElement('div');panel.id='panelSesionVentas';panel.className='tarjeta';
       const historial=el('historialVentas')?.closest('.tarjeta');
       if(historial)historial.parentNode.insertBefore(panel,historial);else totalBox.closest('.info-articulo').parentNode.appendChild(panel);
+    }
+    if(!el("ventaFlete")){
+      const panel=document.createElement("div");panel.className="info-articulo";
+      panel.innerHTML='<h3>🚚 Flete</h3><label for="ventaFlete">Importe del flete ($)</label><input id="ventaFlete" type="number" min="0" step="1" value="0" inputmode="numeric"><div class="ayuda">Déjalo en $0 cuando no se cobre.</div><label for="ventaFleteMetodo">Forma de pago del flete</label><select id="ventaFleteMetodo"><option value="">Selecciona si se cobra</option><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="aplazo">Aplazo</option></select>';
+      totalBox.closest(".info-articulo").before(panel);
+      el("ventaFlete").addEventListener("input",()=>{actualizarTotalVenta();guardarBorradorVenta()});
+      el("ventaFleteMetodo").addEventListener("change",guardarBorradorVenta);
     }
     restaurarBorradorVenta();
     renderPanelSesionVentas();
