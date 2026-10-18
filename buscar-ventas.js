@@ -71,10 +71,12 @@
           (Number(v.flete||0)>0?'<div class="dato">🚚 Flete: <strong>'+dinero(v.flete)+'</strong> ('+esc(v.flete_metodo||'')+')</div>':'') +
           '<div class="dato">Total: <strong>' + dinero(v.total) + ' MXN</strong></div>' +
           (lineas.length ? '<div class="dato"><strong>Artículos:</strong><ul>' + lineas.map(d => '<li>' + esc(d.articulo?.nombre || 'Artículo no disponible') + (d.articulo?.codigo ? ' (' + esc(d.articulo.codigo) + ')' : '') + ' · ' + Number(d.cantidad || 0) + ' × ' + dinero(d.precio_unitario) + '</li>').join('') + '</ul></div>' : '<div class="ayuda">No hay detalle disponible para este ticket.</div>') +
+          '<button type="button" data-flete-venta-buscada="' + esc(v.id) + '">🚚 Añadir / editar flete</button>' +
           '<button type="button" data-editar-venta-buscada="' + esc(v.id) + '">✏️ Editar venta</button>' +
           '<button type="button" class="eliminar" data-cancelar-venta-buscada="' + esc(v.id) + '">🗑️ Eliminar venta y devolver stock</button></div>';
       }).join('') +
       (visibles < coincidencias.length ? '<button type="button" id="masVentasBuscadas">Ver más resultados</button>' : '');
+    box.querySelectorAll('[data-flete-venta-buscada]').forEach(b => b.onclick = () => window.editarFleteVenta(b.dataset.fleteVentaBuscada));
     box.querySelectorAll('[data-editar-venta-buscada]').forEach(b => b.onclick = () => window.editarVenta(b.dataset.editarVentaBuscada));
     box.querySelectorAll('[data-cancelar-venta-buscada]').forEach(b => b.onclick = () => window.cancelarVenta(b.dataset.cancelarVentaBuscada));
     const mas = el('masVentasBuscadas');

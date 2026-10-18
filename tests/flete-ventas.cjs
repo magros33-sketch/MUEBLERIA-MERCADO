@@ -5,7 +5,7 @@ function setup(flete,metodo='efectivo'){
  const fields={ventaFlete:{value:String(flete)},ventaFleteMetodo:{value:metodo},totalVenta:{innerHTML:''},mensajeVenta:{innerHTML:''}};
  let writes=0;
  const c={document:{readyState:'loading',addEventListener(){},getElementById:id=>fields[id]},localStorage:{getItem(){return null}},Intl,Date,console,fetch(){writes++;throw Error('No se permiten escrituras')}};
- c.window=c;vm.createContext(c);
+ c.addEventListener=()=>{};c.window=c;vm.createContext(c);
  vm.runInContext(code.replace('let ventaItems=[];','let ventaItems=[{subtotal:2000}];'),c);
  return {c,fields,get writes(){return writes}};
 }
