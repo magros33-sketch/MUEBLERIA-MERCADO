@@ -29,7 +29,7 @@
     if (carga) return carga;
     carga = (async function () {
       const [ventas, clientes, articulos, detalles] = await Promise.all([
-        leerTabla('ventas', 'id,cliente_id,tipo_cliente,fecha,metodo_pago,total,estado'),
+        leerTabla('ventas', 'id,cliente_id,tipo_cliente,fecha,metodo_pago,total,estado,flete,flete_metodo'),
         leerTabla('clientes', 'id,nombre,codigo_cliente'),
         leerTabla('articulos', 'id,nombre,codigo'),
         leerTabla('ventas_detalle', 'id,venta_id,articulo_id,cantidad,precio_unitario,subtotal')
@@ -68,6 +68,7 @@
         return '<div class="historial"><div class="operacion-encabezado"><strong>💰 Venta · Ticket ' + esc(String(v.id).slice(0, 8)) + '</strong>' + (typeof etiquetaOperacionPagada === 'function' ? etiquetaOperacionPagada(v, 'venta') : '') + '</div>' +
           '<div class="fecha-operacion">📅 ' + esc(fecha) + '</div><div class="dato">Cliente: <strong>' + esc(nombreCliente) + '</strong></div>' +
           '<div class="dato">Método: ' + esc(v.metodo_pago || '') + '</div>' +
+          (Number(v.flete||0)>0?'<div class="dato">🚚 Flete: <strong>'+dinero(v.flete)+'</strong> ('+esc(v.flete_metodo||'')+')</div>':'') +
           '<div class="dato">Total: <strong>' + dinero(v.total) + ' MXN</strong></div>' +
           (lineas.length ? '<div class="dato"><strong>Artículos:</strong><ul>' + lineas.map(d => '<li>' + esc(d.articulo?.nombre || 'Artículo no disponible') + (d.articulo?.codigo ? ' (' + esc(d.articulo.codigo) + ')' : '') + ' · ' + Number(d.cantidad || 0) + ' × ' + dinero(d.precio_unitario) + '</li>').join('') + '</ul></div>' : '<div class="ayuda">No hay detalle disponible para este ticket.</div>') +
           '<button type="button" data-editar-venta-buscada="' + esc(v.id) + '">✏️ Editar venta</button>' +
