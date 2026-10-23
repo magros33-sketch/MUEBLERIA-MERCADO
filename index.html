@@ -3991,21 +3991,25 @@ detallesVentas.forEach(d=>{
   if(!detallesPorVenta.has(id))detallesPorVenta.set(id,[]);
   detallesPorVenta.get(id).push(d);
 });
-function sumarMetodoVentas(metodo){
-  return vh.reduce((s,v)=>{
-    const lineas=detallesPorVenta.get(String(v.id||""))||[];
-    if(lineas.some(d=>d.metodo_pago))return s+(v.flete_metodo===metodo?Number(v.flete||0):0)+lineas.filter(d=>String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo).reduce((a,d)=>a+Number(d.subtotal||0),0);
-    return s+(String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim()===metodo?Number(v.total||0):0);
-  },0);
-}
-function sumarOtrosVentas(){
+function desglosePagoVenta(venta,lineas){
+  const normalizar=v=>String(v||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");
   const conocidos=["efectivo","tarjeta","transferencia","aplazo"];
-  return vh.reduce((s,v)=>{
-    const lineas=detallesPorVenta.get(String(v.id||""))||[];
-    if(lineas.some(d=>d.metodo_pago))return s+lineas.filter(d=>!conocidos.includes(String(d.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim())).reduce((a,d)=>a+Number(d.subtotal||0),0);
-    return s+(!conocidos.includes(String(v.metodo_pago||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim())?Number(v.total||0):0);
-  },0);
+  const resultado={efectivo:0,tarjeta:0,transferencia:0,aplazo:0,otros:0};
+  const agregar=(metodo,importe)=>{const clave=normalizar(metodo);resultado[conocidos.includes(clave)?clave:"otros"]+=Number(importe||0);};
+  const flete=Number(venta.flete||0);
+  if(lineas.some(d=>d.metodo_pago)){
+    lineas.forEach(d=>agregar(d.metodo_pago,d.subtotal));
+  }else{
+    // Un ticket histórico puede haber perdido el método original al pasar a mixto.
+    // No adivinarlo: separar el flete conocido y conservar el resto en Otros.
+    agregar(venta.metodo_pago,Number(venta.total||0)-flete);
+  }
+  agregar(venta.flete_metodo,flete);
+  return resultado;
 }
+const desglosesVentas=vh.map(v=>desglosePagoVenta(v,detallesPorVenta.get(String(v.id||""))||[]));
+function sumarMetodoVentas(metodo){return desglosesVentas.reduce((s,d)=>s+Number(d[metodo]||0),0);}
+function sumarOtrosVentas(){return sumarMetodoVentas("otros");}
 
 const contado=sumarMetodoVentas("efectivo")+sumarMetodo(ph,"efectivo");
 const tarjeta=sumarMetodoVentas("tarjeta")+sumarMetodo(ph,"tarjeta");
