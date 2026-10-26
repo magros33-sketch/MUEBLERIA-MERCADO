@@ -2929,6 +2929,7 @@ async function cargarDeudasProveedores(){
             '<div class="dato">Nota: '+escaparHTML(String(c.id).slice(0,8))+'</div>'+
             '<div class="dato">Pendiente: <strong>'+dineroAdmin(Number(c.saldo||0))+'</strong></div>'+
             '<button type="button" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>'+
+            '<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\',true)">✅ Pagado</button>'+
             '<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>'+
             '<button type="button" onclick="verPagosNotaProveedor(\''+c.id+'\')">📜 Ver pagos</button></div>';
         }).join("");
@@ -2989,7 +2990,8 @@ async function cargarHistorialCompras(){
       }else{
         botones='<button type="button" class="editar" onclick="editarCompra(\''+c.id+'\')">✏️ Editar compra</button>';
         if(Number(c.saldo||0)>0){
-          botones+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';
+          botones+='<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\',true)">✅ Pagado</button>'+
+            '<button type="button" onclick="registrarPagoProveedor(\''+c.id+'\')">💳 Registrar abono</button>';
         }
         botones+='<button type="button" class="editar" onclick="verPagosNotaProveedor(\''+c.id+'\')">📜 Ver pagos</button>';
         botones+='<button type="button" class="eliminar" onclick="cancelarCompra(\''+c.id+'\')">🗑️ Eliminar compra y quitar del stock</button>';
@@ -8348,28 +8350,50 @@ function cambiarPinAdministracion(){
     instalar();
   }
 })();
-async function registrarPagoProveedor(compraId){
-  const importe=Number(prompt("Importe del abono al proveedor:","0"));
-  if(!Number.isFinite(importe)||importe<=0)return;
+const pagosProveedorEnCurso=new Set();
+async function registrarPagoProveedor(compraId,liquidar=false){
+  if(pagosProveedorEnCurso.has(compraId))return;
+  pagosProveedorEnCurso.add(compraId);
   try{
     const rc=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{headers:headersSupabase,cache:"no-store"});
     if(!rc.ok)throw new Error("No se pudo consultar la compra.");
     const compras=await rc.json(); if(!compras.length)throw new Error("No se encontró la compra.");
     const compra=compras[0], saldo=Number(compra.saldo||0);
-    if(saldo<=0){alert("Esta compra ya está pagada.");return;}
+    if(["cancelada","cancelado"].includes(String(compra.estado||"").toLowerCase())){alert("Esta compra está cancelada.");return;}
+    if(!Number.isFinite(saldo)||saldo<=0){alert("Esta compra ya está pagada.");return;}
+    const entradaImporte=liquidar?String(saldo):prompt("Importe del abono al proveedor:","0");
+    if(entradaImporte===null)return;
+    const importe=Number(entradaImporte);
+    if(!Number.isFinite(importe)||importe<=0)return;
     if(importe>saldo){alert("El abono no puede superar la deuda.");return;}
-    const metodo=(prompt("Método: efectivo, tarjeta o transferencia","transferencia")||"transferencia").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim().trim();
-    if(!["efectivo","tarjeta","transferencia"].includes(metodo)){alert("Método no válido.");return;}
-    const nuevoPagado=Number(compra.pagado||0)+importe, nuevoSaldo=Math.max(0,Number(compra.total||0)-nuevoPagado);
-    const rp=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({compra_id:compra.id,proveedor_id:compra.proveedor_id||compra.id_proveedor||null,importe:importe,metodo_pago:metodo,notas:"Abono a compra a crédito"})});
-    if(!rp.ok)throw new Error("No se pudo registrar el abono: "+await rp.text());
+    const entradaMetodo=prompt("Método: efectivo, tarjeta o transferencia","");
+    if(entradaMetodo===null)return;
+    const metodo=entradaMetodo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+    if(!["efectivo","tarjeta","transferencia"].includes(metodo)){alert("Método no válido. No se registró ningún pago.");return;}
+    let fechaPago=null;
+    if(liquidar){
+      const hoy=fechaMexicoHoy();
+      const entradaFecha=prompt("Fecha en que se pagó (AAAA-MM-DD):",hoy);
+      if(entradaFecha===null)return;
+      const fecha=entradaFecha.trim();
+      const dia=new Date(fecha+"T12:00:00Z");
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)||Number.isNaN(dia.getTime())||dia.toISOString().slice(0,10)!==fecha){alert("Fecha no válida. No se registró ningún pago.");return;}
+      fechaPago=fecha+"T12:00:00-06:00";
+      if(!confirm("¿Marcar esta nota como pagada?\n\nSaldo a liquidar: $"+saldo.toFixed(2)+"\nMétodo: "+metodo+"\nFecha: "+fecha+"\n\nSe registrará el pago y el saldo quedará en $0."))return;
+    }
+    const nuevoSaldo=liquidar?0:Math.round((saldo-importe)*100)/100;
+    const nuevoPagado=nuevoSaldo===0?Number(compra.total||0):Math.round((Number(compra.pagado||0)+importe)*100)/100;
+    const pago={compra_id:compra.id,proveedor_id:compra.proveedor_id||compra.id_proveedor||null,importe,metodo_pago:metodo,notas:liquidar?"Liquidación de compra a crédito":"Abono a compra a crédito"};
+    if(fechaPago)pago.fecha=fechaPago;
+    const rp=await fetch(SUPABASE_URL+"/rest/v1/pagos_proveedores",{method:"POST",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify(pago)});
+    if(!rp.ok)throw new Error("No se pudo registrar el pago: "+await rp.text());
     const ru=await fetch(SUPABASE_URL+"/rest/v1/compras?id=eq."+encodeURIComponent(compraId),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({pagado:nuevoPagado,saldo:nuevoSaldo,metodo_pago:nuevoSaldo>0?"credito":"credito_pagado"})});
-    if(!ru.ok)throw new Error("No se pudo actualizar la deuda: "+await ru.text());
-    alert("✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(0));
+    if(!ru.ok)throw new Error("El pago quedó registrado, pero no se pudo actualizar la deuda. No repitas el pago; revisa Ver pagos. Detalle: "+await ru.text());
+    alert(liquidar?"✅ Nota pagada. Saldo pendiente: $0":"✅ Abono registrado. Saldo pendiente: $"+nuevoSaldo.toFixed(0));
     await cargarHistorialCompras();
-    // Actualizar explícitamente todas las vistas de deuda tras registrar el abono.
     await cargarDeudasProveedores();
-  }catch(e){alert("❌ No se pudo registrar el abono.\n\n"+(e.message||String(e)));}
+  }catch(e){alert("❌ No se pudo completar el registro.\n\n"+(e.message||String(e)));}
+  finally{pagosProveedorEnCurso.delete(compraId);}
 }
 
 
