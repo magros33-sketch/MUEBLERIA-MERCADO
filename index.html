@@ -5506,7 +5506,8 @@ function editarApartadoExistente(id){
 }
 
 async function guardarCambioProductoApartado(id,datos){
- if(!datos.articulo_id||!Number.isInteger(datos.cantidad)||datos.cantidad<1||!Number.isInteger(datos.precio_unitario)||datos.precio_unitario<0)throw Error('Producto, cantidad o precio inválidos.');
+ const cancelar=datos.cancelar===true;
+ if(!cancelar&&(!datos.articulo_id||!Number.isInteger(datos.cantidad)||datos.cantidad<1||!Number.isInteger(datos.precio_unitario)||datos.precio_unitario<0))throw Error('Producto, cantidad o precio inválidos.');
  const base=SUPABASE_URL+'/rest/v1/';
  async function leer(tabla,id){
   const r=await fetch(base+tabla+'?id=eq.'+encodeURIComponent(id)+'&select=*',{headers:headersSupabase,cache:'no-store'});
@@ -5514,13 +5515,14 @@ async function guardarCambioProductoApartado(id,datos){
   const filas=await r.json();if(filas.length!==1)throw Error('No se encontró el registro en '+tabla+'.');return filas[0];
  }
  const a=await leer('apartados',id);
- const estado=String(a.estado||'').toLowerCase();
+ const estado=String(a.estado||'').trim().toLowerCase();
  if(['cancelado','cancelada','pagado','liquidado'].includes(estado)||Number(a.saldo||0)<=0)throw Error('Solo se pueden editar apartados pendientes. Actualiza la lista.');
- const total=datos.cantidad*datos.precio_unitario,pagado=Number(a.pagado||0);
- if(!Number.isSafeInteger(total)||total<pagado)throw Error('El total no puede ser menor que los abonos registrados.');
- const mismo=String(a.articulo_id)===String(datos.articulo_id);
+ if(!Number.isInteger(Number(a.cantidad))||Number(a.cantidad)<1)throw Error('El apartado no tiene una cantidad válida para devolver al stock.');
+ const total=cancelar?Number(a.total):datos.cantidad*datos.precio_unitario,pagado=Number(a.pagado||0);
+ if(!cancelar&&(!Number.isSafeInteger(total)||total<pagado))throw Error('El total no puede ser menor que los abonos registrados.');
+ const mismo=cancelar||String(a.articulo_id)===String(datos.articulo_id);
  const anterior=await leer('articulos',a.articulo_id),nuevo=mismo?anterior:await leer('articulos',datos.articulo_id);
- const cambios=mismo?[{art:anterior,delta:Number(a.cantidad||0)-datos.cantidad}]:[{art:anterior,delta:Number(a.cantidad||0)},{art:nuevo,delta:-datos.cantidad}];
+ const cambios=cancelar?[{art:anterior,delta:Number(a.cantidad)}]:mismo?[{art:anterior,delta:Number(a.cantidad)-datos.cantidad}]:[{art:anterior,delta:Number(a.cantidad)},{art:nuevo,delta:-datos.cantidad}];
  if(cambios.some(x=>!Number.isFinite(Number(x.art.stock))||Number(x.art.stock)+x.delta<0))throw Error('Stock insuficiente del producto seleccionado.');
  const aplicados=[];
  let apartadoConfirmado=false,resultadoIncierto=false;
@@ -5546,7 +5548,7 @@ async function guardarCambioProductoApartado(id,datos){
    await actualizar('articulos',cambio.art,{stock:stockNuevo},filtro('stock',cambio.art.stock));
    aplicados.push({art:cambio.art,stock,stockNuevo});
   }
-  const valores={articulo_id:datos.articulo_id,cantidad:datos.cantidad,precio_unitario:datos.precio_unitario,total,saldo:total-pagado,notas:datos.notas,estado:total===pagado?'pagado':a.estado};
+  const valores=cancelar?{estado:'cancelada'}:{articulo_id:datos.articulo_id,cantidad:datos.cantidad,precio_unitario:datos.precio_unitario,total,saldo:total-pagado,notas:datos.notas,estado:total===pagado?'pagado':a.estado};
   const filtros=['articulo_id','cantidad','precio_unitario','total','pagado','saldo','estado','notas'].map(k=>filtro(k,a[k])).join('');
   await actualizar('apartados',a,valores,filtros);apartadoConfirmado=true;
  }catch(e){
@@ -8976,51 +8978,24 @@ async function registrarPagoProveedor(compraId,liquidar=false){
     }
   };
 
+  const cancelacionesApartadosEnCurso=new Set();
   window.cancelarApartado=async function(id){
-    if(!confirm("¿Seguro que quieres cancelar este apartado?\n\nEl artículo regresará al stock."))return;
+    const clave=String(id);
+    if(cancelacionesApartadosEnCurso.has(clave))return;
+    if(!confirm("¿Seguro que quieres cancelar este apartado?\n\nEl producto y la cantidad actuales regresarán al stock."))return;
+    cancelacionesApartadosEnCurso.add(clave);
+    let guardado=false;
     try{
-      const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{headers:headersSupabase,cache:"no-store"});
-      if(!r.ok)throw new Error(await r.text());
-      const datos=await r.json();
-      if(!datos.length)throw new Error("No se encontró el apartado.");
-      const a=datos[0], est=estadoNormal(a.estado);
-      if(["cancelada","cancelado"].includes(est))throw new Error("Este apartado ya está cancelado.");
-      if(["pagado","liquidado"].includes(est))throw new Error("Este apartado ya está pagado/liquidado y no se puede cancelar.");
-
-      const articuloId=a.articulo_id, cantidad=Number(a.cantidad||0);
-      if(!articuloId||!Number.isInteger(cantidad)||cantidad<1)throw new Error("El apartado no tiene una cantidad válida para devolver al stock.");
-
-      const ra=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId)+"&select=id,stock",{headers:headersSupabase,cache:"no-store"});
-      if(!ra.ok)throw new Error(await ra.text());
-      const arts=await ra.json();
-      if(!arts.length)throw new Error("No se encontró el artículo.");
-      const stockAnterior=Number(arts[0].stock||0);
-      const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({stock:stockAnterior+cantidad})
-      });
-      if(!rs.ok)throw new Error("No se pudo devolver el stock: "+await rs.text());
-
-      const rc=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{
-        method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
-        body:JSON.stringify({estado:"cancelada"})
-      });
-      if(!rc.ok){
-        await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(articuloId),{
-          method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},
-          body:JSON.stringify({stock:stockAnterior})
-        });
-        throw new Error("No se pudo marcar el apartado como cancelado: "+await rc.text());
-      }
-
-      alert("✅ Apartado cancelado. El stock fue devuelto.");
+      await guardarCambioProductoApartado(id,{cancelar:true});
+      guardado=true;
+      alert("✅ Apartado cancelado. El producto y su cantidad regresaron al stock.");
       await cargarArticulos();
       await cargarHistorialApartados();
       await cargarResumenVentasDia();
     }catch(e){
       console.error("Error cancelando apartado:",e);
-      alert("❌ No se pudo cancelar el apartado.\n\n"+(e.message||String(e)));
-    }
+      alert(guardado?"El apartado quedó cancelado y el stock devuelto. Actualiza la pantalla para ver los cambios.":"❌ No se pudo cancelar el apartado.\n\n"+(e.message||String(e)));
+    }finally{cancelacionesApartadosEnCurso.delete(clave);}
   };
 })();
 </script>
