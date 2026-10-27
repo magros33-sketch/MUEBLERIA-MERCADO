@@ -5427,6 +5427,7 @@ async function cargarHistorialApartados(){
   apartadosVista=await ra.json();
   pagosApartadosVista=rp.ok?await rp.json():[];
   if(!rp.ok)console.warn("No se pudo consultar la fecha de abonos",await rp.text());
+  await cargarClientes();
   filtrarHistorialApartados();
  }catch(e){destino.textContent="No se pudieron cargar los apartados: "+e.message;}
 }
@@ -5438,7 +5439,7 @@ function filtrarHistorialApartados(){
  const hoy=new Date(fechaHoyMexicoApartado()+"T12:00:00");
  const mostrarActivos=document.getElementById("mostrarActivosApartados")?.checked||false;
  const lista=apartadosVista.filter(a=>{
-  const c=clientes.find(x=>x.id===a.cliente_id),art=articulos.find(x=>x.id===a.articulo_id);
+  const c=clientes.find(x=>String(x.id)===String(a.cliente_id)),art=articulos.find(x=>String(x.id)===String(a.articulo_id));
   const coincide=!texto||normalizar((c?.nombre||"")+" "+(c?.telefono||"")+" "+(art?.nombre||"")+" "+(art?.codigo||"")).includes(normalizar(texto));
   const fechaCoincide=!fecha||String(a.fecha||"").slice(0,10)===fecha;
   return coincide&&fechaCoincide&&(Boolean(fecha)||Boolean(texto)||mostrarActivos);
@@ -5446,7 +5447,7 @@ function filtrarHistorialApartados(){
  const activos=lista.filter(a=>!["cancelado","cancelada","pagado","liquidado"].includes(normalizar(a.estado))&&Number(a.saldo||0)>0);
  const historicos=lista.filter(a=>!activos.includes(a));
  function tarjeta(a){
-  const c=clientes.find(x=>x.id===a.cliente_id),art=articulos.find(x=>x.id===a.articulo_id);
+  const c=clientes.find(x=>String(x.id)===String(a.cliente_id)),art=articulos.find(x=>String(x.id)===String(a.articulo_id));
   const estado=normalizar(a.estado),activo=activos.includes(a);
   const fechas=pagosApartadosVista.filter(p=>p.apartado_id===a.id).map(p=>new Date(p.fecha)).filter(d=>!Number.isNaN(d.getTime()));
   const base=new Date(String(a.fecha||"").slice(0,10)+"T12:00:00");
@@ -5454,7 +5455,7 @@ function filtrarHistorialApartados(){
   const dias=Math.floor((hoy-ultima)/86400000),vencido=activo&&dias>=60;
   const id=String(a.id||"").replace(/[^a-zA-Z0-9-]/g,"");
   const e=x=>escaparHTML(String(x??""));
-  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><div class="operacion-encabezado"><strong>'+e(c?.nombre||"Cliente no disponible")+'</strong>'+etiquetaOperacionPagada(a,"apartado")+'</div><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
+  return '<div class="historial '+(["cancelado","cancelada"].includes(estado)?'apartado-cancelado':'')+'"><div class="operacion-encabezado"><strong style="font-size:20px;color:#123b2a">Cliente: '+e(c?.nombre||"Cliente no disponible")+'</strong>'+etiquetaOperacionPagada(a,"apartado")+'</div><div class="fecha-operacion">📅 '+e(formatearFecha(a.fecha))+'</div><div class="dato">Artículo: '+e(art?.nombre||"No disponible")+'</div><div class="dato">Cantidad: '+Number(a.cantidad||0)+'</div><div class="dato">Precio unitario: $'+Number(a.precio_unitario||0).toFixed(0)+'</div><div class="dato">Total: $'+Number(a.total||0).toFixed(0)+'</div><div class="dato">Pagado: $'+Number(a.pagado||0).toFixed(0)+'</div><div class="dato">Saldo: $'+Number(a.saldo||0).toFixed(0)+'</div><div class="dato"><strong>'+(vencido?'⚠️ VENCIDO — 60 días sin movimientos':e(a.estado||"pendiente"))+'</strong></div>'+(a.notas?'<div class="dato">Notas: '+e(a.notas)+'</div>':'')+'<button onclick="mostrarHistorialAbonosApartado(\''+id+'\')">📜 Ver abonos</button>'+(activo?'<button onclick="registrarAbonoApartado(\''+id+'\')">💵 Registrar abono</button><button class="editar" onclick="editarApartadoExistente(\''+id+'\')">✏️ Editar</button><button class="eliminar" onclick="cancelarApartado(\''+id+'\')">❌ Cancelar</button>':'')+'</div>';
  }
  destino.innerHTML=(!fecha&&!texto&&!mostrarActivos?'<p>📅 Elige una fecha, busca un cliente o pulsa «Ver activos».</p>':'<h3>📋 Apartados encontrados ('+lista.length+')</h3>'+(lista.map(tarjeta).join("")||'<p>No hay apartados para esta búsqueda.</p>'));
 }
