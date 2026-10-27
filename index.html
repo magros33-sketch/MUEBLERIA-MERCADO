@@ -5459,34 +5459,108 @@ function filtrarHistorialApartados(){
  }
  destino.innerHTML=(!fecha&&!texto&&!mostrarActivos?'<p>📅 Elige una fecha, busca un cliente o pulsa «Ver activos».</p>':'<h3>📋 Apartados encontrados ('+lista.length+')</h3>'+(lista.map(tarjeta).join("")||'<p>No hay apartados para esta búsqueda.</p>'));
 }
-async function editarApartadoExistente(id){
+/* Edición del producto de un apartado; conserva cliente y abonos. */
+function editarApartadoExistente(id){
  const a=apartadosVista.find(x=>String(x.id)===String(id));if(!a)return;
- const cantidadTexto=prompt("Cantidad (el cambio ajustará el inventario):",String(a.cantidad||1));if(cantidadTexto===null)return;
- const cantidad=Number(cantidadTexto);if(!Number.isInteger(cantidad)||cantidad<1){alert("Cantidad inválida");return;}
- const precioTexto=prompt("Precio por unidad:",String(a.precio_unitario||0));if(precioTexto===null)return;
- const precio=Number(precioTexto);if(!Number.isFinite(precio)||precio<0){alert("Precio inválido");return;}
- const notas=prompt("Notas:",a.notas||"");if(notas===null)return;
- const total=cantidad*precio,pagado=Number(a.pagado||0);
- if(total<pagado){alert("El total no puede ser menor que los abonos registrados.");return;}
- const diferencia=cantidad-Number(a.cantidad||0);
- const art=articulos.find(x=>x.id===a.articulo_id);
- if(diferencia&&!art){alert("No se encontró el artículo. No se modificó nada.");return;}
- const stock=Number(art?.stock||0);
- if(diferencia>stock){alert("Stock insuficiente.");return;}
- if(!confirm("Guardar cambios del apartado?"+(diferencia?" Se ajustará el inventario.":"")))return;
- try{
-  if(diferencia){
-   const rs=await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(a.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock:stock-diferencia})});
-   if(!rs.ok)throw Error("No se pudo ajustar el inventario: "+await rs.text());
-  }
-  const r=await fetch(SUPABASE_URL+"/rest/v1/apartados?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({cantidad,precio_unitario:precio,total,saldo:total-pagado,notas})});
-  if(!r.ok){
-   if(diferencia)await fetch(SUPABASE_URL+"/rest/v1/articulos?id=eq."+encodeURIComponent(a.articulo_id),{method:"PATCH",headers:{...headersSupabase,"Prefer":"return=minimal"},body:JSON.stringify({stock})});
-   throw Error(await r.text());
-  }
-  alert("Apartado actualizado.");await cargarArticulos();await cargarHistorialApartados();
- }catch(e){alert("No se pudo editar: "+e.message);}
+ document.getElementById('editorProductoApartado')?.remove();
+ const panel=document.createElement('form');panel.id='editorProductoApartado';panel.className='tarjeta';
+ panel.style.border='2px solid #28784f';
+ panel.innerHTML='<h3>✏️ Editar apartado</h3><label for="editarApartadoBusqueda">Buscar producto por código o nombre</label><input id="editarApartadoBusqueda" type="search" autocomplete="off" placeholder="Escribe para buscar el producto"><label for="editarApartadoProducto">Producto del apartado</label><select id="editarApartadoProducto" required></select><div id="editarApartadoStock" class="ayuda"></div><label for="editarApartadoCantidad">Cantidad</label><input id="editarApartadoCantidad" type="number" min="1" step="1" required><label for="editarApartadoPrecio">Precio por unidad</label><input id="editarApartadoPrecio" type="number" min="0" step="1" required><label for="editarApartadoNotas">Notas</label><input id="editarApartadoNotas" type="text"><div class="ayuda">Los abonos se conservan. Al cambiar de producto, se devuelve el anterior al inventario y se descuenta el nuevo. Revisa el precio acordado antes de guardar.</div><button type="submit">💾 Guardar cambios del apartado</button><button type="button" class="secundario" id="cancelarEditorApartado">Cancelar edición</button><div id="mensajeEditarApartado" role="status"></div>';
+ const historial=document.getElementById('historialApartados');historial.before(panel);
+ const el=id=>document.getElementById(id),selector=el('editarApartadoProducto');
+ let seleccionado=String(a.articulo_id);
+ const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ function stock(){
+  seleccionado=selector.value;
+  const art=articulos.find(x=>String(x.id)===seleccionado);
+  el('editarApartadoStock').textContent=art?'Stock disponible: '+Number(art.stock||0)+(seleccionado===String(a.articulo_id)?' (además de las '+Number(a.cantidad||0)+' unidades de este apartado)':''):'';
+ }
+ function opciones(){
+  const q=norm(el('editarApartadoBusqueda').value);selector.replaceChildren();
+  articulos.filter(x=>String(x.id)===seleccionado||norm((x.codigo||'')+' '+(x.nombre||'')).includes(q)).forEach(x=>{
+   const o=document.createElement('option');o.value=String(x.id);o.textContent=(x.codigo?x.codigo+' — ':'')+(x.nombre||'Sin nombre');selector.appendChild(o);
+  });
+  selector.value=seleccionado;stock();
+ }
+ el('editarApartadoCantidad').value=a.cantidad||1;
+ el('editarApartadoPrecio').value=Number(a.precio_unitario||0);
+ el('editarApartadoNotas').value=a.notas||'';
+ el('editarApartadoBusqueda').addEventListener('input',opciones);
+ selector.addEventListener('change',()=>{stock();el('editarApartadoBusqueda').value='';opciones();});
+ el('cancelarEditorApartado').onclick=()=>panel.remove();opciones();
+ panel.onsubmit=async function(event){
+  event.preventDefault();const msg=el('mensajeEditarApartado');
+  const datos={articulo_id:selector.value,cantidad:Number(el('editarApartadoCantidad').value),precio_unitario:Number(el('editarApartadoPrecio').value),notas:el('editarApartadoNotas').value};
+  if(!datos.articulo_id||!Number.isInteger(datos.cantidad)||datos.cantidad<1||!Number.isInteger(datos.precio_unitario)||datos.precio_unitario<0){msg.textContent='Selecciona un producto, cantidad y precio válidos, sin centavos.';return;}
+  if(!confirm('¿Guardar el producto, cantidad y precio de este apartado? Se ajustará el inventario y se conservarán los abonos.'))return;
+  panel.querySelectorAll('button,input,select').forEach(x=>x.disabled=true);msg.textContent='Guardando cambios...';
+  let guardado=false;
+  try{
+   await guardarCambioProductoApartado(id,datos);guardado=true;
+   msg.textContent='✅ Apartado actualizado.';
+   await cargarArticulos();await cargarHistorialApartados();panel.remove();
+  }catch(e){msg.textContent=guardado?'El cambio quedó guardado, pero no se pudo actualizar la vista. Pulsa Actualizar apartados.':'❌ '+e.message;}
+  finally{panel.querySelectorAll('button,input,select').forEach(x=>x.disabled=false);}
+ };
+ panel.scrollIntoView({behavior:'smooth',block:'start'});el('editarApartadoBusqueda').focus({preventScroll:true});
 }
+
+async function guardarCambioProductoApartado(id,datos){
+ if(!datos.articulo_id||!Number.isInteger(datos.cantidad)||datos.cantidad<1||!Number.isInteger(datos.precio_unitario)||datos.precio_unitario<0)throw Error('Producto, cantidad o precio inválidos.');
+ const base=SUPABASE_URL+'/rest/v1/';
+ async function leer(tabla,id){
+  const r=await fetch(base+tabla+'?id=eq.'+encodeURIComponent(id)+'&select=*',{headers:headersSupabase,cache:'no-store'});
+  if(!r.ok)throw Error('No se pudo consultar '+tabla+'.');
+  const filas=await r.json();if(filas.length!==1)throw Error('No se encontró el registro en '+tabla+'.');return filas[0];
+ }
+ const a=await leer('apartados',id);
+ const estado=String(a.estado||'').toLowerCase();
+ if(['cancelado','cancelada','pagado','liquidado'].includes(estado)||Number(a.saldo||0)<=0)throw Error('Solo se pueden editar apartados pendientes. Actualiza la lista.');
+ const total=datos.cantidad*datos.precio_unitario,pagado=Number(a.pagado||0);
+ if(!Number.isSafeInteger(total)||total<pagado)throw Error('El total no puede ser menor que los abonos registrados.');
+ const mismo=String(a.articulo_id)===String(datos.articulo_id);
+ const anterior=await leer('articulos',a.articulo_id),nuevo=mismo?anterior:await leer('articulos',datos.articulo_id);
+ const cambios=mismo?[{art:anterior,delta:Number(a.cantidad||0)-datos.cantidad}]:[{art:anterior,delta:Number(a.cantidad||0)},{art:nuevo,delta:-datos.cantidad}];
+ if(cambios.some(x=>!Number.isFinite(Number(x.art.stock))||Number(x.art.stock)+x.delta<0))throw Error('Stock insuficiente del producto seleccionado.');
+ const aplicados=[];
+ let apartadoConfirmado=false,resultadoIncierto=false;
+ async function actualizar(tabla,registro,valores,filtros){
+  let r;
+  try{r=await fetch(base+tabla+'?id=eq.'+encodeURIComponent(registro.id)+filtros,{method:'PATCH',headers:{...headersSupabase,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(valores)});}
+  catch(e){
+   // Una desconexión no significa que el servidor no haya guardado.
+   try{const actual=await leer(tabla,registro.id);if(Object.keys(valores).every(k=>String(actual[k]??'')===String(valores[k]??'')))return actual;}
+   catch(lectura){resultadoIncierto=true;throw Error('Se perdió la conexión. Comprueba el apartado y el inventario antes de repetir el cambio.');}
+   throw Error('No se pudo confirmar el cambio. Actualiza la lista antes de volver a intentarlo.');
+  }
+  if(!r.ok)throw Error('No se pudo guardar el cambio en '+tabla+'.');
+  let filas;try{filas=await r.json();}catch(e){resultadoIncierto=true;throw Error('No se pudo confirmar la respuesta. Comprueba el apartado y el inventario antes de repetir.');}
+  if(!Array.isArray(filas)||filas.length!==1)throw Error('El registro cambió mientras editabas o no se pudo actualizar. Actualiza la lista.');
+  return filas[0];
+ }
+ const filtro=(k,v)=>'&'+k+(v==null?'=is.null':'=eq.'+encodeURIComponent(v));
+ try{
+  for(const cambio of cambios){
+   if(!cambio.delta)continue;
+   const stock=Number(cambio.art.stock),stockNuevo=stock+cambio.delta;
+   await actualizar('articulos',cambio.art,{stock:stockNuevo},filtro('stock',cambio.art.stock));
+   aplicados.push({art:cambio.art,stock,stockNuevo});
+  }
+  const valores={articulo_id:datos.articulo_id,cantidad:datos.cantidad,precio_unitario:datos.precio_unitario,total,saldo:total-pagado,notas:datos.notas,estado:total===pagado?'pagado':a.estado};
+  const filtros=['articulo_id','cantidad','precio_unitario','total','pagado','saldo','estado','notas'].map(k=>filtro(k,a[k])).join('');
+  await actualizar('apartados',a,valores,filtros);apartadoConfirmado=true;
+ }catch(e){
+  if(!apartadoConfirmado&&!resultadoIncierto){
+   const fallos=[];
+   for(const cambio of aplicados.reverse()){
+    try{await actualizar('articulos',cambio.art,{stock:cambio.stock},filtro('stock',cambio.stockNuevo));}catch(error){fallos.push(cambio.art.nombre||cambio.art.id);}
+   }
+   if(fallos.length)throw Error(e.message+' Revisa el inventario de: '+fallos.join(', ')+'. No repitas el cambio hasta comprobarlo.');
+  }
+  throw e;
+ }
+}
+
 
 /* ================= HISTORIAL DE ABONOS DE APARTADOS ================= */
 async function mostrarHistorialAbonosApartado(id){
