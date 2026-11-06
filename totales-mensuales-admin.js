@@ -96,30 +96,33 @@
       for (const campo of Object.keys(acumulado)) acumulado[campo] += balance[campo];
     }
     const margen = acumulado.conCosto > 0 ? (acumulado.conCosto - acumulado.costo) / acumulado.conCosto : null;
-    function resultado(balance) {
+    function ganancia(balance) {
       if (balance.pendiente && margen === null) return null;
-      return balance.conCosto - balance.costo - balance.gastos
+      return balance.conCosto - balance.costo
         + (balance.pendiente ? Math.round(balance.pendiente * margen) : 0);
     }
     // El acumulado suma los mismos importes diarios que se muestran en el calendario.
-    const resultados = [...dias.values()].map(resultado);
-    const totalMes = resultados.includes(null) ? null : resultados.reduce((total, valor) => total + valor, 0);
-    return {dias, acumulado, totalMes, resultado, margen};
+    const ganancias = [...dias.values()].map(ganancia);
+    const gananciaMes = ganancias.includes(null) ? null : ganancias.reduce((total, valor) => total + valor, 0);
+    return {dias, acumulado, gananciaMes, ganancia, margen};
   }
 
   function mostrarGanancias(mes, datos) {
     const panel = el('gananciasAdmin');
     const hoy = fechaMexico.format(new Date());
     const espacioInicial = (new Date(mes + '-01T00:00:00Z').getUTCDay() + 6) % 7;
-    const tituloResultado = balance => balance.pendiente ? 'Resultado estimado' : 'Resultado';
+    const tituloGanancia = balance => balance.pendiente ? 'Ganancia estimada' : 'Ganancia';
     const nombreMes = new Intl.DateTimeFormat('es-MX',{timeZone:'UTC',month:'long',year:'numeric'})
       .format(new Date(mes + '-01T00:00:00Z'));
     const mostrarResultado = valor => valor === null ? 'Pendiente de costos' : formatoImporte(valor);
+    const despuesDeGastos = (ganancia, gastos) => ganancia === null ? null : ganancia - gastos;
     panel.innerHTML = `
       <div class="info-articulo">
-        <strong>${tituloResultado(datos.acumulado)} · ${nombreMes}</strong>
-        <div class="precio-venta">${mostrarResultado(datos.totalMes)}</div>
-        <div class="ayuda">Ventas sin flete menos costo de mercancía y gastos registrados. Los cobros de apartados se muestran en Totales del mes.</div>
+        <strong>${tituloGanancia(datos.acumulado)} · ${nombreMes}</strong>
+        <div class="precio-venta">${mostrarResultado(datos.gananciaMes)}</div>
+        <div class="ayuda">Precio de venta de la mercancía sin flete menos su costo. Los cobros de apartados se muestran en Totales del mes.</div>
+        <div>Gastos del mes · ${formatoImporte(datos.acumulado.gastos)}</div>
+        <div>Resultado ${datos.acumulado.pendiente ? 'estimado ' : ''}después de gastos · ${mostrarResultado(despuesDeGastos(datos.gananciaMes,datos.acumulado.gastos))}</div>
         ${datos.acumulado.pendiente ? '<div class="ayuda">Ventas sin costo completo: ' + formatoImporte(datos.acumulado.pendiente)
           + (datos.margen === null ? '. Faltan costos para calcular el resultado.' : '. La estimación usa el margen de las ventas con costo de este mes.') + '</div>' : ''}
       </div>
@@ -138,16 +141,17 @@
       boton.setAttribute('aria-pressed','true');
       boton.classList.remove('secundario');
       const balance = datos.dias.get(fecha);
-      const resultado = datos.resultado(balance);
+      const ganancia = datos.ganancia(balance);
       detalle.innerHTML = `
         <strong>${nombreDia.format(new Date(fecha + 'T00:00:00Z'))}</strong>
         <div>Ventas sin flete · ${formatoImporte(balance.ventas)}</div>
         <div>Costo registrado · ${formatoImporte(balance.costo)}</div>
-        <div>Gastos · ${formatoImporte(balance.gastos)}</div>
         ${balance.pendiente ? '<div>Ventas sin costo completo · ' + formatoImporte(balance.pendiente) + '</div>' : ''}
         ${balance.pendiente && datos.margen !== null ? '<div>Costo estimado de esas ventas · '
           + formatoImporte(balance.pendiente - Math.round(balance.pendiente * datos.margen)) + '</div>' : ''}
-        <div><strong>${tituloResultado(balance)} del día · ${mostrarResultado(resultado)}</strong></div>`;
+        <div><strong>${tituloGanancia(balance)} del día · ${mostrarResultado(ganancia)}</strong></div>
+        <div>Gastos · ${formatoImporte(balance.gastos)}</div>
+        <div>Resultado ${balance.pendiente ? 'estimado ' : ''}después de gastos · ${mostrarResultado(despuesDeGastos(ganancia,balance.gastos))}</div>`;
     }
 
     for (const [fecha, balance] of datos.dias) {
