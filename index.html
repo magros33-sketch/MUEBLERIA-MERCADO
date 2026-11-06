@@ -5537,7 +5537,17 @@ async function guardarCambioProductoApartado(id,datos){
    throw Error('No se pudo confirmar el cambio. Actualiza la lista antes de volver a intentarlo.');
   }
   if(!r.ok)throw Error('No se pudo guardar el cambio en '+tabla+'.');
-  let filas;try{filas=await r.json();}catch(e){resultadoIncierto=true;throw Error('No se pudo confirmar la respuesta. Comprueba el apartado y el inventario antes de repetir.');}
+  let filas;
+  try{filas=await r.json();}
+  catch(e){
+   // La escritura pudo completarse aunque su respuesta no se pueda leer.
+   try{
+    const actual=await leer(tabla,registro.id);
+    if(Object.keys(valores).every(k=>String(actual[k]??'')===String(valores[k]??'')))return actual;
+   }catch(lectura){/* Sin confirmación, no revertir a ciegas. */}
+   resultadoIncierto=true;
+   throw Error('No se pudo confirmar la respuesta. Comprueba el apartado y el inventario antes de repetir.');
+  }
   if(!Array.isArray(filas)||filas.length!==1)throw Error('El registro cambió mientras editabas o no se pudo actualizar. Actualiza la lista.');
   return filas[0];
  }
